@@ -1,3 +1,5 @@
+![](https://github.com/williamniemiec/socialine/blob/master/docs/img/logo/logo.jpg?raw=true)
+
 <h1 align='center'>socialine</h1>
 <p align='center'>News feed style notification service, similar to Twitter.</p>
 
