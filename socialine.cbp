@@ -11,6 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="fulano123 123.456.789.000 1234" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
@@ -30,7 +31,38 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add directory="include" />
 		</Compiler>
+		<Linker>
+			<Add directory="lib" />
+		</Linker>
+		<Unit filename="include/client/Client.h" />
+		<Unit filename="include/client/NotificationManager.h" />
+		<Unit filename="include/client/view/HomeView.h" />
+		<Unit filename="lib/ncurses/usr/include/curses.h" />
+		<Unit filename="lib/ncurses/usr/include/cursesapp.h" />
+		<Unit filename="lib/ncurses/usr/include/cursesf.h" />
+		<Unit filename="lib/ncurses/usr/include/cursesm.h" />
+		<Unit filename="lib/ncurses/usr/include/cursesp.h" />
+		<Unit filename="lib/ncurses/usr/include/cursesw.h" />
+		<Unit filename="lib/ncurses/usr/include/cursslk.h" />
+		<Unit filename="lib/ncurses/usr/include/eti.h" />
+		<Unit filename="lib/ncurses/usr/include/etip.h" />
+		<Unit filename="lib/ncurses/usr/include/form.h" />
+		<Unit filename="lib/ncurses/usr/include/menu.h" />
+		<Unit filename="lib/ncurses/usr/include/nc_tparm.h" />
+		<Unit filename="lib/ncurses/usr/include/ncurses.h" />
+		<Unit filename="lib/ncurses/usr/include/ncurses_dll.h" />
+		<Unit filename="lib/ncurses/usr/include/panel.h" />
+		<Unit filename="lib/ncurses/usr/include/term.h" />
+		<Unit filename="lib/ncurses/usr/include/term_entry.h" />
+		<Unit filename="lib/ncurses/usr/include/termcap.h" />
+		<Unit filename="lib/ncurses/usr/include/tic.h" />
+		<Unit filename="lib/ncurses/usr/include/unctrl.h" />
+		<Unit filename="src/App.cpp" />
+		<Unit filename="src/client/Client.cpp" />
+		<Unit filename="src/client/NotificationManager.cpp" />
+		<Unit filename="src/client/views/HomeView.cpp" />
 		<Extensions>
 			<envvars />
 			<code_completion />

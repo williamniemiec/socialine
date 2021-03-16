@@ -1,0 +1,35 @@
+# depslib dependency file v1.0
+1615773464 source:/home/william/Documents/workspace/socialine/src/helloworld.cpp
+	<iostream>
+
+1615857668 source:/home/william/Documents/workspace/socialine/src/App.cpp
+	<iostream>
+	"client/Client.h"
+
+1615850957 source:/home/william/Documents/workspace/socialine/src/Client/Client.cpp
+	<iostream>
+
+1615853357 /home/william/Documents/workspace/socialine/include/client/Client.h
+	<iostream>
+
+1615857837 source:/home/william/Documents/workspace/socialine/src/client/Client.cpp
+	<iostream>
+	"client/Client.h"
+	"client/view/HomeView.h"
+
+1615851509 source:/home/william/Documents/workspace/socialine/src/client/NotificationManager.cpp
+	<iostream>
+
+1615858578 source:/home/william/Documents/workspace/socialine/src/client/views/HomeView.cpp
+	<iostream>
+	<list>
+	<cstdlib>
+	"client/view/HomeView.h"
+
+1615858406 /home/william/Documents/workspace/socialine/include/client/view/HomeView.h
+	<iostream>
+	<list>
+
+1615855913 /home/william/Documents/workspace/socialine/lib/conio.h
+	<ncurses.h>
+
