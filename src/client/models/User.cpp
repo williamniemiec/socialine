@@ -1,6 +1,7 @@
 #include <iostream>
-#include "client/models/NotificationManager.hpp"
+#include "client/models/User.hpp"
 #include "client/models/CommunicationManager.hpp"
+#include "client/models/NotificationManager.hpp"
 
 using namespace std;
 using namespace client::models;
@@ -8,20 +9,26 @@ using namespace client::models;
 //-------------------------------------------------------------------------
 //      Constructor
 //-------------------------------------------------------------------------
-NotificationManager::NotificationManager(string profile)
+User::User(string username)
 {
-    this->profile = profile;
+    this->username = username;
+    this->notificationManager = new models::NotificationManager(username);
 }
-
 
 //-------------------------------------------------------------------------
 //      Methods
 //-------------------------------------------------------------------------
-void NotificationManager::send(string message)
+void User::follow(string username)
 {
-    cout << "Sending message " << message << endl;
+    models::CommunicationManager::follow(this->username, username);
+}
 
-    models::CommunicationManager::sendNotification(this->profile, message);
+void User::send(string message)
+{
+    this->notificationManager->send(message);
+}
 
-    cout << "Sent" << endl;
+string User::getUsername()
+{
+    return this->username;
 }

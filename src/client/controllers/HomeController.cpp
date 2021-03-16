@@ -11,7 +11,7 @@ using namespace client::models;
 //-------------------------------------------------------------------------
 HomeController::HomeController(string username)
 {
-    this->username = username;
+    this->user = new models::User(username);
 }
 
 //-------------------------------------------------------------------------
@@ -19,13 +19,12 @@ HomeController::HomeController(string username)
 //-------------------------------------------------------------------------
 void HomeController::run()
 {
-    this->notificationManager = new models::NotificationManager(username);
     this->render();
 }
 
 void HomeController::render()
 {
-    views::HomeView* homeView = new views::HomeView(this, username);
+    views::HomeView* homeView = new views::HomeView(this, user->getUsername());
     homeView->render();
 }
 
@@ -33,8 +32,8 @@ void HomeController::parseCommand(string command)
 {
     /*
         if (command is SEND)
-            notificationManager->send(message)
+            user->send(message)
         else if (command is FOLLOW)
-            models::CommunicationManager::follow(username, followed)
+            user->follow(followed)
     */
 }

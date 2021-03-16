@@ -25,6 +25,6 @@ namespace client::models
     //      Methods
     //-------------------------------------------------------------------------
     public:
-        void send(string message, string followed);
+        void send(string message);
     };
 }

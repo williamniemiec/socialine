@@ -1,35 +1,34 @@
 #pragma once
 #include <iostream>
-#include "client/models/User.hpp"
+#include "client/models/NotificationManager.hpp"
 
 using namespace std;
 
-namespace client::controllers
+namespace client::models
 {
-    class HomeController
+    class User
     {
     //-------------------------------------------------------------------------
     //      Attributes
     //-------------------------------------------------------------------------
     private:
-        models::User* user;
+        string username;
+        models::NotificationManager* notificationManager;
 
 
     //-------------------------------------------------------------------------
     //      Constructor
     //-------------------------------------------------------------------------
     public:
-        HomeController(string username);
+        User(string username);
 
 
     //-------------------------------------------------------------------------
     //      Methods
     //-------------------------------------------------------------------------
     public:
-        void run();
-        void parseCommand(string command);
-
-    private:
-        void render();
+        void follow(string username);
+        void send(string message);
+        string getUsername();
     };
 }
