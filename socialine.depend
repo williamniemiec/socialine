@@ -21,11 +21,12 @@
 1615851509 source:/home/william/Documents/workspace/socialine/src/client/NotificationManager.cpp
 	<iostream>
 
-1615903280 source:/home/william/Documents/workspace/socialine/src/client/views/HomeView.cpp
+1615907103 source:/home/william/Documents/workspace/socialine/src/client/views/HomeView.cpp
 	<iostream>
 	<list>
 	<cstdlib>
 	"client/views/HomeView.hpp"
+	"client/models/Notification.hpp"
 
 1615858406 /home/william/Documents/workspace/socialine/include/client/view/HomeView.h
 	<iostream>
@@ -37,26 +38,30 @@
 1615901933 /home/william/Documents/workspace/socialine/include/client/Client.hpp
 	<iostream>
 
-1615904978 /home/william/Documents/workspace/socialine/include/client/controllers/HomeController.hpp
+1615906978 /home/william/Documents/workspace/socialine/include/client/controllers/HomeController.hpp
 	<iostream>
+	<list>
 	"client/models/User.hpp"
+	"client/models/Notification.hpp"
 
-1615903207 /home/william/Documents/workspace/socialine/include/client/models/CommunicationManager.hpp
+1615908826 /home/william/Documents/workspace/socialine/include/client/models/CommunicationManager.hpp
 	<iostream>
+	<list>
+	"client/models/Notification.hpp"
 
-1615905000 source:/home/william/Documents/workspace/socialine/src/client/controllers/HomeController.cpp
+1615907188 source:/home/william/Documents/workspace/socialine/src/client/controllers/HomeController.cpp
 	"client/controllers/HomeController.hpp"
 	"client/views/HomeView.hpp"
 
-1615903185 /home/william/Documents/workspace/socialine/include/client/views/HomeView.hpp
+1615907145 /home/william/Documents/workspace/socialine/include/client/views/HomeView.hpp
 	<iostream>
 	<list>
 	"client/controllers/HomeController.hpp"
 
-1615903165 source:/home/william/Documents/workspace/socialine/src/client/models/CommunicationManager.cpp
+1615908927 source:/home/william/Documents/workspace/socialine/src/client/models/CommunicationManager.cpp
 	"client/models/CommunicationManager.hpp"
 
-1615903954 source:/home/william/Documents/workspace/socialine/src/client/models/NotificationManager.cpp
+1615905170 source:/home/william/Documents/workspace/socialine/src/client/models/NotificationManager.cpp
 	<iostream>
 	"client/models/NotificationManager.hpp"
 	"client/models/CommunicationManager.hpp"
@@ -67,4 +72,17 @@
 1615904985 /home/william/Documents/workspace/socialine/include/client/models/User.hpp
 	<iostream>
 	"client/models/NotificationManager.hpp"
+
+1615905136 source:/home/william/Documents/workspace/socialine/src/client/models/User.cpp
+	<iostream>
+	"client/models/User.hpp"
+	"client/models/CommunicationManager.hpp"
+	"client/models/NotificationManager.hpp"
+
+1615906358 /home/william/Documents/workspace/socialine/include/client/models/Notification.hpp
+	<iostream>
+
+1615906376 source:/home/william/Documents/workspace/socialine/src/client/models/Notification.cpp
+	<iostream>
+	"client/models/Notification.hpp"
 

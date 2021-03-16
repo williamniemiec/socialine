@@ -1,8 +1,11 @@
 #pragma once
 #include <iostream>
+#include <list>
 #include "client/models/User.hpp"
+#include "client/models/Notification.hpp"
 
 using namespace std;
+using namespace client::models;
 
 namespace client::controllers
 {
@@ -28,8 +31,10 @@ namespace client::controllers
     public:
         void run();
         void parseCommand(string command);
+        list<models::Notification*> getNotifications();
 
     private:
         void render();
+        list<models::Notification*> generateNotifications();
     };
 }

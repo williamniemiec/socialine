@@ -2,6 +2,7 @@
 #include <list>
 #include <cstdlib>
 #include "client/views/HomeView.hpp"
+#include "client/models/Notification.hpp"
 
 using namespace std;
 using namespace client::views;
@@ -54,30 +55,25 @@ void HomeView::printEndLine(int amount)
 
 void HomeView::displayNotifications()
 {
-    list<string> notifications = generateNotifications();
-
-    for (string notification : notifications)
+    for (client::models::Notification* notification : homeController->getNotifications())
     {
         printDiv();
-        cout << notification << endl;
+        writeNotificationOwner(notification->getUsername());
+        writeNotificationMessage(notification->getMessage());
     }
-    printDiv();
 
+    printDiv();
     printEndLine(3);
 }
 
-list<string> HomeView::generateNotifications()
+void HomeView::writeNotificationOwner(string owner)
 {
-    list<string> notifications;
+    cout << "[" << owner << "]";
+}
 
-    notifications.push_back("Notification 1");
-    notifications.push_back("Notification 2");
-    notifications.push_back("Notification 3");
-    notifications.push_back("Notification 4");
-    notifications.push_back("Notification 5");
-    notifications.push_back("Notification 6");
-
-    return notifications;
+void HomeView::writeNotificationMessage(string message)
+{
+    cout << "  " << message << endl;
 }
 
 void HomeView::displayCommandArea()

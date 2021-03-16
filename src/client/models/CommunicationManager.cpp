@@ -28,3 +28,8 @@ void CommunicationManager::sendNotification(string profile, string message)
 {
 
 }
+
+list<client::models::Notification*> CommunicationManager::getNotifications()
+{
+    return list<client::models::Notification*>();
+}

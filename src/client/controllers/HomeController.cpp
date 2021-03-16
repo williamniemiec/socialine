@@ -19,7 +19,7 @@ HomeController::HomeController(string username)
 //-------------------------------------------------------------------------
 void HomeController::run()
 {
-    this->render();
+    render();
 }
 
 void HomeController::render()
@@ -36,4 +36,22 @@ void HomeController::parseCommand(string command)
         else if (command is FOLLOW)
             user->follow(followed)
     */
+}
+
+list<client::models::Notification*> HomeController::getNotifications()
+{
+    return generateNotifications();
+}
+
+list<client::models::Notification*> HomeController::generateNotifications()
+{
+    list<models::Notification*> notifications;
+
+    models::Notification* n1 = new models::Notification("beltrano456", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Dictum non consectetur a erat nam at.");
+    models::Notification* n2 = new models::Notification("sicrano789", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Dictum non consectetur a erat nam at.");
+
+    notifications.push_back(n1);
+    notifications.push_back(n2);
+
+    return notifications;
 }

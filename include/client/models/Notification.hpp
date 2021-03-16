@@ -1,43 +1,32 @@
 #pragma once
 #include <iostream>
-#include <list>
-#include "client/controllers/HomeController.hpp"
 
 using namespace std;
 
-namespace client::views
+namespace client::models
 {
-    class HomeView
+    class Notification
     {
     //-------------------------------------------------------------------------
     //      Attributes
     //-------------------------------------------------------------------------
     private:
         string username;
-        controllers::HomeController* homeController;
+        string message;
 
 
     //-------------------------------------------------------------------------
     //      Constructor
     //-------------------------------------------------------------------------
     public:
-        HomeView(controllers::HomeController* homeController, string username);
+        Notification(string username, string message);
 
 
     //-------------------------------------------------------------------------
-    //      Methods
+    //      Getters
     //-------------------------------------------------------------------------
     public:
-        void render();
-
-    private:
-        void displayUserInfo();
-        void printDiv();
-        void printEndLine(int amount);
-        void displayNotifications();
-        list<string> generateNotifications();
-        void displayCommandArea();
-        void writeNotificationOwner(string owner);
-        void writeNotificationMessage(string message);
+        string getUsername();
+        string getMessage();
     };
 }
