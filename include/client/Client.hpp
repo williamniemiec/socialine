@@ -19,7 +19,7 @@ namespace client
     //-------------------------------------------------------------------------
     //      Constructor
     //-------------------------------------------------------------------------
-    public:
+    private:
         Client(string username, string server, string port);
 
 
@@ -27,6 +27,6 @@ namespace client
     //      Methods
     //-------------------------------------------------------------------------
     public:
-        void render();
+        static void login(string username, string server, string port);
     };
 }

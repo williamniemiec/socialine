@@ -1,17 +1,18 @@
 #include <iostream>
 #include <list>
 #include <cstdlib>
-#include "client/view/HomeView.h"
+#include "client/views/HomeView.hpp"
 
 using namespace std;
-using namespace view;
+using namespace views;
 
 //-------------------------------------------------------------------------
 //      Constructor
 //-------------------------------------------------------------------------
-HomeView::HomeView(string username)
+HomeView::HomeView(controllers::HomeController* homeController, string username)
 {
     this->username = username;
+    this->homeController = homeController;
 }
 
 

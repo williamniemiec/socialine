@@ -36,9 +36,11 @@
 		<Linker>
 			<Add directory="lib" />
 		</Linker>
-		<Unit filename="include/client/Client.h" />
-		<Unit filename="include/client/NotificationManager.h" />
-		<Unit filename="include/client/view/HomeView.h" />
+		<Unit filename="include/client/Client.hpp" />
+		<Unit filename="include/client/controllers/HomeController.hpp" />
+		<Unit filename="include/client/models/CommunicationManager.hpp" />
+		<Unit filename="include/client/models/NotificationManager.hpp" />
+		<Unit filename="include/client/views/HomeView.hpp" />
 		<Unit filename="lib/ncurses/usr/include/curses.h" />
 		<Unit filename="lib/ncurses/usr/include/cursesapp.h" />
 		<Unit filename="lib/ncurses/usr/include/cursesf.h" />
@@ -61,7 +63,9 @@
 		<Unit filename="lib/ncurses/usr/include/unctrl.h" />
 		<Unit filename="src/App.cpp" />
 		<Unit filename="src/client/Client.cpp" />
-		<Unit filename="src/client/NotificationManager.cpp" />
+		<Unit filename="src/client/controllers/HomeController.cpp" />
+		<Unit filename="src/client/models/CommunicationManager.cpp" />
+		<Unit filename="src/client/models/NotificationManager.cpp" />
 		<Unit filename="src/client/views/HomeView.cpp" />
 		<Extensions>
 			<envvars />

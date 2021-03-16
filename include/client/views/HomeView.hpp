@@ -1,10 +1,11 @@
 #pragma once
 #include <iostream>
 #include <list>
+#include "client/controllers/HomeController.hpp"
 
 using namespace std;
 
-namespace view
+namespace views
 {
     class HomeView
     {
@@ -13,13 +14,14 @@ namespace view
     //-------------------------------------------------------------------------
     private:
         string username;
+        controllers::HomeController* homeController;
 
 
     //-------------------------------------------------------------------------
     //      Constructor
     //-------------------------------------------------------------------------
     public:
-        HomeView(string username);
+        HomeView(controllers::HomeController* homeController, string username);
 
 
     //-------------------------------------------------------------------------

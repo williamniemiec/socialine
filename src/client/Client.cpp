@@ -1,6 +1,7 @@
 #include <iostream>
-#include "client/Client.h"
-#include "client/view/HomeView.h"
+#include "client/Client.hpp"
+#include "client/controllers/HomeController.hpp"
+#include "client/models/CommunicationManager.hpp"
 
 using namespace std;
 using namespace client;
@@ -19,8 +20,17 @@ Client::Client(string username, string server, string port)
 //-------------------------------------------------------------------------
 //      Methods
 //-------------------------------------------------------------------------
-void Client::render()
+void Client::login(string username, string server, string port)
 {
-    view::HomeView* view = new view::HomeView(username);
-    view->render();
+    bool success = client::CommunicationManager::login(username, server, port);
+
+    if (success)
+    {
+        controllers::HomeController* homeController = new controllers::HomeController(username);
+        homeController->run();
+    }
+    else
+    {
+        cout << "Login failed" << endl;
+    }
 }

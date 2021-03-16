@@ -1,5 +1,5 @@
 #include <iostream>
-#include "client/Client.h"
+#include "client/Client.hpp"
 
 using namespace std;
 
@@ -12,8 +12,7 @@ int main(int argc, char* args[])
     string server = "123.456.789.000";
     string porta = "1234";
 
-    client::Client* client = new client::Client(perfil, server, porta);
-    client->render();
+    client::Client::login(perfil, server, porta);
 
     return 0;
 }

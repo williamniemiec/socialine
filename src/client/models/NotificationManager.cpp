@@ -1,5 +1,5 @@
 #include <iostream>
-#include "client/NotificationManager.h"
+#include "client/models/NotificationManager.hpp"
 
 using namespace std;
 using namespace client;
