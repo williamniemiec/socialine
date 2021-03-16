@@ -3,7 +3,7 @@
 
 using namespace std;
 
-namespace client
+namespace client::models
 {
     class CommunicationManager
     {

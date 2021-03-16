@@ -4,7 +4,7 @@
 #include "client/views/HomeView.hpp"
 
 using namespace std;
-using namespace views;
+using namespace client::views;
 
 //-------------------------------------------------------------------------
 //      Constructor
@@ -86,5 +86,6 @@ void HomeView::displayCommandArea()
 
     cout << "Command (or Ctrl + C to exit): ";
     getline(cin, command);
-    cout << endl << command << endl;
+
+    this->homeController->parseCommand(command);
 }

@@ -5,24 +5,14 @@
 
 using namespace std;
 using namespace client;
-
-//-------------------------------------------------------------------------
-//      Constructor
-//-------------------------------------------------------------------------
-Client::Client(string username, string server, string port)
-{
-    this->username = username;
-    this->server = server;
-    this->port = port;
-};
-
+using namespace client::models;
 
 //-------------------------------------------------------------------------
 //      Methods
 //-------------------------------------------------------------------------
 void Client::login(string username, string server, string port)
 {
-    bool success = client::CommunicationManager::login(username, server, port);
+    bool success = models::CommunicationManager::login(username, server, port);
 
     if (success)
     {

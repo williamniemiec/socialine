@@ -12,7 +12,7 @@
 1615899267 /home/william/Documents/workspace/socialine/include/client/Client.h
 	<iostream>
 
-1615901954 source:/home/william/Documents/workspace/socialine/src/client/Client.cpp
+1615903316 source:/home/william/Documents/workspace/socialine/src/client/Client.cpp
 	<iostream>
 	"client/Client.hpp"
 	"client/controllers/HomeController.hpp"
@@ -37,27 +37,29 @@
 1615901933 /home/william/Documents/workspace/socialine/include/client/Client.hpp
 	<iostream>
 
-1615901992 /home/william/Documents/workspace/socialine/include/client/controllers/HomeController.hpp
+1615903211 /home/william/Documents/workspace/socialine/include/client/controllers/HomeController.hpp
+	<iostream>
+	"client/models/NotificationManager.hpp"
+
+1615903207 /home/william/Documents/workspace/socialine/include/client/models/CommunicationManager.hpp
 	<iostream>
 
-1615902096 /home/william/Documents/workspace/socialine/include/client/models/CommunicationManager.hpp
-	<iostream>
-
-1615902003 source:/home/william/Documents/workspace/socialine/src/client/controllers/HomeController.cpp
+1615903740 source:/home/william/Documents/workspace/socialine/src/client/controllers/HomeController.cpp
 	"client/controllers/HomeController.hpp"
 	"client/views/HomeView.hpp"
 
-1615902127 /home/william/Documents/workspace/socialine/include/client/views/HomeView.hpp
+1615903185 /home/william/Documents/workspace/socialine/include/client/views/HomeView.hpp
 	<iostream>
 	<list>
 	"client/controllers/HomeController.hpp"
 
-1615902085 source:/home/william/Documents/workspace/socialine/src/client/models/CommunicationManager.cpp
+1615903165 source:/home/william/Documents/workspace/socialine/src/client/models/CommunicationManager.cpp
 	"client/models/CommunicationManager.hpp"
 
 1615902103 source:/home/william/Documents/workspace/socialine/src/client/models/NotificationManager.cpp
 	<iostream>
 	"client/models/NotificationManager.hpp"
 
-1615859104 /home/william/Documents/workspace/socialine/include/client/models/NotificationManager.hpp
+1615903684 /home/william/Documents/workspace/socialine/include/client/models/NotificationManager.hpp
+	<iostream>
 

@@ -5,7 +5,7 @@
 
 using namespace std;
 
-namespace views
+namespace client::views
 {
     class HomeView
     {

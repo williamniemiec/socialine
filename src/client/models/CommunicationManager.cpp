@@ -1,7 +1,7 @@
 #include "client/models/CommunicationManager.hpp"
 
 using namespace std;
-using namespace client;
+using namespace client::models;
 
 //-------------------------------------------------------------------------
 //      Constructor

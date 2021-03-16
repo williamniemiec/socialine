@@ -1,9 +1,10 @@
 #pragma once
 #include <iostream>
+#include "client/models/NotificationManager.hpp"
 
 using namespace std;
 
-namespace controllers
+namespace client::controllers
 {
     class HomeController
     {
@@ -12,6 +13,7 @@ namespace controllers
     //-------------------------------------------------------------------------
     private:
         string username;
+        models::NotificationManager* notificationManager;
 
 
     //-------------------------------------------------------------------------
@@ -26,6 +28,7 @@ namespace controllers
     //-------------------------------------------------------------------------
     public:
         void run();
+        void parseCommand(string command);
 
     private:
         void render();
