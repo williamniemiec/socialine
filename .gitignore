@@ -15,5 +15,12 @@
 obj/
 bin/
 
+#MacOS Files
+.DS_Store
 
+#CLion Files
+.idea/
 
+# CMake
+*cmake-build-*/
+*CMakeLists.txt
