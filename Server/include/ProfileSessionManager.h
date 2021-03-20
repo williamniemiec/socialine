@@ -5,11 +5,12 @@
 #ifndef SOCIALINEV2_PROFILESESSIONMANAGER_H
 #define SOCIALINEV2_PROFILESESSIONMANAGER_H
 
+#include <iostream>
 
 class ProfileSessionManager {
 
-    int login( string username );
-    int follow( string follower, string followed );
+    int login( std::string username );
+    int follow( std::string follower, std::string followed );
 
 };
 

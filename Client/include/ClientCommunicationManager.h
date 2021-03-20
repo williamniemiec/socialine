@@ -5,12 +5,12 @@
 #ifndef SOCIALINEV2_CLIENTCOMMUNICATIONMANAGER_H
 #define SOCIALINEV2_CLIENTCOMMUNICATIONMANAGER_H
 
+#include <iostream>
 
 class ClientCommunicationManager {
     public:
-        int establish_connection(std::string username, string server , string door );
-        int follow(string followed);
-
+        int establish_connection(std::string username, std::string server , std::string door );
+        int follow(std::string followed);
 };
 
 

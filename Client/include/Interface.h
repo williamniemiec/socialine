@@ -5,11 +5,14 @@
 #ifndef SOCIALINEV2_INTERFACE_H
 #define SOCIALINEV2_INTERFACE_H
 
+#include "../../Utils/Types.h"
+#include <iostream>
 
 class Interface {
     public:
-        void parse_command(); //follow e login
-        void print_message(int message_code); //mensagens de erro ou sucesso dependendo de código de erro
+        app_command parse_command(int argc, char* argv[]);
+        app_command parse_command(std::string);
+        void print_message(int message_code);
 
 };
 
