@@ -4,19 +4,26 @@
 
 
 #include "include/ServerCommunicationManager.h"
+#include "include/ProfileSessionManager.h"
+#include "../Utils/Types.h"
 
 #include <iostream>
 #include <vector>
+#include <string>
+#include <sstream>
+
+using namespace std;
 
 int main(int argc, char* argv[])
 {
-    //To be implemented
-    //Começa com communication manager
-    //Faz encerramento de sessão
+
     ServerCommunicationManager server;
 
     server.start();
 
-    return(0);
+    //ToDo: call function to persist server data
 
+    cout << "I am finishing the session!! " << NEW_LINE;
+
+    return(0);
 }

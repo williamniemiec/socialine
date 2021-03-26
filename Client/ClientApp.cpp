@@ -18,8 +18,6 @@ int main(int argc, char* argv[])
         auto keep_running = true;
         int return_code;
 
-
-
         std::cout << "Hi, I am the main! I have just started!" << NEW_LINE;
         command_to_execute = interfaceModule.parse_command(argc, argv);
 
@@ -27,7 +25,8 @@ int main(int argc, char* argv[])
         if( command_to_execute.type == CMD_LOGIN )
         {
             std::cout << "The command is: login"<< NEW_LINE;
-            return_code = communicationModule.establish_connection(command_to_execute.arguments[1], command_to_execute.arguments[2], command_to_execute.arguments[3]);
+            //return_code = communicationModule.establish_connection(command_to_execute.arguments[1], command_to_execute.arguments[2], command_to_execute.arguments[3]);
+            return_code = communicationModule.establish_connection("@fariask", "127.0.0.1", "4000");
         }
         else
         {

@@ -8,9 +8,14 @@
 #include <iostream>
 
 class ClientCommunicationManager {
-    public:
-        int establish_connection(std::string username, std::string server , std::string door );
-        int follow(std::string followed);
+    std::string username, server, door;
+public:
+    int establish_connection(std::string username, std::string server , std::string door );
+    int follow(std::string followed);
+
+private:
+    void buildLoginPacket(std::string username, struct __packet *loginPacket);
+    uint16_t getTimestamp();
 };
 
 

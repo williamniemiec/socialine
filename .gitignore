@@ -24,3 +24,6 @@ bin/
 # CMake
 *cmake-build-*/
 *CMakeLists.txt
+
+# Ignore "database" files
+*profiles.txt
