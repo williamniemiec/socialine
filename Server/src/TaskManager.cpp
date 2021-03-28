@@ -12,22 +12,24 @@ ProfileSessionManager profile_and_session;
 
 vector<string> TaskManager::parse_command( string payload )
 {
-
-    cout << "parse_command called with payload: " << payload << NEW_LINE;
-
-    char line[MAX_DATA_SIZE];
+    //Arguments in a payload are separated by new line
+    //This method receives a payload and returns arguments list
+  
     vector<string> arguments;
-    stringstream string_stream;
+    int pos = 0, i = 0;
 
-    string_stream << payload;
-
-    cout << line << NEW_LINE;
-    while(!string_stream.eof())
+    cout << "I am parsing a commmand" << NEW_LINE;
+    while(pos != -1)
     {
-        arguments.push_back( line );
+        pos = payload.find_first_of('\n', 0);
+        arguments.push_back(payload.substr(0, pos));
+        payload.erase(0, pos);
+        cout << "This is the current argument:" << arguments[i] << NEW_LINE;
+        i++;
     }
 
     return arguments;
+
 }
 
 int TaskManager::run_command(int type, string payload, string session_id )
