@@ -19,7 +19,23 @@ int ClientCommunicationManager::establish_connection(std::string username, std::
     this->username = username;
     this->server = server;
     this->door = door;
+    this->session_cookie = NO_COOKIE;
 
+    char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
+    packet loginPacket = {
+            0,0,0,0, bufferPayload
+    };
+
+    std::string listen_notification_port;
+    listen_notifications(&listen_notification_port);
+
+    buildLoginPacket(username, listen_notification_port, &loginPacket);
+    sendPacket(&loginPacket);
+
+    return 1;
+}
+
+void ClientCommunicationManager::sendPacket(struct __packet *packet) {
     int sockfd, n;
     struct sockaddr_in server_addr;
     struct hostent *server_host;
@@ -42,24 +58,15 @@ int ClientCommunicationManager::establish_connection(std::string username, std::
     server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
     bzero(&(server_addr.sin_zero), 8);
 
-
-
-
     if (connect(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
         printf("ERROR connecting\n");
 
-
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
-    packet loginPacket = {
-            0,0,0,0, bufferPayload
-    };
-
-    buildLoginPacket(username, &loginPacket);
-    loginPacket.print("SENT");
+    packet->print("SENT");
 
     char* buffer;
     buffer = (char *) calloc(MAX_MAIL_SIZE, sizeof(char));
-    buffer = loginPacket.Serialize();
+    buffer = packet->Serialize();
 
     // write
     n = write(sockfd, buffer, MAX_MAIL_SIZE);
@@ -78,9 +85,10 @@ int ClientCommunicationManager::establish_connection(std::string username, std::
     received_packet.Deserialize(buffer_response);
     received_packet.print("RECEIVED");
 
-    close(sockfd);
+    if(this->session_cookie == NO_COOKIE)
+        this->session_cookie = received_packet.cookie;
 
-    return 1;
+    close(sockfd);
 }
 
 int ClientCommunicationManager::follow(std::string followed)
@@ -92,8 +100,7 @@ int ClientCommunicationManager::follow(std::string followed)
 
 // Private Methods
 
-void ClientCommunicationManager::buildLoginPacket(std::string username, struct __packet *loginPacket) {
-
+void ClientCommunicationManager::buildLoginPacket(std::string username, std::string listen_notification_port, struct __packet *loginPacket) {
     uint16_t headerLength = 8; // cada uint16_t possui 2 bytes.
     uint16_t length = headerLength + MAX_DATA_SIZE;
     uint16_t timestamp = getTimestamp();
@@ -102,7 +109,8 @@ void ClientCommunicationManager::buildLoginPacket(std::string username, struct _
     loginPacket->seqn = 0;
     loginPacket->length = length;
     loginPacket->timestamp = timestamp;
-    loginPacket->_payload = username;
+    loginPacket->cookie = session_cookie;
+    loginPacket->_payload = username + "\n" + listen_notification_port + "\n";
 }
 
 uint16_t ClientCommunicationManager::getTimestamp() {
@@ -121,4 +129,73 @@ uint16_t ClientCommunicationManager::getTimestamp() {
 //    printf("%02d%02d%02d\n",
 //           (int) d%32, (int) (d/32)%16, (int) ((d/512)%128 + (1980-1900))%100);
     return d;
+}
+
+void ClientCommunicationManager::listen_notifications(std::string *listen_notification_port) {
+
+    int notification_socket;
+    socklen_t clilen;
+    struct sockaddr_in notf_addr;
+    std::string input;
+
+    if ((notification_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        printf("ERROR opening socket\n");
+
+    notf_addr.sin_family = AF_INET;
+    notf_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bzero(&(notf_addr.sin_zero), 8);
+
+    if (bind(notification_socket, (struct sockaddr *) &notf_addr, sizeof(notf_addr)) < 0)
+        printf("[Notification Service] ERROR on binding\n");
+
+    listen(notification_socket, 5);
+
+    socklen_t len = sizeof(notf_addr);
+    if (getsockname(notification_socket, (struct sockaddr *) &notf_addr, &len) == -1) {
+        printf("[Notification Service] ERROR on getsockname\n");
+    } else {
+        *listen_notification_port = std::to_string(ntohs(notf_addr.sin_port));
+        printf("[Notification Service] port number %d\n", ntohs(notf_addr.sin_port));
+    }
+    clilen = sizeof(struct sockaddr_in);
+
+    printf("[Notification Service] Ready to receive\n");
+
+
+    // cria um novo processo filho p/ ouvir notificações
+    pid_t pid = fork();
+    if (pid == 0) { // processo filho
+        printf("started notification listening service\n");
+
+        int n;
+
+        //Todo: change loop to detect the end of execution, so it can return to the app;
+        while (true) {
+
+            int connection_socket;
+            struct sockaddr_in cli_addr;
+
+            if ((connection_socket = accept(notification_socket, (struct sockaddr *) &cli_addr, &clilen)) == -1) {
+                printf("ERROR on accept");
+                continue;
+            }
+
+            char buffer[MAX_MAIL_SIZE];
+            bzero(buffer, MAX_MAIL_SIZE);
+            n = read(connection_socket, buffer, MAX_MAIL_SIZE);
+            if (n < 0)
+                printf("[Notification Service] ERROR reading from socket");
+
+            char received_packet_buffer[MAX_DATA_SIZE];
+            struct __packet received_packet = {0, 0, 0, 0, received_packet_buffer };
+            received_packet.Deserialize(buffer);
+            received_packet.print("[Notification Service] RECEIVED");
+        }
+
+        close(notification_socket);
+        exit(0);
+    }
+
+    return;
 }
