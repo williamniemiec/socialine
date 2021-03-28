@@ -16,7 +16,9 @@ public:
 private:
     void buildPacket(struct __packet *loginPacket, uint16_t type, uint16_t seqn, std::string message);
     void start_client_thread(int connection_socket, sockaddr_in *cli_addr);
+    std::string makeCookie(sockaddr_in *cli_addr);
     uint16_t getTimestamp();
+    std::string random_string(size_t length);
 };
 
 

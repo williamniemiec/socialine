@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define PORT 4000
 
@@ -26,6 +27,7 @@
 
 void ServerCommunicationManager::start( )
 {
+
     int server_socket;
     socklen_t clilen;
     struct sockaddr_in serv_addr;
@@ -60,6 +62,8 @@ void ServerCommunicationManager::start( )
             continue;
         }
 
+        makeCookie(&cli_addr);
+
         // cria um novo processo filho p/ cliente
         pid_t pid = fork();
         if (pid == 0) { // processo filho
@@ -77,7 +81,6 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     int response_code;
     char buffer[MAX_MAIL_SIZE];
     TaskManager taskManager;
-    std::string session_id = std::to_string( cli_addr->sin_port );
 
     bzero(buffer, MAX_MAIL_SIZE);
 
@@ -86,14 +89,18 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
         printf("ERROR reading from socket");
 
     char received_packet_buffer[MAX_DATA_SIZE];
-    struct __packet received_packet = {0, 0, 0, 0, received_packet_buffer };
+    struct __packet received_packet = {0, 0, 0, 0, NO_COOKIE, received_packet_buffer };
     received_packet.Deserialize(buffer);
     received_packet.print("RECEIVED");
 
     std::cout << "Hi, I am here" << NEW_LINE;
 
+    std::string cookie;
+    if(received_packet.cookie == NO_COOKIE)
+        cookie = makeCookie(cli_addr);
+
     // CALLBACK METHOD TO HANDLE COMMAND EXECUTION
-    response_code = taskManager.run_command(received_packet.type, received_packet._payload, session_id);
+    response_code = taskManager.run_command(received_packet.type, std::string(received_packet._payload.c_str()), cookie);
 
     std::cout << "Hi, have executed that shitty method" << NEW_LINE;
 
@@ -103,7 +110,9 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     std::tie(type, message) = response_data;
 
     char response_packet_payload[MAX_DATA_SIZE];
-    struct __packet response_packet = {0, 0, 0, 0, response_packet_payload };
+    struct __packet response_packet = {0, 0, 0, 0, cookie, response_packet_payload };
+
+
     buildPacket(&response_packet, type, 0, message);
 
     char* response_buffer;
@@ -156,4 +165,45 @@ uint16_t ServerCommunicationManager::getTimestamp() {
 //    printf("%02d%02d%02d\n",
 //           (int) d%32, (int) (d/32)%16, (int) ((d/512)%128 + (1980-1900))%100);
     return d;
+}
+
+std::string ServerCommunicationManager::makeCookie(sockaddr_in *cli_addr) {
+
+    char* ip_char_pointer = inet_ntoa(cli_addr->sin_addr);
+    std::string ip_str(ip_char_pointer);
+
+    char port_char_pointer[80];
+    sprintf(port_char_pointer, "%u", htons(cli_addr->sin_port));
+    std::string port_str(port_char_pointer);
+
+    std::string cookie = ip_str + port_str;
+    int cookie_prefix_length = cookie.length();
+
+    if (cookie_prefix_length < COOKIE_LENGTH) {
+        std::string random_suffix = random_string(COOKIE_LENGTH - cookie_prefix_length);
+        cookie = ip_str + port_str + random_suffix;
+    } else {
+        int extra_chars = cookie_prefix_length - COOKIE_LENGTH;
+        cookie.erase(cookie.length()-extra_chars);
+    }
+
+    printf("\nCookie: %s \n Cookie Length: %d\n", cookie.c_str(), cookie.length());
+
+    return cookie;
+}
+
+std::string ServerCommunicationManager::random_string( size_t length )
+{
+    auto randchar = []() -> char
+    {
+        const char charset[] =
+                "0123456789"
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                "abcdefghijklmnopqrstuvwxyz";
+        const size_t max_index = (sizeof(charset) - 1);
+        return charset[ rand() % max_index ];
+    };
+    std::string str(length,0);
+    std::generate_n( str.begin(), length, randchar );
+    return str;
 }

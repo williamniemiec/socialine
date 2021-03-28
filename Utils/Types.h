@@ -31,6 +31,9 @@
 #define MAX_MAIL_SIZE 1024
 #define MAX_DATA_SIZE 256
 
+#define COOKIE_LENGTH 30
+#define NO_COOKIE std::string(COOKIE_LENGTH, '0')
+
 typedef struct __command{
     int type;
     std::vector<std::string> arguments;
@@ -41,6 +44,7 @@ typedef struct __packet{
     uint16_t seqn;          //Sequence number
     uint16_t length;        //Payload size
     uint16_t timestamp;     //Data timestamp
+    std::string cookie;     // cookie to keep session (length = COOKIE_LENGTH)
     std::string _payload;   //Message data
 
     char* Serialize() {
@@ -57,7 +61,9 @@ typedef struct __packet{
         message[6] = htons(timestamp) >> 8;
         message[7] = htons(timestamp);
 
-        memcpy(&message[8], _payload.c_str(), MAX_DATA_SIZE);
+        memcpy(&message[8], cookie.c_str(), COOKIE_LENGTH);
+
+        memcpy(&message[8+COOKIE_LENGTH], _payload.c_str(), MAX_DATA_SIZE);
 
         return message;
     }
@@ -69,25 +75,29 @@ typedef struct __packet{
         length = ntohs(message[4] << 8 | message[5]);
         timestamp = ntohs(message[6] << 8 | message[7]);
 
+        char cookie_received[COOKIE_LENGTH];
+        for (unsigned i=0; i < COOKIE_LENGTH; i++)
+            cookie_received[i] = message[i+8];
+
+        cookie.assign(cookie_received, COOKIE_LENGTH);
+
         char payload_message[MAX_DATA_SIZE];
         for (unsigned i=0; i < MAX_DATA_SIZE; i++)
-            payload_message[i] = message[i+8];
+            payload_message[i] = message[i+8+COOKIE_LENGTH];
 
         _payload.assign(payload_message, MAX_DATA_SIZE);
     }
 
     void print(char* title) {
         printf("---- %s PACKET -----\n", title);
-        printf("packet.type: %u\n",this->type);
+        printf("packet.type: %u\n", this->type);
         printf("packet.seqn: %u\n", this->seqn);
         printf("packet.length: %u\n", this->length);
         printf("packet.timestamp: %u\n", this->timestamp);
+        printf("packet.cookie: %s\n", this->cookie.c_str());
         printf("packet._payload: %s\n", this->_payload.c_str());
         printf("----------------------\n");
-
     }
-
-
 } packet;
 
 typedef struct __notification{

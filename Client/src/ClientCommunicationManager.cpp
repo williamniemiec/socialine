@@ -19,6 +19,7 @@ int ClientCommunicationManager::establish_connection(std::string username, std::
     this->username = username;
     this->server = server;
     this->door = door;
+    this->session_cookie = NO_COOKIE;
 
     int sockfd, n;
     struct sockaddr_in server_addr;
@@ -42,12 +43,8 @@ int ClientCommunicationManager::establish_connection(std::string username, std::
     server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
     bzero(&(server_addr.sin_zero), 8);
 
-
-
-
     if (connect(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
         printf("ERROR connecting\n");
-
 
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
     packet loginPacket = {
@@ -78,6 +75,9 @@ int ClientCommunicationManager::establish_connection(std::string username, std::
     received_packet.Deserialize(buffer_response);
     received_packet.print("RECEIVED");
 
+    if(this->session_cookie == NO_COOKIE)
+        this->session_cookie = received_packet.cookie;
+
     close(sockfd);
 
     return 1;
@@ -93,7 +93,6 @@ int ClientCommunicationManager::follow(std::string followed)
 // Private Methods
 
 void ClientCommunicationManager::buildLoginPacket(std::string username, struct __packet *loginPacket) {
-
     uint16_t headerLength = 8; // cada uint16_t possui 2 bytes.
     uint16_t length = headerLength + MAX_DATA_SIZE;
     uint16_t timestamp = getTimestamp();
@@ -102,6 +101,7 @@ void ClientCommunicationManager::buildLoginPacket(std::string username, struct _
     loginPacket->seqn = 0;
     loginPacket->length = length;
     loginPacket->timestamp = timestamp;
+    loginPacket->cookie = session_cookie;
     loginPacket->_payload = username;
 }
 
