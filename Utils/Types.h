@@ -17,6 +17,7 @@
 #define CMD_FOLLOW 2
 #define CMD_LOGOUT 3
 #define CMD_OTHERS 5
+#define NOTIFICATION_TWEET 6
 
 #define ERROR_INVALID_COMMAND 1
 #define ERROR_START_WITH_LOGIN 2
@@ -32,6 +33,7 @@
 #define MAX_DATA_SIZE 256
 
 #define COOKIE_LENGTH 30
+#define PORT_LENGTH 10
 #define NO_COOKIE std::string(COOKIE_LENGTH, '0')
 
 typedef struct __command{
@@ -88,8 +90,8 @@ typedef struct __packet{
         _payload.assign(payload_message, MAX_DATA_SIZE);
     }
 
-    void print(char* title) {
-        printf("---- %s PACKET -----\n", title);
+    void print(std::string title) {
+        printf("---- %s PACKET -----\n", title.c_str());
         printf("packet.type: %u\n", this->type);
         printf("packet.seqn: %u\n", this->seqn);
         printf("packet.length: %u\n", this->length);
@@ -98,6 +100,14 @@ typedef struct __packet{
         printf("packet._payload: %s\n", this->_payload.c_str());
         printf("----------------------\n");
     }
+
+    bool isEmptyPacket() {
+        return this->type == 0 &&
+                this->seqn == 0 &&
+                this->length == 0 &&
+                this->timestamp == 0;
+    }
+
 } packet;
 
 typedef struct __notification{

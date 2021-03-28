@@ -6,6 +6,15 @@
 #define SOCIALINEV2_CLIENTCOMMUNICATIONMANAGER_H
 
 #include <iostream>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <ctime>
 
 class ClientCommunicationManager {
     std::string username, server, door, session_cookie;
@@ -14,7 +23,9 @@ public:
     int follow(std::string followed);
 
 private:
-    void buildLoginPacket(std::string username, struct __packet *loginPacket);
+    void listen_notifications(std::string *listen_notification_port);
+    void buildLoginPacket(std::string username, std::string listen_notification_port, struct __packet *loginPacket);
+    void sendPacket(struct __packet *packet);
     uint16_t getTimestamp();
 };
 
