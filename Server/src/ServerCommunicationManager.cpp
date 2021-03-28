@@ -136,8 +136,6 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     char* client_ip = inet_ntoa(cli_addr->sin_addr);
     std::string ip_str(client_ip);
 
-    char client_port_char_pointer[80];
-
     std::stringstream ss(received_packet._payload);
     std::string to;
 
