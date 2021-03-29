@@ -1,7 +1,7 @@
 OBJS	= ServerApp.o FileManager.o ProfileSessionManager.o TaskManager.o ServerCommunicationManager.o ServerNotificationManager.o
 SOURCE	= ServerApp.cpp FileManager.cpp src/ProfileSessionManager.cpp src/TaskManager.cpp src/ServerCommunicationManager.cpp src/ServerNotificationManager.cpp
 HEADER	= ../Utils/Types.h include/FileManager.h include/ProfileSessionManager.h include/TaskManager.h include/ServerCommunicationManager.h include/ServerNotificationManager.h
-OUT	= app_cliente.out
+OUT	= app_server.out
 CC	 = g++
 FLAGS	 = -g -c -Wall
 LFLAGS	 =

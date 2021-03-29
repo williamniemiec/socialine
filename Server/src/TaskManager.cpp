@@ -13,19 +13,16 @@ ProfileSessionManager profile_and_session;
 vector<string> TaskManager::parse_command( string payload )
 {
     //Arguments in a payload are separated by new line
-    //This method receives a payload and returns arguments list
+    //This method receives a payload and returns the arguments list
   
     vector<string> arguments;
-    int pos = 0, i = 0;
+    int pos = payload.find_first_of(NEW_LINE, 0);
 
-    cout << "I am parsing a commmand" << NEW_LINE;
-    while(pos != -1)
+    while(pos != 0 )
     {
-        pos = payload.find_first_of('\n', 0);
         arguments.push_back(payload.substr(0, pos));
         payload.erase(0, pos);
-        cout << "This is the current argument:" << arguments[i] << NEW_LINE;
-        i++;
+        pos = payload.find_first_of(NEW_LINE, 0);
     }
 
     return arguments;
@@ -36,30 +33,25 @@ int TaskManager::run_command(int type, string payload, string session_id )
 {
     int code = 0;
 
-    cout << "run_command called with payload: " << payload << NEW_LINE;
-
-//    vector<string> arguments;
-//    arguments = parse_command( payload );
-    std::string arguments[2] = { payload.c_str(), "Victor" };
+    vector<string> arguments;
+    arguments = parse_command( payload );
 
     switch(type)
     {
         case CMD_LOGIN:
-            cout << "Hi, I am login in" << NEW_LINE;
+            cout << "Login" << NEW_LINE;
             code = profile_and_session.login(arguments[0], session_id);
             break;
         case CMD_FOLLOW:
             cout << "Follow" << NEW_LINE;
-            //string follower;
-            //transformar payload em follower
-            //code = profile_and_session.follow(username, follower);
+            code = profile_and_session.follow(arguments[0], arguments[1]);
             break;
         case CMD_LOGOUT:
-            cout << "LOGOUT" << NEW_LINE;
-            //code = profile_and_session.logout(username, session_id);
+            cout << "Logout" << NEW_LINE;
+            code = profile_and_session.logout(arguments[0], session_id);
             break;
         default:
-            cout << "Jesus, to no lugar errado!" << NEW_LINE;
+            cout << "Oops! Something went wrong!" << NEW_LINE;
     }
 
     return code;

@@ -16,8 +16,8 @@
 #define CMD_LOGIN 1
 #define CMD_FOLLOW 2
 #define CMD_LOGOUT 3
-#define CMD_OTHERS 4
-#define CMD_TWEET 5
+#define CMD_TWEET 4
+#define CMD_OTHERS 5
 #define NOTIFICATION_TWEET 6
 
 #define ERROR_INVALID_COMMAND 1

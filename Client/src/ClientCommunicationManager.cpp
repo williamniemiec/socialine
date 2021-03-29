@@ -58,7 +58,6 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     if (connect(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
         printf("ERROR connecting\n");
 
-    char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
     packet->print("SENT");
 
     char* buffer;
@@ -146,7 +145,7 @@ uint16_t ClientCommunicationManager::getTimestamp() {
     tm_time = *localtime(&ti);
 
     //const time_t create_time;
-    uint16_t t, d;
+    uint16_t d;
     d = tm_time.tm_mday
         + (tm_time.tm_mon + 1) * 32
         + (tm_time.tm_year - (1980-1900)) * 512;
