@@ -129,29 +129,6 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     printf("finished process child\n");
     printf("closed connection_socket\n");
 
-    // TODO: REMOVE LINES BELOW (TESTING NOTIFICATION)
-
-    sleep(5);
-
-    char* client_ip = inet_ntoa(cli_addr->sin_addr);
-    std::string ip_str(client_ip);
-
-    std::stringstream ss(received_packet._payload);
-    std::string to;
-
-
-    int i=0;
-    std::string client_port;
-    while(std::getline(ss,to,'\n')) {
-        std::cout << to << std::endl;
-        if(i == 1) {
-            client_port = to;
-            break;
-        }
-        i++;
-    }
-
-    sendNotification(client_ip, client_port, cookie, std::string("Tweet notification mock"));
 }
 
 void ServerCommunicationManager::buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *packet) {

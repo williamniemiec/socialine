@@ -13,7 +13,7 @@ ProfileSessionManager profile_and_session;
 vector<string> TaskManager::parse_command( string payload )
 {
     //Arguments in a payload are separated by new line
-    //This method receives a payload and returns arguments list
+    //This method receives a payload and returns the arguments list
   
     vector<string> arguments;
     int pos = payload.find_first_of(NEW_LINE, 0);

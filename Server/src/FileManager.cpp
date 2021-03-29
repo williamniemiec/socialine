@@ -14,64 +14,64 @@
 
 using namespace std;
 
+std::string trim(const std::string& str);
 
-void FileManager::read_profiles_file( )
+unordered_map<string, vector<string>> FileManager::read_profiles_file( )
 {
-    /*fstream profiles;
+    unordered_map<string, vector<string>> followers_map;
+    fstream profiles_file("profiles.txt");
+    string profiles_line;
+    string username;
+    vector<string> followers;
+    int pos;
 
-    profiles.open( "profiles.txt" , std::fstream::in );
-
-    if(profiles.is_open())
+    if(!profiles_file)
     {
-        cout << "I am profiles file. I am opened";
+        cout << "Unable to open file" << NEW_LINE;
+    }
+    else
+    {
+        while(getline(profiles_file, profiles_line))
+        {
+            profiles_line = trim( profiles_line );
+            pos = profiles_line.find_first_of(':', 0);
+            username = profiles_line.substr(0, pos);
+            profiles_line.erase(0, pos+2);
+            cout << username << " should follow: " << profiles_line << NEW_LINE;
+            pos = profiles_line.find_first_of(' ', 0);
+
+            while(pos > 0)
+            {
+                followers.push_back(profiles_line.substr(0, pos));
+                cout << "User: " << username << " Following: " << profiles_line.substr(0, pos) << NEW_LINE;
+                profiles_line.erase(0, pos+1);
+                pos = profiles_line.find_first_of(' ', 0);
+            }
+
+            followers.push_back(profiles_line);
+            cout << "User: " << username << " Following: " << profiles_line.substr(0, pos) << NEW_LINE;
+            followers_map[username] = followers;
+        }
     }
 
-    profiles.
+    profiles_file.close();
 
-    profiles.close();*/
+    return followers_map;
+}
 
-    vector<string> followers;
-    vector<string> followers2;
-
-    followers.push_back("@thiago");
-    followers.push_back("@victor");
-    followers.push_back("@william");
-
-    followers2.push_back("@fariask");
-    followers2.push_back("@victor");
-    followers2.push_back("@william");
-
-    unordered_map<string, vector<string>> followers_map;
-
-    followers_map["@fariask"] = followers;
-    followers_map["@thiago"] = followers2;
-
-    cout << "I am @fariask and I follow this accounts:" << NEW_LINE;
-    for(int i = 0; i < 3; i++)
-        cout << "\t" << followers_map["@fariask"][i] << NEW_LINE;
-
-    cout << "I am @thiago and I follow this accounts:" << NEW_LINE;
-    for(int j = 0; j < 3; j++)
-        cout << "\t" << followers_map["@thiago"][j] << NEW_LINE;
+void FileManager::write_profiles_file( std::unordered_map<std::string, std::vector<std::string>> final_followers_map )
+{
 
 }
 
-void FileManager::write_notifications_file( )
+std::string trim(const std::string& str)
 {
-    cout << "Hi! I am the File Manager" << NEW_LINE;
-    cout << "I am writing notifications" << NEW_LINE;
-}
+    size_t first = str.find_first_not_of(' ');
+    if (string::npos == first)
+    {
+        return str;
+    }
+    size_t last = str.find_last_not_of(' ');
 
-void FileManager::write_profiles_file( )
-{
-    cout << "Hi! I am the File Manager" << NEW_LINE;
-    cout << "I am writing a profile " << NEW_LINE;
-}
-
-
-void FileManager::read_notifications_file( )
-{
-    cout << "Hi! I am the File Manager" << NEW_LINE;
-    cout << "I am reading notifications file" << NEW_LINE;
-
+    return str.substr(first, (last - first + 1));
 }

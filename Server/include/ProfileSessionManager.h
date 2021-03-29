@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include "FileManager.h"
 
 using namespace std;
 
@@ -20,32 +21,9 @@ class ProfileSessionManager {
 public:
     ProfileSessionManager()
     {
-        //MOCK DOS DADOS SESSÃO
-        vector<string> sessionid;
-        vector<string> sessionid2;
+        FileManager myFileManager;
 
-        sessionid.push_back("012345");
-
-        sessionid2.push_back("ABCDEF");
-        sessionid2.push_back("GHIJKL");
-
-        sessions_map["@fariask"] = sessionid;
-        sessions_map["@thiago"] = sessionid2;
-
-        //MOCK DE DADOS SEGUIDORES
-        vector<string> followers;
-        vector<string> followers2;
-
-        followers.push_back("@thiago");
-        followers.push_back("@victor");
-        followers.push_back("@william");
-
-        followers2.push_back("@fariask");
-        followers2.push_back("@victor");
-        followers2.push_back("@william");
-
-        followers_map["@fariask"] = followers;
-        followers_map["@thiago"] = followers2;
+        followers_map = myFileManager.read_profiles_file();
     }
 
     int login( std::string username, std::string session_id );

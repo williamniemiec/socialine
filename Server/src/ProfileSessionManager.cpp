@@ -36,7 +36,7 @@ int ProfileSessionManager::login( std::string username, std::string session_id)
 
     cout << "\n\n";
 
-    return return_code;
+    return 19;
 }
 
 int ProfileSessionManager::follow( std::string follower, std::string followed )
@@ -103,7 +103,6 @@ int ProfileSessionManager::logout( std::string username, std::string session_id 
 
     return return_code;
 }
-
 
 int ProfileSessionManager::create_user(std::string username, std::string session_id)
 {

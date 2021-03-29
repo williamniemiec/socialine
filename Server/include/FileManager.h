@@ -5,14 +5,14 @@
 #ifndef PROJECT_FILEMANAGER_H
 #define PROJECT_FILEMANAGER_H
 
+#include <vector>
+#include <unordered_map>
 
 class FileManager {
 
 public:
-    void read_notifications_file( );
-    void read_profiles_file( );
-    void write_notifications_file( );
-    void write_profiles_file( );
+    std::unordered_map<std::string, std::vector<std::string>> read_profiles_file( );
+    void write_profiles_file( std::unordered_map<std::string, std::vector<std::string>> final_followers_map  );
 
 };
 
