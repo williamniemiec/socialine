@@ -126,7 +126,6 @@ void ClientCommunicationManager::buildLoginPacket(std::string username, std::str
 }
 
 void ClientCommunicationManager::buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *packet) {
-    uint16_t headerLength = HEADER_LENGTH;
     uint16_t length = HEADER_LENGTH + MAX_DATA_SIZE + COOKIE_LENGTH;
     uint16_t timestamp = getTimestamp();
 
@@ -134,6 +133,7 @@ void ClientCommunicationManager::buildPacket(uint16_t type, uint16_t seqn, std::
     packet->seqn = seqn;
     packet->length = length;
     packet->timestamp = timestamp;
+    packet->cookie = NO_COOKIE;
     packet->_payload = message;
 }
 
