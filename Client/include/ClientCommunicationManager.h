@@ -21,11 +21,14 @@ class ClientCommunicationManager {
 public:
     int establish_connection(std::string username, std::string server , std::string door );
     int follow(std::string followed);
+    int tweet(std::string message);
+    int logout();
 
 private:
     void listen_notifications(std::string *listen_notification_port);
     void buildLoginPacket(std::string username, std::string listen_notification_port, struct __packet *loginPacket);
-    void sendPacket(struct __packet *packet);
+    void buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *packet);
+    int sendPacket(struct __packet *packet);
     uint16_t getTimestamp();
 };
 
