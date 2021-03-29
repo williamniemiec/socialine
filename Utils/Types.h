@@ -16,7 +16,8 @@
 #define CMD_LOGIN 1
 #define CMD_FOLLOW 2
 #define CMD_LOGOUT 3
-#define CMD_OTHERS 5
+#define CMD_OTHERS 4
+#define CMD_TWEET 5
 #define NOTIFICATION_TWEET 6
 
 #define ERROR_INVALID_COMMAND 1
@@ -32,6 +33,7 @@
 #define MAX_MAIL_SIZE 1024
 #define MAX_DATA_SIZE 256
 
+#define HEADER_LENGTH 38 // cada uint16_t possui 2 bytes + 30 bytes do cookie
 #define COOKIE_LENGTH 30
 #define PORT_LENGTH 10
 #define NO_COOKIE std::string(COOKIE_LENGTH, '0')

@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <ctime>
 
+
 int ClientCommunicationManager::establish_connection(std::string username, std::string server , std::string door ) {
     this->username = username;
     this->server = server;
@@ -22,20 +23,16 @@ int ClientCommunicationManager::establish_connection(std::string username, std::
     this->session_cookie = NO_COOKIE;
 
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
-    packet loginPacket = {
-            0,0,0,0, bufferPayload
-    };
+    packet loginPacket = { 0,0,0,0, bufferPayload };
 
     std::string listen_notification_port;
     listen_notifications(&listen_notification_port);
 
     buildLoginPacket(username, listen_notification_port, &loginPacket);
-    sendPacket(&loginPacket);
-
-    return 1;
+    return sendPacket(&loginPacket);
 }
 
-void ClientCommunicationManager::sendPacket(struct __packet *packet) {
+int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     int sockfd, n;
     struct sockaddr_in server_addr;
     struct hostent *server_host;
@@ -89,29 +86,58 @@ void ClientCommunicationManager::sendPacket(struct __packet *packet) {
         this->session_cookie = received_packet.cookie;
 
     close(sockfd);
+
+    return received_packet.type;
 }
 
 int ClientCommunicationManager::follow(std::string followed)
 {
-    std::cout << "Hi! I am the communication Manager" << NEW_LINE;
-    std::cout << "I am triggering a request to follow this profile:" << followed << NEW_LINE;
-    return 0;
+    char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
+    packet pkt = { 0,0,0,0, bufferPayload };
+
+    // _payload: follower + "\n" + followed + "\n"
+    std::string pkt_msg = username + "\n" + followed + "\n";
+    buildPacket(CMD_FOLLOW, 0, pkt_msg, &pkt);
+    return sendPacket(&pkt);
 }
+
+int ClientCommunicationManager::tweet(std::string message) {
+    char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
+    packet pkt = { 0,0,0,0, bufferPayload };
+
+    std::string pkt_msg = message + "\n";
+    buildPacket(CMD_TWEET, 0, pkt_msg, &pkt);
+    return sendPacket(&pkt);
+}
+
+int ClientCommunicationManager::logout() {
+    char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
+    packet pkt = { 0,0,0,0, bufferPayload };
+
+    std::string pkt_msg = username + "\n";
+    buildPacket(CMD_LOGOUT, 0, pkt_msg, &pkt);
+    return sendPacket(&pkt);
+};
 
 // Private Methods
 
 void ClientCommunicationManager::buildLoginPacket(std::string username, std::string listen_notification_port, struct __packet *loginPacket) {
-    uint16_t headerLength = 8; // cada uint16_t possui 2 bytes.
-    uint16_t length = headerLength + MAX_DATA_SIZE;
+    std::string payload = username + "\n" + listen_notification_port + "\n";
+    buildPacket(CMD_LOGIN, 0, payload, loginPacket);
+}
+
+void ClientCommunicationManager::buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *packet) {
+    uint16_t headerLength = HEADER_LENGTH;
+    uint16_t length = HEADER_LENGTH + MAX_DATA_SIZE + COOKIE_LENGTH;
     uint16_t timestamp = getTimestamp();
 
-    loginPacket->type = CMD_LOGIN;
-    loginPacket->seqn = 0;
-    loginPacket->length = length;
-    loginPacket->timestamp = timestamp;
-    loginPacket->cookie = session_cookie;
-    loginPacket->_payload = username + "\n" + listen_notification_port + "\n";
+    packet->type = type;
+    packet->seqn = seqn;
+    packet->length = length;
+    packet->timestamp = timestamp;
+    packet->_payload = message;
 }
+
 
 uint16_t ClientCommunicationManager::getTimestamp() {
     time_t ti;

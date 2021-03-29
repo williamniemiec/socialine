@@ -30,7 +30,6 @@
 
 void ServerCommunicationManager::start( )
 {
-
     int server_socket;
     socklen_t clilen;
     struct sockaddr_in serv_addr;
@@ -103,13 +102,13 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
         cookie = makeCookie(cli_addr);
 
     // CALLBACK METHOD TO HANDLE COMMAND EXECUTION
-    response_code = taskManager.run_command(received_packet.type, std::string(received_packet._payload.c_str()), cookie);
+    response_code = taskManager.run_command(received_packet.type, std::string(received_packet._payload.c_str()), cookie); // enviar IP e porta.
 
     std::cout << "Hi, have executed that shitty method" << NEW_LINE;
 
     int type;
     std::string message;
-    std::tuple<int, std::string> response_data = std::make_tuple(response_code, "Response message");
+    std::tuple<int, std::string> response_data = std::make_tuple(response_code, "");
     std::tie(type, message) = response_data;
 
     char response_packet_payload[MAX_DATA_SIZE];
@@ -136,8 +135,6 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     char* client_ip = inet_ntoa(cli_addr->sin_addr);
     std::string ip_str(client_ip);
 
-    char client_port_char_pointer[80];
-
     std::stringstream ss(received_packet._payload);
     std::string to;
 
@@ -158,7 +155,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
 
 void ServerCommunicationManager::buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *packet) {
 
-    uint16_t headerLength = 8; // cada uint16_t possui 2 bytes.
+    uint16_t headerLength = HEADER_LENGTH; // cada uint16_t possui 2 bytes.
     uint16_t length = headerLength + MAX_DATA_SIZE;
     uint16_t timestamp = getTimestamp();
 
@@ -225,6 +222,11 @@ std::string ServerCommunicationManager::random_string( size_t length )
     std::string str(length,0);
     std::generate_n( str.begin(), length, randchar );
     return str;
+}
+
+void ServerCommunicationManager::sendNotification(std::string session_id, std::string message) {
+    client_session session = this->client_sessions[session_id];
+    this->sendNotification(session.ip, session.notification_port, session_id, message);
 }
 
 void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::string receiver_port, std::string session_id, std::string message) {
