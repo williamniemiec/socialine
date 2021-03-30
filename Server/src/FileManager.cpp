@@ -37,19 +37,22 @@ unordered_map<string, vector<string>> FileManager::read_profiles_file( )
             pos = profiles_line.find_first_of(':', 0);
             username = profiles_line.substr(0, pos);
             profiles_line.erase(0, pos+2);
-            cout << username << " should follow: " << profiles_line << NEW_LINE;
+            //ToDo: remove prints and adhere to logger
+            //cout << username << " should follow: " << profiles_line << NEW_LINE;
             pos = profiles_line.find_first_of(' ', 0);
 
             while(pos > 0)
             {
                 followers.push_back(profiles_line.substr(0, pos));
-                cout << "User: " << username << " Following: " << profiles_line.substr(0, pos) << NEW_LINE;
+                //ToDo: remove prints and adhere to logger
+                //cout << "User: " << username << " Following: " << profiles_line.substr(0, pos) << NEW_LINE;
                 profiles_line.erase(0, pos+1);
                 pos = profiles_line.find_first_of(' ', 0);
             }
 
             followers.push_back(profiles_line);
-            cout << "User: " << username << " Following: " << profiles_line.substr(0, pos) << NEW_LINE;
+            //ToDo: remove prints and adhere to logger
+            //cout << "User: " << username << " Following: " << profiles_line.substr(0, pos) << NEW_LINE;
             followers_map[username] = followers;
         }
     }

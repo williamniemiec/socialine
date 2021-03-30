@@ -82,7 +82,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     int n;
     int response_code;
     char buffer[MAX_MAIL_SIZE];
-    TaskManager taskManager;
+
 
     bzero(buffer, MAX_MAIL_SIZE);
 
@@ -95,16 +95,12 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     received_packet.Deserialize(buffer);
     received_packet.print(std::string("RECEIVED"));
 
-    std::cout << "Hi, I am here" << NEW_LINE;
-
     std::string cookie;
     if(received_packet.cookie == NO_COOKIE)
         cookie = makeCookie(cli_addr);
 
     // CALLBACK METHOD TO HANDLE COMMAND EXECUTION
     response_code = taskManager.run_command(received_packet.type, std::string(received_packet._payload.c_str()), cookie); // enviar IP e porta.
-
-    std::cout << "Hi, have executed that shitty method" << NEW_LINE;
 
     int type;
     std::string message;
@@ -125,8 +121,8 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
         printf("ERROR writing to socket");
 
     close(connection_socket);
-    printf("finished process child\n");
-    printf("closed connection_socket\n");
+    //printf("finished process child\n");
+    //printf("closed connection_socket\n");
 
     // TODO: REMOVE LINES BELOW (TESTING NOTIFICATION)
 

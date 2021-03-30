@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
         {
             std::cout << "The command is: login"<< NEW_LINE;
             //return_code = communicationModule.establish_connection(command_to_execute.arguments[1], command_to_execute.arguments[2], command_to_execute.arguments[3]);
-            return_code = communicationModule.establish_connection("@fariask", "127.0.0.1", "4000");
+            return_code = communicationModule.establish_connection("@karine", "127.0.0.1", "4000");
         }
         else
         {
@@ -52,8 +52,11 @@ int main(int argc, char* argv[])
                     keep_running = false;
                     break;
                 case CMD_FOLLOW:
-                    std::cout << "The command is: follow" << NEW_LINE;
-                    return_code = communicationModule.follow(command_to_execute.arguments[1]);
+                    //return_code = communicationModule.establish_connection("@karine", "127.0.0.1", "4000");
+
+                    communicationModule.follow("@bruno");
+                    communicationModule.follow("@renata");
+                    communicationModule.follow("@rodolfo");
                     break;
                 case CMD_OTHERS:
                     std::cout << "I don't recognise this command" << NEW_LINE;

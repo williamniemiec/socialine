@@ -14,6 +14,8 @@ vector<string> TaskManager::parse_command( string payload )
 {
     //Arguments in a payload are separated by new line
     //This method receives a payload and returns the arguments list
+
+    //ToDo: replace this by another parsing methods (that works :)
   
     vector<string> arguments;
     int pos = payload.find_first_of(NEW_LINE, 0);
@@ -39,15 +41,16 @@ int TaskManager::run_command(int type, string payload, string session_id )
     switch(type)
     {
         case CMD_LOGIN:
-            cout << "Login" << NEW_LINE;
+            cout << "Hi! This is the task Manager running command LOGIN" << NEW_LINE;
             code = profile_and_session.login(arguments[0], session_id);
             break;
         case CMD_FOLLOW:
-            cout << "Follow" << NEW_LINE;
+            cout << "Hi! This is the task Manager running command FOLLOW" << NEW_LINE;
+            cout << "Follower: " << arguments[0] << "Followed: " << arguments[1];
             code = profile_and_session.follow(arguments[0], arguments[1]);
             break;
         case CMD_LOGOUT:
-            cout << "Logout" << NEW_LINE;
+            cout << "Hi! This is the task Manager running command LOGOUT" << NEW_LINE;
             code = profile_and_session.logout(arguments[0], session_id);
             break;
         default:

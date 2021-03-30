@@ -3,7 +3,7 @@ SOURCE	= ServerApp.cpp FileManager.cpp src/ProfileSessionManager.cpp src/TaskMan
 HEADER	= ../Utils/Types.h include/FileManager.h include/ProfileSessionManager.h include/TaskManager.h include/ServerCommunicationManager.h include/ServerNotificationManager.h
 OUT	= app_server.out
 CC	 = g++
-FLAGS	 = -g -c -Wall
+FLAGS	 = -g -c -Wno-deprecated-declarations -Wall
 LFLAGS	 =
 
 all: $(OBJS)
