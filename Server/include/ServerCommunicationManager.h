@@ -25,18 +25,18 @@ typedef struct __client_session {
 
 class ServerCommunicationManager {
     TaskManager taskManager;
+    static std::unordered_map<std::string, client_session> client_sessions;
 public:
-    void start( );
-    void sendNotification(std::string session_id, std::string message);
+    static void start( );
+    static void sendNotification(std::string session_id, std::string message);
 private:
-    std::unordered_map<std::string, client_session> client_sessions;
 
-    void sendNotification(std::string receiver_ip, std::string receiver_port, std::string session_id, std::string message);
-    void buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *loginPacket);
-    void start_client_thread(int connection_socket, sockaddr_in *cli_addr);
-    std::string makeCookie(sockaddr_in *cli_addr);
-    uint16_t getTimestamp();
-    std::string random_string(size_t length);
+    static void sendNotification(std::string receiver_ip, std::string receiver_port, std::string session_id, std::string message);
+    static void buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *loginPacket);
+    static void start_client_thread(int connection_socket, sockaddr_in *cli_addr);
+    static std::string makeCookie(sockaddr_in *cli_addr);
+    static uint16_t getTimestamp();
+    static std::string random_string(size_t length);
 };
 
 

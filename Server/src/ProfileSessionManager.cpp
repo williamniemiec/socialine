@@ -33,6 +33,9 @@ int ProfileSessionManager::follow( std::string follower, std::string followed )
     cout << "Welcome to Profile and Session Manager" << NEW_LINE ;
     cout << "I am trying to follow this profile: " << followed << NEW_LINE;
 
+    if(follower == followed)
+        return ERROR_FOLLOW_YOURSELF;
+
     return_code = write_follower(follower, followed);
 
     //ToDo: Remove prints

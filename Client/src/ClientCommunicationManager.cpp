@@ -15,7 +15,6 @@
 #include <netdb.h>
 #include <ctime>
 
-
 int ClientCommunicationManager::establish_connection(std::string username, std::string server , std::string door ) {
     this->username = username;
     this->server = server;

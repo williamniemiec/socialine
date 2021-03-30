@@ -14,7 +14,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <unistd.h>
+#include <thread>
 #include <netdb.h>
 #include <ctime>
 
@@ -27,8 +27,12 @@
  * - Ao receber uma mensagem, criar uma nova thread com um clientSocket que irá tratá-la, e voltar a ouvir a porta.
  */
 
+
+std::unordered_map<std::string, client_session> ServerCommunicationManager::client_sessions;
+
 void ServerCommunicationManager::start( )
 {
+
     int server_socket;
     socklen_t clilen;
     struct sockaddr_in serv_addr;
@@ -65,13 +69,8 @@ void ServerCommunicationManager::start( )
 
         makeCookie(&cli_addr);
 
-        // cria um novo processo filho p/ cliente
-        pid_t pid = fork();
-        if (pid == 0) { // processo filho
-            printf("started process child\n");
-            start_client_thread(connection_socket, &cli_addr);
-            exit(0);
-        }
+        std::thread child_thread(start_client_thread, connection_socket, &cli_addr);
+        child_thread.detach();
     }
 
     close(server_socket);
@@ -120,32 +119,6 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
         printf("ERROR writing to socket");
 
     close(connection_socket);
-    //printf("finished process child\n");
-    //printf("closed connection_socket\n");
-
-    // TODO: REMOVE LINES BELOW (TESTING NOTIFICATION)
-
-//    sleep(5);
-//
-//    char* client_ip = inet_ntoa(cli_addr->sin_addr);
-//    std::string ip_str(client_ip);
-//
-//    std::stringstream ss(received_packet._payload);
-//    std::string to;
-//
-//
-//    int i=0;
-//    std::string client_port;
-//    while(std::getline(ss,to,'\n')) {
-//        std::cout << to << std::endl;
-//        if(i == 1) {
-//            client_port = to;
-//            break;
-//        }
-//        i++;
-//    }
-//
-//    sendNotification(client_ip, client_port, cookie, std::string("Tweet notification mock"));
 }
 
 void ServerCommunicationManager::buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *packet) {
@@ -219,9 +192,10 @@ std::string ServerCommunicationManager::random_string( size_t length )
     return str;
 }
 
+std::unordered_map<std::string, client_session> client_sessions;
 void ServerCommunicationManager::sendNotification(std::string session_id, std::string message) {
-    client_session session = this->client_sessions[session_id];
-    this->sendNotification(session.ip, session.notification_port, session_id, message);
+    client_session session = ServerCommunicationManager::client_sessions[session_id];
+    sendNotification(session.ip, session.notification_port, session_id, message);
 }
 
 void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::string receiver_port, std::string session_id, std::string message) {
