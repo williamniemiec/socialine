@@ -52,8 +52,7 @@ int main(int argc, char* argv[])
                     keep_running = false;
                     break;
                 case CMD_FOLLOW:
-                    communicationModule.tweet("My message!!!");
-                    return_code = communicationModule.establish_connection("@karine", "127.0.0.1", "4000");
+                    return_code = communicationModule.follow(command_to_execute.arguments[0]);
                     /*communicationModule.follow("@bruno");
                     communicationModule.follow("@renata");
                     communicationModule.follow("@rodolfo");*/

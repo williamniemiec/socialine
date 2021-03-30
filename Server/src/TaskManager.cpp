@@ -13,23 +13,28 @@ ProfileSessionManager profile_and_session;
 
 vector<string> TaskManager::parse_command( string payload )
 {
-    //Arguments in a payload are separated by new line
+    //Arguments in a payload are separated by new line (\n)
     //This method receives a payload and returns the arguments list
-
-    //ToDo: replace this by another parsing methods (that works :)
-  
     vector<string> arguments;
-    int pos = payload.find_first_of(NEW_LINE, 0);
 
-    while(pos != 0 )
-    {
-        arguments.push_back(payload.substr(0, pos));
-        payload.erase(0, pos);
-        pos = payload.find_first_of(NEW_LINE, 0);
-    }
+    std::string::size_type first_pos;
+    std::string::size_type last_pos;
+    first_pos = 0;
+
+    do {
+        last_pos = payload.find('\n', first_pos);
+        if (last_pos == std::string::npos)
+            break;
+
+        arguments.push_back(payload.substr(first_pos, last_pos));
+        first_pos = last_pos+1;
+    } while(last_pos != std::string::npos);
+
+    // debug print
+    for(string arg : arguments)
+        cout << "[TaskManager] parse_command arg = " << arg << endl;
 
     return arguments;
-
 }
 
 int TaskManager::run_command(int type, string payload, string session_id )
