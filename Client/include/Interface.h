@@ -14,6 +14,9 @@ class Interface {
         app_command parse_command(std::string);
         void print_message(int message_code);
 
+    private:
+        int get_command_type(std::string command_type_str);
+
 };
 
 
