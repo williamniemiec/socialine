@@ -8,6 +8,11 @@
 
 class ServerNotificationManager {
 
+    int tweet_number;
+public:
+    void tweet();
+    int read_tweet();
+
 };
 
 

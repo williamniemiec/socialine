@@ -4,7 +4,6 @@
 
 #include "../../Utils/Types.h"
 #include "../include/ServerCommunicationManager.h"
-#include "../include/TaskManager.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -82,7 +81,6 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     int n;
     int response_code;
     char buffer[MAX_MAIL_SIZE];
-
 
     bzero(buffer, MAX_MAIL_SIZE);
 

@@ -13,6 +13,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "../include/TaskManager.h"
+
 typedef struct __client_session {
     std::string session_id;
     std::string ip;
@@ -22,6 +24,7 @@ typedef struct __client_session {
 
 
 class ServerCommunicationManager {
+    TaskManager taskManager;
 public:
     void start( );
     void sendNotification(std::string session_id, std::string message);

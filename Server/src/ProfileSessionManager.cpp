@@ -4,6 +4,7 @@
 
 #include "../include/ProfileSessionManager.h"
 #include "../../Utils/Types.h"
+#include "../include/Globals.h"
 
 using namespace std;
 
@@ -16,6 +17,7 @@ int ProfileSessionManager::login( std::string username, std::string session_id)
 
     return_code = open_session(username, session_id);
     //ToDo: send user notifications !!
+    notificationManager.read_tweet( );
 
     cout << "Finishing method login, code: " << return_code << NEW_LINE;
 

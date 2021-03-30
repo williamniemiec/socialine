@@ -52,11 +52,11 @@ int main(int argc, char* argv[])
                     keep_running = false;
                     break;
                 case CMD_FOLLOW:
-                    //return_code = communicationModule.establish_connection("@karine", "127.0.0.1", "4000");
-
-                    communicationModule.follow("@bruno");
+                    communicationModule.tweet("My message!!!");
+                    return_code = communicationModule.establish_connection("@karine", "127.0.0.1", "4000");
+                    /*communicationModule.follow("@bruno");
                     communicationModule.follow("@renata");
-                    communicationModule.follow("@rodolfo");
+                    communicationModule.follow("@rodolfo");*/
                     break;
                 case CMD_OTHERS:
                     std::cout << "I don't recognise this command" << NEW_LINE;

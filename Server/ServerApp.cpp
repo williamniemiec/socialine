@@ -4,7 +4,6 @@
 
 
 #include "include/ServerCommunicationManager.h"
-#include "include/ProfileSessionManager.h"
 #include "../Utils/Types.h"
 
 #include <iostream>
@@ -16,7 +15,6 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-
     ServerCommunicationManager server;
 
     server.start();
