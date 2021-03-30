@@ -133,7 +133,7 @@ void ClientCommunicationManager::buildPacket(uint16_t type, uint16_t seqn, std::
     packet->seqn = seqn;
     packet->length = length;
     packet->timestamp = timestamp;
-    packet->cookie = NO_COOKIE;
+    packet->cookie = session_cookie;
     packet->_payload = message;
 }
 
