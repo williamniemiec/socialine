@@ -32,8 +32,13 @@ app_command Interface::parse_command(std::string input)
     std::cout << "Hi! I am the Interface Module" << NEW_LINE;
     std::cout << "I will parse the following command: "<< input << NEW_LINE;
 
-    command.type = CMD_FOLLOW;
-    command.arguments.push_back("Profile");
+    std::string::size_type pos;
+    pos= input.find(' ',0);
+    std::string args = input.substr(pos+1);
+    std::string cmd = input.substr(0,pos);
+
+    command.type = get_command_type(cmd);
+    command.arguments.push_back(args);
 
     return command;
 }
@@ -50,4 +55,14 @@ void Interface::print_message(int message_code)
             std::cout << "I am trying to print a message" << NEW_LINE;
     }
 
+}
+
+int Interface::get_command_type(std::string command_type_str) {
+    if (command_type_str == "FOLLOW") {
+        return CMD_FOLLOW;
+    } else if (command_type_str == "SEND") {
+        return CMD_TWEET;
+    }
+
+    return CMD_OTHERS;
 }

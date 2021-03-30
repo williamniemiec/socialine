@@ -81,6 +81,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     int n;
     int response_code;
     char buffer[MAX_MAIL_SIZE];
+    TaskManager taskManager;
 
     bzero(buffer, MAX_MAIL_SIZE);
 

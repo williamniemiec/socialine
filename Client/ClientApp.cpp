@@ -58,6 +58,12 @@ int main(int argc, char* argv[])
                     communicationModule.follow("@renata");
                     communicationModule.follow("@rodolfo");*/
                     break;
+                case CMD_TWEET:
+                    return_code = communicationModule.tweet(command_to_execute.arguments[0]);
+                    break;
+                case CMD_LOGOUT:
+                    return_code = communicationModule.logout();
+                    break;
                 case CMD_OTHERS:
                     std::cout << "I don't recognise this command" << NEW_LINE;
                     return_code = ERROR_INVALID_COMMAND;
