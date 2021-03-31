@@ -29,7 +29,7 @@ private:
     void buildLoginPacket(std::string username, std::string listen_notification_port, struct __packet *loginPacket);
     void buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *packet);
     int sendPacket(struct __packet *packet);
-    uint16_t getTimestamp();
+    uint32_t getTimestamp();
 };
 
 
