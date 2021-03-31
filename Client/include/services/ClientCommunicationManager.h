@@ -13,7 +13,7 @@
 #include <ctime>
 
 class ClientCommunicationManager {
-    std::string username, server, door, session_cookie;
+    static std::string username, server, door, session_cookie;
 public:
     int establish_connection(std::string username, std::string server , std::string door );
     int follow(std::string followed);

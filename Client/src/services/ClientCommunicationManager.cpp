@@ -13,11 +13,16 @@
 #include <netdb.h>
 #include <ctime>
 
+std::string ClientCommunicationManager::username;
+std::string ClientCommunicationManager::server;
+std::string ClientCommunicationManager::door;
+std::string ClientCommunicationManager::session_cookie;
+
 int ClientCommunicationManager::establish_connection(std::string username, std::string server , std::string door ) {
-    this->username = username;
-    this->server = server;
-    this->door = door;
-    this->session_cookie = NO_COOKIE;
+    ClientCommunicationManager::username = username;
+    ClientCommunicationManager::server = server;
+    ClientCommunicationManager::door = door;
+    ClientCommunicationManager::session_cookie = NO_COOKIE;
 
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
     packet loginPacket = { 0,0,0,0, bufferPayload };
@@ -78,8 +83,8 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     received_packet.Deserialize(buffer_response);
     received_packet.print("RECEIVED");
 
-    if(this->session_cookie == NO_COOKIE)
-        this->session_cookie = received_packet.cookie;
+    if(session_cookie == NO_COOKIE)
+        session_cookie = received_packet.cookie;
 
     close(sockfd);
 

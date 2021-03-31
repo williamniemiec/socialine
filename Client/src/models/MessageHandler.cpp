@@ -39,6 +39,9 @@ std::map<int, std::string> MessageHandler::create_map()
 
 std::string MessageHandler::fromCode(int code)
 {
+    if (code == 0)
+        return "Success!";
+        
     if (messageMapping.count(code) == 0)
         return "Unknown error";
 
