@@ -1,6 +1,6 @@
-OBJS	= ServerApp.o FileManager.o ServerNotificationManager.o ProfileSessionManager.o TaskManager.o ServerCommunicationManager.o
-SOURCE	= ServerApp.cpp FileManager.cpp src/ServerNotificationManager.cpp src/ProfileSessionManager.cpp src/TaskManager.cpp src/ServerCommunicationManager.cpp
-HEADER	= ../Utils/Types.h include/FileManager.h include/ServerNotificationManager.h include/ProfileSessionManager.h include/TaskManager.h include/ServerCommunicationManager.h
+OBJS	= ServerApp.o StringUtils.o FileManager.o ServerNotificationManager.o ProfileSessionManager.o TaskManager.o ServerCommunicationManager.o
+SOURCE	= ServerApp.cpp ../Utils/StringUtils.cpp FileManager.cpp src/ServerNotificationManager.cpp src/ProfileSessionManager.cpp src/TaskManager.cpp src/ServerCommunicationManager.cpp
+HEADER	= ../Utils/Types.h ../Utils/StringUtils.h include/FileManager.h include/ServerNotificationManager.h include/ProfileSessionManager.h include/TaskManager.h include/ServerCommunicationManager.h
 OUT	= app_server.out
 CC	 = g++
 FLAGS	 = -g -c -Wno-deprecated-declarations -Wall
@@ -11,6 +11,9 @@ all: $(OBJS)
 
 ServerApp.o: ServerApp.cpp
 	$(CC) $(FLAGS) ServerApp.cpp -std=c++17
+
+StringUtils.o: ../Utils/StringUtils.cpp
+	$(CC) $(FLAGS) ../Utils/StringUtils.cpp -std=c++17
 
 FileManager.o: src/FileManager.cpp
 	$(CC) $(FLAGS) src/FileManager.cpp -std=c++17

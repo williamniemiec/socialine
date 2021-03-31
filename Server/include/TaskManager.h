@@ -14,9 +14,9 @@ class TaskManager {
 
 public:
     int run_command(int type, std::string payload, std::string session_id );
-
+/*
 private:
-    std::vector<std::string> parse_command( std::string payload );
+    std::vector<std::string> parse_command( std::string payload );*/
 
 };
 

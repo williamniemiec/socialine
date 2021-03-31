@@ -97,7 +97,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
         cookie = makeCookie(cli_addr);
 
     // CALLBACK METHOD TO HANDLE COMMAND EXECUTION
-    std::string arguments = received_packet._payload + '\n' + std::to_string( received_packet.timestamp );
+    std::string arguments = std::to_string( received_packet.timestamp ) + '\n' + received_packet._payload + '\n';
     response_code = taskManager.run_command(received_packet.type, arguments , cookie); // enviar IP e porta.
 
     int type;
