@@ -10,7 +10,6 @@
 
 class ServerNotificationManager {
 
-    static ProfileSessionManager profileSessionManager;
     static std::unordered_map<std::string, std::vector<notification>> pending_notifications;
     static sem_t notifications_semaphore;
 

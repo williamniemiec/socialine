@@ -27,6 +27,8 @@ class ProfileSessionManager {
     int followers_readers_count;
 
 public:
+    static ProfileSessionManager profileSessionManager;
+
     ProfileSessionManager()
     {
         FileManager myFileManager;

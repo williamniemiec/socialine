@@ -8,8 +8,6 @@
 
 using namespace std;
 
-ProfileSessionManager profile_and_session;
-
 vector<string> TaskManager::parse_command( string payload )
 {
     //Arguments in a payload are separated by new line (\n)
@@ -47,17 +45,17 @@ int TaskManager::run_command(int type, string payload, string session_id )
     {
         case CMD_LOGIN:
             cout << "Hi! This is the task Manager running command LOGIN" << NEW_LINE;
-            code = profile_and_session.login(arguments[1], session_id);
+            code = ProfileSessionManager::profileSessionManager.login(arguments[1], session_id);
             //ServerCommunicationManager::sendNotification( session_id, notification );
             break;
         case CMD_FOLLOW:
             cout << "Hi! This is the task Manager running command FOLLOW" << NEW_LINE;
             cout << "Follower: " << arguments[1] << "Followed: " << arguments[2];
-            code = profile_and_session.follow(arguments[1], arguments[2]);
+            code = ProfileSessionManager::profileSessionManager.follow(arguments[1], arguments[2]);
             break;
         case CMD_LOGOUT:
             cout << "Hi! This is the task Manager running command LOGOUT" << NEW_LINE;
-            code = profile_and_session.logout(arguments[1], session_id);
+            code = ProfileSessionManager::profileSessionManager.logout(arguments[1], session_id);
             break;
         case CMD_TWEET:
             cout << "Hi! This is the task Manager running command TWEET" << NEW_LINE;

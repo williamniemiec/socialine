@@ -6,7 +6,7 @@
 
 using namespace std;
 
-ProfileSessionManager ServerNotificationManager::profileSessionManager;
+ProfileSessionManager ProfileSessionManager::profileSessionManager;
 
 std::unordered_map<std::string, std::vector<notification>> ServerNotificationManager::pending_notifications;
 sem_t ServerNotificationManager::notifications_semaphore;
@@ -38,12 +38,12 @@ std::unordered_map<std::string, notification> ServerNotificationManager::tweet( 
     //current_notification.timestamp = timestamp;
     current_notification._message = message;
 
-    followed_by = profileSessionManager.read_followed( username );
+    followed_by = ProfileSessionManager::profileSessionManager.read_followed( username );
 
     for(int i = 0; i < followed_by.size( ); i++ )
     {
         followed = followed_by[i];
-        open_sessions = profileSessionManager.read_open_sessions(followed);
+        open_sessions = ProfileSessionManager::profileSessionManager.read_open_sessions(followed);
         if(open_sessions.size( ) == 0)
         {
             add_pending_notification( followed, current_notification );
