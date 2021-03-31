@@ -47,7 +47,7 @@ typedef struct __packet{
     uint16_t type;          //PACKAGE TYPE (Eg. data/command)
     uint16_t seqn;          //Sequence number
     uint16_t length;        //Payload size
-    uint16_t timestamp;     //Data timestamp
+    uint32_t timestamp;     //Data timestamp
     std::string cookie;     // cookie to keep session (length = COOKIE_LENGTH)
     std::string _payload;   //Message data
 
@@ -62,12 +62,14 @@ typedef struct __packet{
         message[4] = htons(length) >> 8;
         message[5] = htons(length);
 
-        message[6] = htons(timestamp) >> 8;
-        message[7] = htons(timestamp);
+        message[6] = htonl(timestamp) >> 24 & 0xFF;
+        message[7] = htonl(timestamp) >> 16 & 0xFF;
+        message[8] = htonl(timestamp) >> 8 & 0xFF;
+        message[9] = htonl(timestamp) & 0xFF;
 
-        memcpy(&message[8], cookie.c_str(), COOKIE_LENGTH);
+        memcpy(&message[10], cookie.c_str(), COOKIE_LENGTH);
 
-        memcpy(&message[8+COOKIE_LENGTH], _payload.c_str(), MAX_DATA_SIZE);
+        memcpy(&message[10+COOKIE_LENGTH], _payload.c_str(), MAX_DATA_SIZE);
 
         return message;
     }
@@ -77,17 +79,18 @@ typedef struct __packet{
         type = ntohs(message[0] << 8 | message[1]);
         seqn = ntohs(message[2] << 8 | message[3]);
         length = ntohs(message[4] << 8 | message[5]);
-        timestamp = ntohs(message[6] << 8 | message[7]);
+
+        timestamp = ntohl(message[6] << 24 | message[7] << 16 | message[8] << 8 | message[9]);
 
         char cookie_received[COOKIE_LENGTH];
         for (unsigned i=0; i < COOKIE_LENGTH; i++)
-            cookie_received[i] = message[i+8];
+            cookie_received[i] = message[i+10];
 
         cookie.assign(cookie_received, COOKIE_LENGTH);
 
         char payload_message[MAX_DATA_SIZE];
         for (unsigned i=0; i < MAX_DATA_SIZE; i++)
-            payload_message[i] = message[i+8+COOKIE_LENGTH];
+            payload_message[i] = message[i+10+COOKIE_LENGTH];
 
         _payload.assign(payload_message, MAX_DATA_SIZE);
     }
@@ -97,7 +100,7 @@ typedef struct __packet{
         printf("packet.type: %u\n", this->type);
         printf("packet.seqn: %u\n", this->seqn);
         printf("packet.length: %u\n", this->length);
-        printf("packet.timestamp: %u\n", this->timestamp);
+        printf("packet.timestamp: %ul\n", this->timestamp);
         printf("packet.cookie: %s\n", this->cookie.c_str());
         printf("packet._payload: %s\n", this->_payload.c_str());
         printf("----------------------\n");
@@ -117,6 +120,5 @@ typedef struct __notification{
     uint32_t timestamp;  //Notification timestamp
     std::string _message;     //Message data
 } notification;
-
 
 #endif //CLIENT_APP_TYPES_H

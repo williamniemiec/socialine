@@ -96,8 +96,8 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     if(received_packet.cookie == NO_COOKIE)
         cookie = makeCookie(cli_addr);
 
-    // CALLBACK METHOD TO HANDLE COMMAND EXECUTION
-    std::string arguments = received_packet._payload + '\n' + std::to_string( received_packet.timestamp );
+    std::string arguments = std::to_string( received_packet.timestamp ) + '\n' + received_packet._payload;
+  
     response_code = taskManager.run_command(received_packet.type, arguments , cookie); // enviar IP e porta.
 
     int type;
@@ -109,6 +109,9 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     struct __packet response_packet = {0, 0, 0, 0, cookie, response_packet_payload };
 
     buildPacket(type, 0, message, &response_packet);
+
+
+    response_packet.print(std::string("SENT"));
 
     char* response_buffer;
     response_buffer = (char *) calloc(MAX_MAIL_SIZE, sizeof(char));
@@ -125,32 +128,16 @@ void ServerCommunicationManager::buildPacket(uint16_t type, uint16_t seqn, std::
 
     uint16_t headerLength = HEADER_LENGTH; // cada uint16_t possui 2 bytes.
     uint16_t length = headerLength + MAX_DATA_SIZE;
-    uint16_t timestamp = getTimestamp();
 
     packet->type = type;
     packet->seqn = seqn;
     packet->length = length;
-    packet->timestamp = timestamp;
+    packet->timestamp = getTimestamp();
     packet->_payload = message;
 }
 
-uint16_t ServerCommunicationManager::getTimestamp() {
-    time_t ti;
-    ti = time(NULL);
-    struct tm tm_time;
-    tm_time = *localtime(&ti);
-
-    //const time_t create_time;
-    //uint16_t t, d;
-    uint16_t d;
-    d = tm_time.tm_mday
-        + (tm_time.tm_mon + 1) * 32
-        + (tm_time.tm_year - (1980-1900)) * 512;
-
-    // Print ddmmyy
-//    printf("%02d%02d%02d\n",
-//           (int) d%32, (int) (d/32)%16, (int) ((d/512)%128 + (1980-1900))%100);
-    return d;
+uint32_t ServerCommunicationManager::getTimestamp() {
+    return time(0);
 }
 
 std::string ServerCommunicationManager::makeCookie(sockaddr_in *cli_addr) {
@@ -195,6 +182,7 @@ std::string ServerCommunicationManager::random_string( size_t length )
 std::unordered_map<std::string, client_session> client_sessions;
 void ServerCommunicationManager::sendNotification(std::string session_id, notification current_notification) {
     client_session session = ServerCommunicationManager::client_sessions[session_id];
+
     std::string payload = current_notification.owner + '\n' + std::to_string( current_notification.timestamp ) + '\n' + current_notification._message + '\n';
 
     sendNotification(session.ip, session.notification_port, session_id, payload);
