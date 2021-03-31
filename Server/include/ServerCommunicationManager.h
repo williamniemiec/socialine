@@ -35,7 +35,7 @@ private:
     static void buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *loginPacket);
     static void start_client_thread(int connection_socket, sockaddr_in *cli_addr);
     static std::string makeCookie(sockaddr_in *cli_addr);
-    static uint16_t getTimestamp();
+    static uint32_t getTimestamp();
     static std::string random_string(size_t length);
 };
 

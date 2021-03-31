@@ -28,7 +28,12 @@ int ClientCommunicationManager::establish_connection(std::string username, std::
     listen_notifications(&listen_notification_port);
 
     buildLoginPacket(username, listen_notification_port, &loginPacket);
-    return sendPacket(&loginPacket);
+    int result_code = sendPacket(&loginPacket);
+
+    if (result_code == ERROR_SESSIONS_LIMIT)
+
+
+    return result_code;
 }
 
 int ClientCommunicationManager::sendPacket(struct __packet *packet) {
@@ -126,33 +131,18 @@ void ClientCommunicationManager::buildLoginPacket(std::string username, std::str
 
 void ClientCommunicationManager::buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *packet) {
     uint16_t length = HEADER_LENGTH + MAX_DATA_SIZE + COOKIE_LENGTH;
-    uint16_t timestamp = getTimestamp();
 
     packet->type = type;
     packet->seqn = seqn;
     packet->length = length;
-    packet->timestamp = timestamp;
+    packet->timestamp = getTimestamp();
     packet->cookie = session_cookie;
     packet->_payload = message;
 }
 
 
-uint16_t ClientCommunicationManager::getTimestamp() {
-    time_t ti;
-    ti = time(NULL);
-    struct tm tm_time;
-    tm_time = *localtime(&ti);
-
-    //const time_t create_time;
-    uint16_t d;
-    d = tm_time.tm_mday
-        + (tm_time.tm_mon + 1) * 32
-        + (tm_time.tm_year - (1980-1900)) * 512;
-
-    // Print ddmmyy
-//    printf("%02d%02d%02d\n",
-//           (int) d%32, (int) (d/32)%16, (int) ((d/512)%128 + (1980-1900))%100);
-    return d;
+uint32_t ClientCommunicationManager::getTimestamp() {
+    return time(0);
 }
 
 void ClientCommunicationManager::listen_notifications(std::string *listen_notification_port) {
