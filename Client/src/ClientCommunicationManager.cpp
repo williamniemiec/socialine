@@ -103,7 +103,7 @@ int ClientCommunicationManager::tweet(std::string message) {
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
     packet pkt = { 0,0,0,0, bufferPayload };
 
-    std::string pkt_msg = message + "\n";
+    std::string pkt_msg = username + "\n" + message + "\n";
     buildPacket(CMD_TWEET, 0, pkt_msg, &pkt);
     return sendPacket(&pkt);
 }
@@ -215,6 +215,9 @@ void ClientCommunicationManager::listen_notifications(std::string *listen_notifi
             struct __packet received_packet = {0, 0, 0, 0, received_packet_buffer };
             received_packet.Deserialize(buffer);
             received_packet.print("[Notification Service] RECEIVED");
+
+            // TODO: Chamar método que exibe a mensagem (formato do _payload é: "autor + '\n' + timestamp + '\n' + mensagem + '\n');
+
         }
 
         close(notification_socket);

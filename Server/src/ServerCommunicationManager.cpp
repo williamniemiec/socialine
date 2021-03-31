@@ -3,6 +3,7 @@
 //
 
 #include "../include/ServerCommunicationManager.h"
+#include "../../Utils/StringUtils.hpp"
 
 #include <iostream>
 #include <stdio.h>
@@ -31,6 +32,7 @@ std::unordered_map<std::string, client_session> ServerCommunicationManager::clie
 
 void ServerCommunicationManager::start( )
 {
+    signal(SIGPIPE, SIG_IGN);
 
     int server_socket;
     socklen_t clilen;
@@ -114,6 +116,19 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     response_buffer = (char *) calloc(MAX_MAIL_SIZE, sizeof(char));
     response_buffer = response_packet.Serialize();
 
+    std::vector<std::string> args = utils::StringUtils::split(received_packet._payload,"\n");
+
+    auto it = client_sessions.find(cookie);
+    if (it == client_sessions.end() && received_packet.type == CMD_LOGIN) {
+        client_session new_session;
+        new_session.ip = std::string(inet_ntoa(cli_addr->sin_addr));   //"127.0.0.1"; // TODO: pegar dinamicamente
+        new_session.notification_port = args[1];
+        client_sessions[cookie] = new_session;
+
+    } else if(received_packet.type == CMD_LOGOUT) {
+        client_sessions.erase(cookie);
+    }
+
     n = write(connection_socket, response_buffer, MAX_MAIL_SIZE);
     if (n < 0)
         printf("ERROR writing to socket");
@@ -195,6 +210,10 @@ std::string ServerCommunicationManager::random_string( size_t length )
 std::unordered_map<std::string, client_session> client_sessions;
 void ServerCommunicationManager::sendNotification(std::string session_id, notification current_notification) {
     client_session session = ServerCommunicationManager::client_sessions[session_id];
+
+    printf("\n\nVICTOR IP: %s\n\n", session.ip.c_str());
+    printf("\n\nVICTOR PORT: %s\n\n", session.notification_port.c_str());
+
     std::string payload = current_notification.owner + '\n' + std::to_string( current_notification.timestamp ) + '\n' + current_notification._message + '\n';
 
     sendNotification(session.ip, session.notification_port, session_id, payload);
@@ -209,15 +228,15 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     std::string buffer_out;
 
     inet_aton(receiver_ip.c_str(), &addr);
+
     receiver_host = gethostbyaddr(&addr, sizeof(receiver_ip), AF_INET);
 
     if (receiver_host == NULL) {
-        printf("ERROR: no such client found!!");
-        exit(0);
+        printf("[Send Notification] ERROR: no such client found!!");
     }
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        printf("ERROR opening socket\n");
+        printf("[Send Notification] ERROR opening socket\n");
 
     printf("[Send Notification] receiver port: %s\n", receiver_port.c_str());
 
@@ -227,7 +246,7 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     bzero(&(receiver_addr.sin_zero), 8);
 
     if (connect(sockfd, (struct sockaddr *) &receiver_addr, sizeof(receiver_addr)) < 0)
-        printf("ERROR connecting\n");
+        printf("[Send Notification] ERROR connecting\n");
 
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
     packet packet_sent = {0,0,0,0, session_id, bufferPayload };
@@ -243,7 +262,7 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     // write
     n = write(sockfd, buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        printf("ERROR writing to socket\n");
+        printf("[Send Notification] ERROR writing to socket\n");
 
     close(sockfd);
 }
