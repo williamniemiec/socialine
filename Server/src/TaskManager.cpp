@@ -42,6 +42,7 @@ int TaskManager::run_command(int type, string payload, string session_id )
             break;
         case CMD_LOGOUT:
             cout << "Hi! This is the task Manager running command LOGOUT" << NEW_LINE;
+            cout << "session id: " << session_id << endl;
             ProfileSessionManager::profileSessionManager.logout(arguments[1], session_id);
             break;
         case CMD_TWEET:

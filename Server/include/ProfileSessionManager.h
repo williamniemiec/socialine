@@ -24,10 +24,10 @@ class ProfileSessionManager {
 
 public:
     static ProfileSessionManager profileSessionManager;
+    FileManager myFileManager;
 
     ProfileSessionManager()
     {
-        FileManager myFileManager;
 
         followers_map = myFileManager.read_profiles_file();
 

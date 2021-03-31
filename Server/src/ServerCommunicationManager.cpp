@@ -99,6 +99,8 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     std::string cookie;
     if(received_packet.cookie == NO_COOKIE)
         cookie = makeCookie(cli_addr);
+    else
+        cookie = received_packet.cookie;
 
     // CALLBACK METHOD TO HANDLE COMMAND EXECUTION
     std::string arguments = std::to_string( received_packet.timestamp ) + '\n' + received_packet._payload + '\n';
@@ -212,10 +214,6 @@ std::string ServerCommunicationManager::random_string( size_t length )
 std::unordered_map<std::string, client_session> client_sessions;
 void ServerCommunicationManager::sendNotification(std::string session_id, notification current_notification) {
     client_session session = ServerCommunicationManager::client_sessions[session_id];
-
-    printf("\n\nVICTOR IP: %s\n\n", session.ip.c_str());
-    printf("\n\nVICTOR PORT: %s\n\n", session.notification_port.c_str());
-
     std::string payload = current_notification.owner + '\n' + std::to_string( current_notification.timestamp ) + '\n' + current_notification._message + '\n';
 
     sendNotification(session.ip, session.notification_port, session_id, payload);

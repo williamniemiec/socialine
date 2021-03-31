@@ -11,6 +11,7 @@
 class FileManager {
 
 public:
+    std::string trim(const std::string& str);
     std::unordered_map<std::string, std::vector<std::string>> read_profiles_file( );
     void write_profiles_file( std::unordered_map<std::string, std::vector<std::string>> final_followers_map  );
 

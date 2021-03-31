@@ -43,22 +43,9 @@ int ProfileSessionManager::follow( std::string follower, std::string followed )
 
 int ProfileSessionManager::logout( std::string username, std::string session_id )
 {
-    //ToDo: Remove prints
-    cout << "Welcome to Profile and Session Manager" << NEW_LINE ;
-    cout << "I am trying to log you out, " << username << NEW_LINE;
-
-    //ToDo: Remove prints
-    cout << "You have " << sessions_map[username].size() << " sessions opened" << NEW_LINE;
-    for (int k = 0; k < sessions_map[username].size() ; ++k)
-        cout << "\t" << sessions_map[username][k] << NEW_LINE;
-
+    cout << "LOGOUT LENG\n" << session_id.length() << endl;
     close_session(username, session_id);
-
-    //ToDo: Remove prints
-    cout << "You have " << sessions_map[username].size() << " sessions opened" << NEW_LINE;
-    for (int k = 0; k < sessions_map[username].size() ; ++k)
-        cout << "\t" << sessions_map[username][k] << NEW_LINE;
-    cout << "\n\n";
+    cout << session_id.length() << endl;
 
     return 0;
 }
@@ -67,8 +54,9 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 {
     int code = 0;
 
-    sem_wait(&write_session_semaphore);
+    session_id = myFileManager.trim(session_id);
 
+    sem_wait(&write_session_semaphore);
 
     cout << "Active sessions: " << NEW_LINE;
     for(int i = 0; i < sessions_map[username].size(); i++ )
@@ -104,8 +92,13 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 
 void ProfileSessionManager::close_session(std::string username, std::string session_id)
 {
+    cout << "LENG\n" << session_id.length() << endl;
+    session_id = myFileManager.trim(session_id);
+    cout << session_id.length() << endl;
+
     //ToDo: clean up prints
     sem_wait(&write_session_semaphore);
+    cout << session_id << endl;
     cout << "Active sessions: ";
     for(int i = 0; i < sessions_map[username].size(); i++ )
     {

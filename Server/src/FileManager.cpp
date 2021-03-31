@@ -14,7 +14,7 @@
 
 using namespace std;
 
-std::string trim(const std::string& str);
+
 
 unordered_map<string, vector<string>> FileManager::read_profiles_file( )
 {
@@ -67,7 +67,7 @@ void FileManager::write_profiles_file( std::unordered_map<std::string, std::vect
     //ToDo: create write file;
 }
 
-std::string trim(const std::string& str)
+std::string FileManager::trim(const std::string& str)
 {
     size_t first = str.find_first_not_of(' ');
     if (string::npos == first)
