@@ -26,7 +26,9 @@ int main(int argc, char* argv[])
         {
             std::cout << "The command is: login"<< NEW_LINE;
             //return_code = communicationModule.establish_connection(command_to_execute.arguments[1], command_to_execute.arguments[2], command_to_execute.arguments[3]);
-            return_code = communicationModule.establish_connection("@karine", "127.0.0.1", "4000");
+            return_code = communicationModule.establish_connection(argv[1], "127.0.0.1", "4000");
+            if(return_code != 0)
+                keep_running = false;
         }
         else
         {
@@ -34,6 +36,7 @@ int main(int argc, char* argv[])
             interfaceModule.print_message(ERROR_START_WITH_LOGIN);
             keep_running = false;
         }
+
 
         std::cout << "Hi, I am back to the app. Waiting for new commands" << NEW_LINE;
         //After executing login keep waiting for new commands until user stops execution or an error occurs
@@ -53,9 +56,6 @@ int main(int argc, char* argv[])
                     break;
                 case CMD_FOLLOW:
                     return_code = communicationModule.follow(command_to_execute.arguments[0]);
-                    /*communicationModule.follow("@bruno");
-                    communicationModule.follow("@renata");
-                    communicationModule.follow("@rodolfo");*/
                     break;
                 case CMD_TWEET:
                     return_code = communicationModule.tweet(command_to_execute.arguments[0]);
@@ -75,6 +75,7 @@ int main(int argc, char* argv[])
         };
 
         interfaceModule.print_message(MESSAGE_SHUT_DOWN);
+        communicationModule.logout();
 
         return(0);
 

@@ -64,7 +64,7 @@ unordered_map<string, vector<string>> FileManager::read_profiles_file( )
 
 void FileManager::write_profiles_file( std::unordered_map<std::string, std::vector<std::string>> final_followers_map )
 {
-
+    //ToDo: create write file;
 }
 
 std::string trim(const std::string& str)
