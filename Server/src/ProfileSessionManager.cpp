@@ -4,7 +4,6 @@
 
 #include "../include/ProfileSessionManager.h"
 #include "../../Utils/Types.h"
-#include "../include/Globals.h"
 
 using namespace std;
 
@@ -16,8 +15,6 @@ int ProfileSessionManager::login( std::string username, std::string session_id)
     cout << "I am trying to log you in, " << username << NEW_LINE;
 
     return_code = open_session(username, session_id);
-    //ToDo: send user notifications !!
-    notificationManager.read_tweet( );
 
     cout << "Finishing method login, code: " << return_code << NEW_LINE;
 
@@ -73,11 +70,12 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
     sem_wait(&write_session_semaphore);
 
 
-    cout << "Active sessions: ";
+    cout << "Active sessions: " << NEW_LINE;
     for(int i = 0; i < sessions_map[username].size(); i++ )
     {
         cout << sessions_map[username][i] << " ";
     }
+    cout << NEW_LINE;
 
     if(sessions_map[username].size() >= 2)
     {
@@ -92,12 +90,13 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
     if( code == 0 )
         sessions_map[username].push_back(session_id);
 
-    cout << "After execution: ";
+    cout << "After execution: " << NEW_LINE;
     for(int i = 0; i < sessions_map[username].size(); i++ )
     {
         cout << sessions_map[username][i] << " ";
     }
 
+    cout << NEW_LINE;
     sem_post(&write_session_semaphore);
 
     return code;
@@ -124,6 +123,27 @@ void ProfileSessionManager::close_session(std::string username, std::string sess
     sem_post(&write_session_semaphore);
 }
 
+std::vector<std::string> ProfileSessionManager::read_open_sessions(std::string username)
+{
+    vector<string> sessions_list;
+
+    sem_wait(&session_readers_mutex);
+    session_readers_count++;
+    if(session_readers_count == 1)
+        sem_wait(&write_session_semaphore);
+    sem_post(&session_readers_mutex);
+
+    sessions_list = sessions_map[username];
+
+    sem_wait(&session_readers_mutex);
+    session_readers_count--;
+    if(session_readers_count == 0)
+        sem_post(&write_session_semaphore);
+    sem_post(&session_readers_mutex);
+
+    return sessions_list;
+}
+
 vector<string> ProfileSessionManager::read_followers(std::string username)
 {
     vector<string> followers_list;
@@ -143,6 +163,27 @@ vector<string> ProfileSessionManager::read_followers(std::string username)
     sem_post(&follower_readers_mutex);
 
     return followers_list;
+}
+
+vector<string> ProfileSessionManager::read_followed(std::string username)
+{
+    vector<string> followed_list;
+
+    sem_wait(&follower_readers_mutex);
+    followers_readers_count++;
+    if(followers_readers_count == 1)
+        sem_wait(&write_followers_semaphore);
+    sem_post(&follower_readers_mutex);
+
+    followed_list = followed_by_map[username];
+
+    sem_wait(&follower_readers_mutex);
+    followers_readers_count--;
+    if(followers_readers_count == 0)
+        sem_post(&write_followers_semaphore);
+    sem_post(&follower_readers_mutex);
+
+    return followed_list;
 }
 
 int ProfileSessionManager::write_follower(std::string follower, std::string followed)
@@ -170,6 +211,7 @@ int ProfileSessionManager::write_follower(std::string follower, std::string foll
     {
         cout << "I am here!!!!" << NEW_LINE;
         followers_map[follower].push_back(followed);
+        followed_by_map[followed].push_back(follower);
     }
 
 

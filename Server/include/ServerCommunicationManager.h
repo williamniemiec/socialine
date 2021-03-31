@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 
 #include "../include/TaskManager.h"
+#include "../../Utils/Types.h"
 
 typedef struct __client_session {
     std::string session_id;
@@ -24,11 +25,10 @@ typedef struct __client_session {
 
 
 class ServerCommunicationManager {
-    TaskManager taskManager;
     static std::unordered_map<std::string, client_session> client_sessions;
 public:
     static void start( );
-    static void sendNotification(std::string session_id, std::string message);
+    static void sendNotification(std::string session_id, notification current_notification);
 private:
 
     static void sendNotification(std::string receiver_ip, std::string receiver_port, std::string session_id, std::string message);

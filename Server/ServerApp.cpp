@@ -4,7 +4,6 @@
 
 
 #include "include/ServerCommunicationManager.h"
-#include "../Utils/Types.h"
 
 #include <iostream>
 #include <vector>

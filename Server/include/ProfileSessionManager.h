@@ -16,7 +16,12 @@ class ProfileSessionManager {
 
     std::unordered_map<std::string, std::vector<std::string>> sessions_map;
     std::unordered_map<std::string, std::vector<std::string>> followers_map;
+    std::unordered_map<std::string, std::vector<std::string>> followed_by_map;
+
     sem_t write_session_semaphore;
+    sem_t session_readers_mutex;
+    int session_readers_count;
+
     sem_t write_followers_semaphore;
     sem_t follower_readers_mutex;
     int followers_readers_count;
@@ -28,19 +33,15 @@ public:
 
         followers_map = myFileManager.read_profiles_file();
 
+        //ToDo: Remove cout
         std::cout << "Followers map size is: " << followers_map.size() << '\n';
-        std::cout << "@karine is following these accounts:" << '\n';
-        //ToDo: remove prints
-        for(int i = 0; i < followers_map["@karine"].size(); i++ )
-        {
-            std::cout <<  followers_map["@karine"][i] << ' ';
-        }
-        std::cout << '\n';
 
         sem_init(&write_session_semaphore, 1, 1);
+        sem_init(&session_readers_mutex, 1, 1);
+        session_readers_count = 0;
+
         sem_init(&write_followers_semaphore, 1, 1);
         sem_init(&follower_readers_mutex, 1, 1);
-
         followers_readers_count = 0;
 
     }
@@ -48,11 +49,13 @@ public:
     int login( std::string username, std::string session_id );
     int logout( std::string username, std::string session_id );
     int follow( std::string follower, std::string followed );
+    std::vector<std::string> read_followers(std::string username);
+    std::vector<std::string> read_followed(std::string username);
+    std::vector<std::string> read_open_sessions(std::string username);
 
 private:
     int open_session(std::string username, std::string session_id);
     void close_session(std::string username, std::string session_id);
-    std::vector<std::string> read_followers(std::string username);
     int write_follower(std::string follower, std::string followed);
 
 };

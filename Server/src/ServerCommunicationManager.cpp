@@ -2,7 +2,6 @@
 // Created by Farias, Karine on 3/17/21.
 //
 
-#include "../../Utils/Types.h"
 #include "../include/ServerCommunicationManager.h"
 
 #include <iostream>
@@ -97,8 +96,9 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     if(received_packet.cookie == NO_COOKIE)
         cookie = makeCookie(cli_addr);
 
-    // CALLBACK METHOD TO HANDLE COMMAND EXECUTION
-    response_code = taskManager.run_command(received_packet.type, std::string(received_packet._payload.c_str()), cookie); // enviar IP e porta.
+
+    std::string arguments = std::to_string( received_packet.timestamp ) + '\n' + received_packet._payload;
+    response_code = taskManager.run_command(received_packet.type, arguments , cookie); // enviar IP e porta.
 
     int type;
     std::string message;
@@ -193,9 +193,12 @@ std::string ServerCommunicationManager::random_string( size_t length )
 }
 
 std::unordered_map<std::string, client_session> client_sessions;
-void ServerCommunicationManager::sendNotification(std::string session_id, std::string message) {
+void ServerCommunicationManager::sendNotification(std::string session_id, notification current_notification) {
     client_session session = ServerCommunicationManager::client_sessions[session_id];
-    sendNotification(session.ip, session.notification_port, session_id, message);
+
+    std::string payload = current_notification.owner + '\n' + std::to_string( current_notification.timestamp ) + '\n' + current_notification._message + '\n';
+
+    sendNotification(session.ip, session.notification_port, session_id, payload);
 }
 
 void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::string receiver_port, std::string session_id, std::string message) {
