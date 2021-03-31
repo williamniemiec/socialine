@@ -8,6 +8,9 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <cstring>
 
 #define MAX_ARGS 10
 #define NEW_LINE '\n'

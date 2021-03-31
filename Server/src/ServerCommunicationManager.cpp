@@ -8,6 +8,8 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>
+#include <csignal>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>

@@ -4,7 +4,7 @@ HEADER	= ../Utils/Types.h ../Utils/StringUtils.h include/FileManager.h include/S
 OUT	= app_server.out
 CC	 = g++
 FLAGS	 = -g -c -Wno-deprecated-declarations -Wall
-LFLAGS	 =
+LFLAGS	 = -pthread
 
 all: $(OBJS)
 	$(CC) -g $(OBJS) -o $(OUT) $(LFLAGS) -std=c++17

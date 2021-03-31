@@ -2,7 +2,9 @@
 // Created by Farias, Karine on 3/17/21.
 //
 
-#include "../include/ClientCommunicationManager.h"
+#include "services/ClientCommunicationManager.h"
+#include "models/ClientNotificationManager.h"
+#include "../../Utils/StringUtils.hpp"
 #include "../../Utils/Types.h"
 #include <iostream>
 #include <unistd.h>
@@ -217,7 +219,15 @@ void ClientCommunicationManager::listen_notifications(std::string *listen_notifi
             received_packet.print("[Notification Service] RECEIVED");
 
             // TODO: Chamar método que exibe a mensagem (formato do _payload é: "autor + '\n' + timestamp + '\n' + mensagem + '\n');
+            std::vector<std::string> fields = utils::StringUtils::split(received_packet._payload, "\n");
 
+            ClientNotificationManager* notificationManager = new ClientNotificationManager();
+            notificationManager->receive_notification(
+                fields[0], 
+                static_cast<uint32_t>(std::stoul(fields[1])), 
+                fields[2]
+            );
+            
         }
 
         close(notification_socket);
