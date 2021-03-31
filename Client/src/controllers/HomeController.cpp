@@ -21,10 +21,11 @@ using namespace views;
 models::manager::ClientConsoleManager* HomeController::consoleManager =
         new manager::ClientConsoleManager();
 models::manager::ClientNotificationManager* HomeController::notificationManager =
-        new manager::ClientNotificationManager();
+        models::manager::ClientNotificationManager::get_instance();
 ClientCommunicationManager* HomeController::communicationManager =
         new ClientCommunicationManager();
 std::string HomeController::command;
+views::IView* HomeController::homeView;
 
 
 //-------------------------------------------------------------------------
@@ -33,6 +34,10 @@ std::string HomeController::command;
 HomeController::HomeController(std::string username)
 {
     this->user = new User(username);
+    
+    homeView = new HomeView(this, user, 0);
+    notificationManager->attach(homeView);
+    consoleManager->attach(homeView);
 
     onShutdown();
 }
@@ -59,13 +64,11 @@ bool HomeController::OnInit()
 
 void HomeController::buildHomeView()
 {
-    homeView = new HomeView(this, user, 0);
+    
     homeView->render();
-
-    notificationManager->attach(homeView);
+    
     //notificationManager->fetch_notifications();
-
-    consoleManager->attach(homeView);
+    
     consoleManager->welcomeMessage(user->getUsername());
 }
 

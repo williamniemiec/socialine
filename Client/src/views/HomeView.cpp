@@ -13,6 +13,7 @@
 #include "../../../Utils/StringUtils.hpp"
 #include "../../include/views/HomeView.hpp"
 #include "../../include/services/ClientCommunicationManager.h"
+#include "../../include/models/manager/ClientNotificationManager.h"
 #include "../../include/models/manager/ClientConsoleManager.hpp"
 
 using namespace views;

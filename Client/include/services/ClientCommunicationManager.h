@@ -11,9 +11,16 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ctime>
+#include <thread>
+#include <unistd.h>
+#include "../../include/models/manager/ClientNotificationManager.h"
 
 class ClientCommunicationManager {
     static std::string username, server, door, session_cookie;
+    static int notification_socket;
+    static socklen_t clilen;
+    static models::manager::ClientNotificationManager* notificationManager;
+
 public:
     int establish_connection(std::string username, std::string server , std::string door );
     int follow(std::string followed);
@@ -26,6 +33,7 @@ private:
     void buildPacket(uint16_t type, uint16_t seqn, std::string message, struct __packet *packet);
     int sendPacket(struct __packet *packet);
     uint16_t getTimestamp();
+    static void* thread_listen_notif(void* arg);
 };
 
 

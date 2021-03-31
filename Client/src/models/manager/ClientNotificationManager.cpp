@@ -1,5 +1,6 @@
 #include <cstring>
 #include "../../../include/models/manager/ClientNotificationManager.h"
+#include "../../../include/views/HomeView.hpp"
 
 using namespace models::manager;
 
@@ -7,6 +8,17 @@ using namespace models::manager;
 //      Attributes
 //-------------------------------------------------------------------------
 std::list<models::IObserver*> ClientNotificationManager::observers;
+std::list<std::string>* ClientNotificationManager::notifications;
+ClientNotificationManager* ClientNotificationManager::instance;
+views::HomeView* homeview;
+
+
+//-------------------------------------------------------------------------
+//      Constructor
+//-------------------------------------------------------------------------
+ClientNotificationManager::ClientNotificationManager()
+{
+}
 
 
 //-------------------------------------------------------------------------
@@ -15,6 +27,9 @@ std::list<models::IObserver*> ClientNotificationManager::observers;
 void ClientNotificationManager::attach(models::IObserver* observer)
 {
     observers.push_back(observer);
+    std::cout << observers.size() << std::endl;
+
+    homeview = dynamic_cast<views::HomeView*>(observer);
 }
 
 void ClientNotificationManager::detatch(models::IObserver* observer)
@@ -24,10 +39,13 @@ void ClientNotificationManager::detatch(models::IObserver* observer)
 
 void ClientNotificationManager::notify_observers()
 {
+
     for (models::IObserver* observer : observers)
     {
         observer->update(this, *notifications);
     }
+    // TODO refactor
+    //homeview->update(this, *notifications);
 }
 
 /*
@@ -51,8 +69,17 @@ void ClientNotificationManager::receive_notification(std::string username, uint3
     std::list<std::string> bufferNotifications;
 
     bufferNotifications.push_back((new Notification(username, timestamp, message))->to_string());
-
     notifications = &bufferNotifications;
 
+    //views::HomeView::receive_notification((new Notification(username, timestamp, message))->to_string());
+
     notify_observers();
+}
+
+ClientNotificationManager* ClientNotificationManager::get_instance()
+{
+    if (instance == nullptr)
+        instance = new ClientNotificationManager();
+
+    return instance;
 }

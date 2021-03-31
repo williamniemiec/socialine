@@ -18,7 +18,7 @@ namespace controllers
     //      Attributes
     //-------------------------------------------------------------------------
     private:
-        views::IView* homeView;
+        static views::IView* homeView;
         models::User* user;
         static ClientCommunicationManager* communicationManager;
         static models::manager::ClientNotificationManager* notificationManager;

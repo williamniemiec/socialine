@@ -1,32 +1,32 @@
 OBJS	= 	ClientApp.o\
-			HomeController.o\
-			InvalidCredentialsException.o\
-			HomeView.o\
-			ArgumentValidator.o\
-			CLIAuthenticator.o\
-			CommandBuilder.o\
-			CommandParser.o\
-			ClientCommunicationManager.o\
-			ClientConsoleManager.o\
-			ClientNotificationManager.o\
-			MessageHandler.o\
-			Notification.o\
-			User.o\
-			StringUtils.o
+		HomeController.o\
+		InvalidCredentialsException.o\
+		HomeView.o\
+		ArgumentValidator.o\
+		CLIAuthenticator.o\
+		CommandBuilder.o\
+		CommandParser.o\
+		ClientCommunicationManager.o\
+		ClientConsoleManager.o\
+		ClientNotificationManager.o\
+		MessageHandler.o\
+		Notification.o\
+		User.o\
+		StringUtils.o
 SOURCE	= 	ClientApp.cpp\
-			src/controllers/HomeController.cpp\
-			src/exceptions/InvalidCredentialsException.cpp\
-			src/models/auth/CLIAuthenticator.cpp\
-			src/models/command/CommandBuilder.cpp\
-			src/models/command/CommandParser.cpp\
-			src/models/data/ArgumentValidator.cpp\
-			src/models/manager/ClientCommunicationManager.cpp\
-			src/models/manager/ClientConsoleManager.cpp\
-			src/models/manager/ClientNotificationManager.cpp\
-			src/models/MessageHandler.cpp\
-			src/models/Notification.cpp\
-			src/models/User.cpp\
-			src/views/HomeView.cpp\
+		src/controllers/HomeController.cpp\
+		src/exceptions/InvalidCredentialsException.cpp\
+		src/models/auth/CLIAuthenticator.cpp\
+		src/models/command/CommandBuilder.cpp\
+		src/models/command/CommandParser.cpp\
+		src/models/data/ArgumentValidator.cpp\
+		src/models/manager/ClientCommunicationManager.cpp\
+		src/models/manager/ClientConsoleManager.cpp\
+		src/models/manager/ClientNotificationManager.cpp\
+		src/models/MessageHandler.cpp\
+		src/models/Notification.cpp\
+		src/models/User.cpp\
+		src/views/HomeView.cpp\
 HEADER	= 	../Utils/Types.h\
 			../Utils/StringUtils.hpp 
 OUT	= app_cliente.out
