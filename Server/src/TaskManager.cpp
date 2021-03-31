@@ -5,7 +5,6 @@
 #include "../include/TaskManager.h"
 #include "../include/ProfileSessionManager.h"
 #include "../../Utils/Types.h"
-#include "../include/Globals.h"
 
 using namespace std;
 
@@ -61,7 +60,7 @@ int TaskManager::run_command(int type, string payload, string session_id )
             break;
         case CMD_TWEET:
             cout << "Hi! This is the task Manager running command TWEET" << NEW_LINE;
-            notificationManager.tweet( );
+            //notificationManager.tweet( );
             break;
         default:
             cout << "Oops! Something went wrong!" << NEW_LINE;

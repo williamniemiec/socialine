@@ -25,7 +25,6 @@ typedef struct __client_session {
 
 
 class ServerCommunicationManager {
-    TaskManager taskManager;
     static std::unordered_map<std::string, client_session> client_sessions;
 public:
     static void start( );
