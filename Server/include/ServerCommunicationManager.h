@@ -12,6 +12,7 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <algorithm>
 
 #include "../include/TaskManager.h"
 #include "../../Utils/Types.h"

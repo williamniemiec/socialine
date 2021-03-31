@@ -7,6 +7,8 @@
 
 #include <vector>
 #include <unordered_map>
+#include <arpa/inet.h>
+#include <cstring>
 
 class FileManager {
 
