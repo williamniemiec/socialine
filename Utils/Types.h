@@ -4,7 +4,6 @@
 
 #ifndef CLIENT_APP_TYPES_H
 #define CLIENT_APP_TYPES_H
-#endif //CLIENT_APP_TYPES_H
 
 #include <cstdint>
 #include <vector>
@@ -114,9 +113,10 @@ typedef struct __packet{
 } packet;
 
 typedef struct __notification{
-    uint32_t id;            //Notification ID
-    uint32_t timestamp;     //Notification timestamp
-    const char* _message;   //Message data
-    uint16_t length;        //Message size
-    uint16_t pending;       //Number of pending readers
+    std::string owner;   //Receiver session ID
+    uint32_t timestamp;  //Notification timestamp
+    std::string _message;     //Message data
 } notification;
+
+
+#endif //CLIENT_APP_TYPES_H
