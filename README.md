@@ -9,7 +9,7 @@
 ```
 cd Client
 make
-make run p1 = <primeiro parametro que quiserem passar> p2 = < segundo parametro que quiserem passar> ..... (por enquanto nosso make file aceita apenas 5 parametros p1 até p5)
+make run user=@<username> server=<ip> port=<port>
 ```
 
 ### Server
@@ -17,6 +17,14 @@ make run p1 = <primeiro parametro que quiserem passar> p2 = < segundo parametro 
 cd Server
 make
 make run
+```
+
+## ⚠ Requirements
+#### wxWidgets
+```
+sudo apt-add-repository universe
+sudo apt-get update
+sudo apt-get install libwxbase3.0-dev libwxgtk3.0-dev
 ```
 
 ## 📁 Files
