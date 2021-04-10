@@ -85,5 +85,13 @@ StringUtils.o: ../Utils/StringUtils.cpp
 clean:
 	rm -f $(OBJS) $(OUT)
 
+wx-mac:
+	brew install wxmac --dev --use-llvm
+
+wx-ubuntu:
+	sudo apt-add-repository universe
+	sudo apt-get update
+	sudo apt-get install libwxbase3.0-dev libwxgtk3.0-dev
+
 run: $(OUT)
 	./$(OUT) $(user) $(server) $(port) 
