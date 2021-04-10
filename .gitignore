@@ -16,11 +16,14 @@
 obj/
 bin/
 
-#MacOS Files
+# MacOS Files
 .DS_Store
 
-#CLion Files
+# CLion Files
 .idea/
+
+# Visual code files
+.vscode
 
 # CMake
 *cmake-build-*/
