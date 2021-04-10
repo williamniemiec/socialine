@@ -21,11 +21,11 @@ make run
 
 ## ⚠ Requirements
 #### wxWidgets
-```
-sudo apt-add-repository universe
-sudo apt-get update
-sudo apt-get install libwxbase3.0-dev libwxgtk3.0-dev
-```
+|        OS        |Make command|
+|----------------|-------------------------------|
+|Ubuntu |`make wx-ubuntu`|
+|MacOS |`make wx-mac`|
+|Windows| 😥 |
 
 ## 📁 Files
 
