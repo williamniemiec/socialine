@@ -105,11 +105,7 @@ StringUtils.o: ../Utils/StringUtils.cpp
 clean:
 	rm -f $(OBJS) $(OUT)
 
-<<<<<<< HEAD
-wx-brew:
-=======
 wx-mac:
->>>>>>> 46ed9a2d937d10b2e636462a13ba84ecdd2e8b31
 	brew install wxmac --dev --use-llvm
 
 wx-ubuntu:
