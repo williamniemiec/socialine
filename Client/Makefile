@@ -106,7 +106,7 @@ clean:
 	rm -f $(OBJS) $(OUT)
 
 wx-mac:
-	brew install wxmac --use-llvm
+	brew install wxmac
 
 wx-ubuntu:
 	sudo apt-add-repository universe
