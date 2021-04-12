@@ -9,19 +9,33 @@
   <a href="https://github.com/williamniemiec/socialine/blob/master/LICENCE"><img src="https://img.shields.io/badge/Licence-BSD0-919191.svg" alt="Licence"></a>
 
 ## ❓ How to use
-### Client
 
+#### Client
 ```
 cd Client
 make
 make run user=@<username> server=<ip> port=<port>
 ```
 
-### Server
+#### Client - debug mode
+```
+cd Client
+make
+make run user=@<username> server=<ip> port=<port> debug=true
+```
+
+#### Server
 ```
 cd Server
 make
 make run
+```
+
+#### Server - debug mode
+```
+cd Server
+make
+make run debug=true
 ```
 
 ## ⚠ Requirements
