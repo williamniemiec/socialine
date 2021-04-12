@@ -2,6 +2,11 @@
 
 <h1 align='center'>socialine</h1>
 <p align='center'>News feed style notification service, similar to Twitter.</p>
+<p align="center">
+	<a href="https://github.com/williamniemiec/socialine/actions/workflows/macos.yml"><img src="https://github.com/williamniemiec/socialine/actions/workflows/macos.yml/badge.svg" alt=""></a>
+	<a href="https://github.com/williamniemiec/socialine/actions/workflows/ubuntu.yml"><img src="https://github.com/williamniemiec/socialine/actions/workflows/ubuntu.yml/badge.svg" alt=""></a>
+	<a href="https://docs.microsoft.com/en-us/cpp/"><img src="https://img.shields.io/badge/C++-17+-D0008F.svg" alt="Cpp compatibility"></a>
+  <a href="https://github.com/williamniemiec/socialine/blob/master/LICENCE"><img src="https://img.shields.io/badge/Licence-BSD0-919191.svg" alt="Licence"></a>
 
 ## ❓ How to use
 ### Client
