@@ -17,3 +17,12 @@ jobs:
     - name: make client
       run: make -C Client/
       
+  build_server:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: make -C Server/
+    - name: make server
+      run: make -C Server/
