@@ -29,14 +29,14 @@ namespace models::auth
     public:
         virtual void login();
     private:
-        void doLogin();
-        bool wasLoginSuccessful();
+        void do_login();
+        bool was_login_successful();
 
 
     //-------------------------------------------------------------------------
     //      Getters
     //-------------------------------------------------------------------------
     public:
-        virtual std::string getUsername();
+        virtual std::string get_username();
     };
 }

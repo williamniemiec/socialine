@@ -15,7 +15,7 @@ User::User(std::string username)
 //-------------------------------------------------------------------------
 //      Getters
 //-------------------------------------------------------------------------
-std::string User::getUsername()
+std::string User::get_username()
 {
     return this->username;
 }

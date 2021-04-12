@@ -23,15 +23,15 @@ void CLIAuthenticator::login()
 {
     std::cout << "Logging in..." << std::endl;
 
-    doLogin();
+    do_login();
 
-    if (!wasLoginSuccessful())
+    if (!was_login_successful())
         throw exceptions::InvalidCredentialsException("Incorrect credentials");
 
     std::cout << "Logged!" << std::endl;
 }
 
-void CLIAuthenticator::doLogin()
+void CLIAuthenticator::do_login()
 {
     app_command loginCommand = models::command::CommandParser::parse(argc, argv);
     ClientCommunicationManager communicationModule;
@@ -45,7 +45,7 @@ void CLIAuthenticator::doLogin()
     this->username = loginCommand.arguments[0];
 }
 
-bool CLIAuthenticator::wasLoginSuccessful()
+bool CLIAuthenticator::was_login_successful()
 {
     return (authResponseCode == 0);
 }
@@ -54,7 +54,7 @@ bool CLIAuthenticator::wasLoginSuccessful()
 //-------------------------------------------------------------------------
 //      Getters
 //-------------------------------------------------------------------------
-std::string CLIAuthenticator::getUsername()
+std::string CLIAuthenticator::get_username()
 {
     return username;
 }

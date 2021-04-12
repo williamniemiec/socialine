@@ -13,21 +13,21 @@ Notification::Notification(notification n)
 {
     username = n.owner;
     message = n._message;
-    date = getDateFromNotification(n.timestamp);
+    date = get_date_from_notification(n.timestamp);
 }
 
 Notification::Notification(std::string username, uint32_t timestamp, std::string message)
 {
     this->username = username;
     this->message = message;
-    date = getDateFromNotification(timestamp);
+    date = get_date_from_notification(timestamp);
 }
 
 
 //-------------------------------------------------------------------------
 //      Methods
 //-------------------------------------------------------------------------
-std::string Notification::getDateFromNotification(uint32_t rawtime)
+std::string Notification::get_date_from_notification(uint32_t rawtime)
 {
     time_t t = rawtime;
     struct tm timeinfo = *localtime(&t);
@@ -70,26 +70,26 @@ std::string Notification::getDateFromNotification(uint32_t rawtime)
 
 std::string Notification::to_string()
 {
-    return  "[ " + getUsername() + " ]"
-            + "  { " + getDate() + " }"
-            + " " + getMessage();
+    return  "[ " + get_username() + " ]"
+            + "  { " + get_date() + " }"
+            + " " + get_message();
 }
 
 
 //-------------------------------------------------------------------------
 //      Getters
 //-------------------------------------------------------------------------
-std::string Notification::getUsername()
+std::string Notification::get_username()
 {
     return username;
 }
 
-std::string Notification::getMessage()
+std::string Notification::get_message()
 {
     return message;
 }
 
-std::string Notification::getDate()
+std::string Notification::get_date()
 {
     return date;
 }

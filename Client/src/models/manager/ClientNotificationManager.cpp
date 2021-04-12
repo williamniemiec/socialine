@@ -44,25 +44,7 @@ void ClientNotificationManager::notify_observers()
     {
         observer->update(this, *notifications);
     }
-    // TODO refactor
-    //homeview->update(this, *notifications);
 }
-
-/*
-void ClientNotificationManager::fetch_notifications()
-{
-    std::list<std::string> bufferNotifications;
-
-    for (notification n : communicationManager->getNotifications())
-    {
-        bufferNotifications.push_back((new Notification(n))->to_string());
-    }
-
-    notifications = &bufferNotifications;
-
-    notify_observers();
-}
-*/
 
 void ClientNotificationManager::receive_notification(std::string username, uint32_t timestamp, std::string message)
 {
@@ -70,8 +52,6 @@ void ClientNotificationManager::receive_notification(std::string username, uint3
 
     bufferNotifications.push_back((new Notification(username, timestamp, message))->to_string());
     notifications = &bufferNotifications;
-
-    //views::HomeView::receive_notification((new Notification(username, timestamp, message))->to_string());
 
     notify_observers();
 }

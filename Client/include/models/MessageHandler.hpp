@@ -23,7 +23,7 @@ namespace models
     //      Methods
     //-------------------------------------------------------------------------
     public:
-        static std::string fromCode(int code);
+        static std::string from_code(int code);
     private:
         static std::map<int, std::string> create_map();
     };

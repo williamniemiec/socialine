@@ -3,7 +3,7 @@ SOURCE	= ServerApp.cpp ../Utils/StringUtils.cpp FileManager.cpp src/ServerNotifi
 HEADER	= ../Utils/Types.h ../Utils/StringUtils.h include/FileManager.h include/ServerNotificationManager.h include/ProfileSessionManager.h include/TaskManager.h include/ServerCommunicationManager.h
 OUT	= app_server.out
 CC	 = g++
-FLAGS	 = -g -c -Wno-deprecated-declarations -Wall
+FLAGS	 = -g -c -Wno-deprecated-declarations
 LFLAGS	 = -pthread
 
 all: $(OBJS)

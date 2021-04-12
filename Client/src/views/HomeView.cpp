@@ -99,15 +99,15 @@ void HomeView::update(IObservable* observable, std::list<std::string> data)
 
 void HomeView::render()
 {
-    buildWindow();
-    buildIcon();
-    buildHeader();
-    buildBody();
-    buildMenuBar();
-    onClose();
+    build_window();
+    build_icon();
+    build_header();
+    build_body();
+    build_menu_bar();
+    on_close();
 }
 
-void HomeView::buildWindow()
+void HomeView::build_window()
 {
     Create(
             parent,
@@ -124,25 +124,25 @@ void HomeView::buildWindow()
     SetMaxSize(wxSize(WIDTH,HEIGHT));
 }
 
-void HomeView::buildIcon()
+void HomeView::build_icon()
 {
     wxIcon FrameIcon;
     FrameIcon.CopyFromBitmap(wxBitmap(wxImage(_T("src/assets/icon/socialine-icon.ico"))));
     SetIcon(FrameIcon);
 }
 
-void HomeView::buildHeader()
+void HomeView::build_header()
 {
-    wxPanel* pnlHeader = buildHeaderPanel();
-    buildHeaderBackground(pnlHeader);
+    wxPanel* pnlHeader = build_header_panel();
+    build_header_background(pnlHeader);
 }
 
-void HomeView::buildHeaderBackground(wxPanel* panel)
+void HomeView::build_header_background(wxPanel* panel)
 {
     new wxStaticBitmap(
             panel,
             ID_HEADER_IMG,
-            wxBitmap(buildHeaderImage()),
+            wxBitmap(build_header_image()),
             wxPoint(0,0),
             wxSize(WIDTH,HEADER_HEIGHT),
             wxSIMPLE_BORDER,
@@ -150,7 +150,7 @@ void HomeView::buildHeaderBackground(wxPanel* panel)
     );
 }
 
-wxPanel* HomeView::buildHeaderPanel()
+wxPanel* HomeView::build_header_panel()
 {
     return new wxPanel(
             this,
@@ -162,7 +162,7 @@ wxPanel* HomeView::buildHeaderPanel()
     );
 }
 
-wxBitmap HomeView::buildHeaderImage()
+wxBitmap HomeView::build_header_image()
 {
     return wxImage(_T("src/assets/header/socialine-header-700x80.png")).Rescale(
             wxSize(WIDTH, HEADER_HEIGHT).GetWidth(),
@@ -170,16 +170,16 @@ wxBitmap HomeView::buildHeaderImage()
     );
 }
 
-void HomeView::buildBody()
+void HomeView::build_body()
 {
-    buildBodyPanel();
-    buildNotificationsArea();
-    buildConsoleArea();
-    buildSendArea();
-    renderBody();
+    build_body_panel();
+    build_notifications_area();
+    build_console_area();
+    build_send_area();
+    render_body();
 }
 
-void HomeView::buildBodyPanel()
+void HomeView::build_body_panel()
 {
     pnlMain = new wxPanel(
             this,
@@ -193,20 +193,20 @@ void HomeView::buildBodyPanel()
     flexGridSizerMain = new wxFlexGridSizer(5, 2, 0, 0);
 }
 
-void HomeView::buildNotificationsArea()
+void HomeView::build_notifications_area()
 {
-    buildNotificationsTitle();
-    buildNotificationsBody();
+    build_notifications_title();
+    build_notifications_body();
 }
 
-void HomeView::buildNotificationsTitle()
+void HomeView::build_notifications_title()
 {
-    wxPanel* pnlNotificationsTitle = buildNotificationsTitlePanel();
-    buildNotificationsLabel(pnlNotificationsTitle);
-    renderNotificationsTitle(pnlNotificationsTitle);
+    wxPanel* pnlNotificationsTitle = build_notifications_title_panel();
+    build_notifications_label(pnlNotificationsTitle);
+    render_notifications_title(pnlNotificationsTitle);
 }
 
-void HomeView::buildNotificationsLabel(wxPanel* panel)
+void HomeView::build_notifications_label(wxPanel* panel)
 {
     new wxStaticText(
             panel,
@@ -219,7 +219,7 @@ void HomeView::buildNotificationsLabel(wxPanel* panel)
      );
 }
 
-wxPanel* HomeView::buildNotificationsTitlePanel()
+wxPanel* HomeView::build_notifications_title_panel()
 {
     return new wxPanel(
             pnlMain,
@@ -231,7 +231,7 @@ wxPanel* HomeView::buildNotificationsTitlePanel()
     );
 }
 
-void HomeView::renderNotificationsTitle(wxPanel* panel)
+void HomeView::render_notifications_title(wxPanel* panel)
 {
     flexGridSizerMain->Add(
             panel,
@@ -249,14 +249,14 @@ void HomeView::renderNotificationsTitle(wxPanel* panel)
     );
 }
 
-void HomeView::buildNotificationsBody()
+void HomeView::build_notifications_body()
 {
-    wxPanel* pnlNotificationsBody = buildNotificationsBodyPanel();
-    buildNotificationsList(pnlNotificationsBody);
-    renderNotificationsBody(pnlNotificationsBody);
+    wxPanel* pnlNotificationsBody = build_notifications_body_panel();
+    build_notifications_list(pnlNotificationsBody);
+    render_notifications_body(pnlNotificationsBody);
 }
 
-wxPanel* HomeView::buildNotificationsBodyPanel()
+wxPanel* HomeView::build_notifications_body_panel()
 {
     return new wxPanel(
             pnlMain,
@@ -268,7 +268,7 @@ wxPanel* HomeView::buildNotificationsBodyPanel()
     );
 }
 
-void HomeView::buildNotificationsList(wxPanel* panel)
+void HomeView::build_notifications_list(wxPanel* panel)
 {
     notificationsList = new wxListBox(
             panel,
@@ -283,7 +283,7 @@ void HomeView::buildNotificationsList(wxPanel* panel)
     );
 }
 
-void HomeView::renderNotificationsBody(wxPanel* panel)
+void HomeView::render_notifications_body(wxPanel* panel)
 {
     flexGridSizerMain->Add(
             panel,
@@ -301,20 +301,20 @@ void HomeView::renderNotificationsBody(wxPanel* panel)
     );
 }
 
-void HomeView::buildConsoleArea()
+void HomeView::build_console_area()
 {
-    buildConsoleTitle();
-    buildConsoleBody();
+    build_console_title();
+    build_console_body();
 }
 
-void HomeView::buildConsoleTitle()
+void HomeView::build_console_title()
 {
-    wxPanel* pnlConsoleTitlePanel = buildConsoleTitlePanel();
-    buildConsoleTitleLabel(pnlConsoleTitlePanel);
-    renderConsoleTitle(pnlConsoleTitlePanel);
+    wxPanel* pnlConsoleTitlePanel = build_console_title_panel();
+    build_console_title_label(pnlConsoleTitlePanel);
+    render_console_title(pnlConsoleTitlePanel);
 }
 
-wxPanel* HomeView::buildConsoleTitlePanel()
+wxPanel* HomeView::build_console_title_panel()
 {
     return new wxPanel(
             pnlMain,
@@ -326,7 +326,7 @@ wxPanel* HomeView::buildConsoleTitlePanel()
     );
 }
 
-void HomeView::buildConsoleTitleLabel(wxPanel* panel)
+void HomeView::build_console_title_label(wxPanel* panel)
 {
     new wxStaticText(
             panel,
@@ -339,7 +339,7 @@ void HomeView::buildConsoleTitleLabel(wxPanel* panel)
      );
 }
 
-void HomeView::renderConsoleTitle(wxPanel* panel)
+void HomeView::render_console_title(wxPanel* panel)
 {
     flexGridSizerMain->Add(
             panel,
@@ -357,14 +357,14 @@ void HomeView::renderConsoleTitle(wxPanel* panel)
     );
 }
 
-void HomeView::buildConsoleBody()
+void HomeView::build_console_body()
 {
-    wxPanel* pnlConsoleBody = buildConsoleBodyPanel();
-    buildConsoleList(pnlConsoleBody);
-    renderConsoleBody(pnlConsoleBody);
+    wxPanel* pnlConsoleBody = build_console_body_panel();
+    build_console_list(pnlConsoleBody);
+    render_console_body(pnlConsoleBody);
 }
 
-wxPanel* HomeView::buildConsoleBodyPanel()
+wxPanel* HomeView::build_console_body_panel()
 {
     return new wxPanel(
             pnlMain,
@@ -376,7 +376,7 @@ wxPanel* HomeView::buildConsoleBodyPanel()
     );
 }
 
-void HomeView::buildConsoleList(wxPanel* panel)
+void HomeView::build_console_list(wxPanel* panel)
 {
     consoleList = new wxListBox(
             panel,
@@ -391,7 +391,7 @@ void HomeView::buildConsoleList(wxPanel* panel)
     );
 }
 
-void HomeView::renderConsoleBody(wxPanel* panel)
+void HomeView::render_console_body(wxPanel* panel)
 {
     flexGridSizerMain->Add(
             panel,
@@ -409,16 +409,16 @@ void HomeView::renderConsoleBody(wxPanel* panel)
     );
 }
 
-void HomeView::buildSendArea()
+void HomeView::build_send_area()
 {
-    wxPanel* pnlSendArea = buildSendAreaPanel();
-    buildInputMessage(pnlSendArea);
-    buildSendMessageButton(pnlSendArea);
+    wxPanel* pnlSendArea = build_send_area_panel();
+    build_input_message(pnlSendArea);
+    build_send_message_button(pnlSendArea);
 
-    renderSendArea(pnlSendArea);
+    render_send_area(pnlSendArea);
 }
 
-wxPanel* HomeView::buildSendAreaPanel()
+wxPanel* HomeView::build_send_area_panel()
 {
     return new wxPanel(
             pnlMain,
@@ -430,7 +430,7 @@ wxPanel* HomeView::buildSendAreaPanel()
     );
 }
 
-void HomeView::buildInputMessage(wxPanel* panel)
+void HomeView::build_input_message(wxPanel* panel)
 {
     inMessage = new wxTextCtrl(
             panel,
@@ -446,7 +446,7 @@ void HomeView::buildInputMessage(wxPanel* panel)
     inMessage->SetHint("Message");
 }
 
-void HomeView::buildSendMessageButton(wxPanel* panel)
+void HomeView::build_send_message_button(wxPanel* panel)
 {
     new wxButton(
             panel,
@@ -466,7 +466,7 @@ void HomeView::buildSendMessageButton(wxPanel* panel)
     );
 }
 
-void HomeView::renderSendArea(wxPanel* panel)
+void HomeView::render_send_area(wxPanel* panel)
 {
     flexGridSizerMain->Add(
             panel,
@@ -476,33 +476,33 @@ void HomeView::renderSendArea(wxPanel* panel)
     );
 }
 
-void HomeView::renderBody()
+void HomeView::render_body()
 {
     pnlMain->SetSizer(flexGridSizerMain);
     SetSizer(flexGridSizerMain);
     Layout();
 }
 
-void HomeView::buildMenuBar()
+void HomeView::build_menu_bar()
 {
     wxMenuBar* menuBar = new wxMenuBar();
 
-    buildFileDropDownMenu(menuBar);
-    buildActionsDropDownMenu(menuBar);
-    buildHelpDropDownMenu(menuBar);
-    renderMenuBar(menuBar);
+    build_file_drop_down_menu(menuBar);
+    build_actions_drop_down_menu(menuBar);
+    build_help_drop_down_menu(menuBar);
+    render_menu_bar(menuBar);
 }
 
-void HomeView::buildFileDropDownMenu(wxMenuBar* menuBar)
+void HomeView::build_file_drop_down_menu(wxMenuBar* menuBar)
 {
     wxMenu* fileMenu = new wxMenu();
 
-    buildQuitMenuItem(fileMenu);
+    build_quit_menu_item(fileMenu);
 
     menuBar->Append(fileMenu, _("&File"));
 }
 
-void HomeView::buildQuitMenuItem(wxMenu* menu)
+void HomeView::build_quit_menu_item(wxMenu* menu)
 {
     wxMenuItem* quitMenuItem = new wxMenuItem(
             menu,
@@ -521,16 +521,16 @@ void HomeView::buildQuitMenuItem(wxMenu* menu)
     menu->Append(quitMenuItem);
 }
 
-void HomeView::buildActionsDropDownMenu(wxMenuBar* menuBar)
+void HomeView::build_actions_drop_down_menu(wxMenuBar* menuBar)
 {
     wxMenu* actionsMenu = new wxMenu();
 
-    buildActionsMenuItem(actionsMenu);
+    build_actions_menu_item(actionsMenu);
 
     menuBar->Append(actionsMenu, _("Actions"));
 }
 
-void HomeView::buildActionsMenuItem(wxMenu* menu)
+void HomeView::build_actions_menu_item(wxMenu* menu)
 {
     wxMenuItem* followMenuItem = new wxMenuItem(
             menu,
@@ -540,7 +540,7 @@ void HomeView::buildActionsMenuItem(wxMenu* menu)
             wxITEM_NORMAL
     );
 
-    buildFollowUserDialog();
+    build_follow_user_dialog();
 
     Connect(
             ID_MENU_FOLLOW,
@@ -551,7 +551,7 @@ void HomeView::buildActionsMenuItem(wxMenu* menu)
     menu->Append(followMenuItem);
 }
 
-void HomeView::buildFollowUserDialog()
+void HomeView::build_follow_user_dialog()
 {
     dgFollowUsername = new wxTextEntryDialog(
             this,
@@ -563,16 +563,16 @@ void HomeView::buildFollowUserDialog()
     );
 }
 
-void HomeView::buildHelpDropDownMenu(wxMenuBar* menuBar)
+void HomeView::build_help_drop_down_menu(wxMenuBar* menuBar)
 {
     wxMenu* helpMenu = new wxMenu();
 
-    buildAboutMenuItem(helpMenu);
+    build_about_menu_item(helpMenu);
 
     menuBar->Append(helpMenu, _("Help"));
 }
 
-void HomeView::buildAboutMenuItem(wxMenu* menu)
+void HomeView::build_about_menu_item(wxMenu* menu)
 {
     wxMenuItem* aboutMenuItem = new wxMenuItem(
             menu,
@@ -591,7 +591,7 @@ void HomeView::buildAboutMenuItem(wxMenu* menu)
     menu->Append(aboutMenuItem);
 }
 
-void HomeView::renderMenuBar(wxMenuBar* menuBar)
+void HomeView::render_menu_bar(wxMenuBar* menuBar)
 {
     SetMenuBar(menuBar);
 }
@@ -614,7 +614,7 @@ void HomeView::OnAbout(wxCommandEvent& event)
 
 void HomeView::OnSend(wxCommandEvent& event)
 {
-    homeController->sendMessage(wx_to_str(inMessage->GetValue()));
+    homeController->send_message(wx_to_str(inMessage->GetValue()));
 
     inMessage->Clear();
     inMessage->SetFocus();
@@ -626,14 +626,14 @@ std::string HomeView::wx_to_str(wxString str)
     return std::string(str.mb_str(wxConvUTF8));
 }
 
-void HomeView::onClose()
+void HomeView::on_close()
 {
     Connect(wxID_ANY,wxEVT_CLOSE_WINDOW,(wxObjectEventFunction)&HomeView::onCloseHandler);
 }
 
 void HomeView::onCloseHandler(wxCloseEvent& event)
 {
-    homeController->shutdownHandler();
+    homeController->shutdown_handler();
 }
 
 void HomeView::OnFollow(wxCloseEvent& event)
@@ -647,7 +647,7 @@ void HomeView::OnFollow(wxCloseEvent& event)
 void HomeView::OnKeyDown(wxKeyEvent& event)
 {
     if (event.ControlDown() && ((int)event.GetKeyCode() == 67 || (int)event.GetKeyCode() == 68)) {
-        homeController->shutdownHandler();
+        homeController->shutdown_handler();
     }
     event.Skip();
 }

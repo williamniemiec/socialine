@@ -1,16 +1,13 @@
 #include <csignal>
 #include <cstdlib>
-#include <wx/image.h>
 #include <pthread.h>
-#include "../../include/wx_pch.h"
-#include "../../include/controllers/HomeController.hpp"
+#include "../../include/controllers/HomeCLIController.hpp"
 #include "../../include/models/command/CommandParser.hpp"
 #include "../../include/models/manager/ClientNotificationManager.h"
 #include "../../include/models/MessageHandler.hpp"
-#include "../../include/views/HomeView.hpp"
+#include "../../include/views/HomeCLIView.hpp"
 #include "../../include/exceptions/InvalidCredentialsException.hpp"
 #include "../../../Utils/Types.h"
-//#include "../../include/wniemiec/io/consolex/Consolex.hpp"
 
 using namespace controllers;
 using namespace models;
@@ -19,25 +16,24 @@ using namespace views;
 //-------------------------------------------------------------------------
 //      Attributes
 //-------------------------------------------------------------------------
-models::manager::ClientConsoleManager* HomeController::consoleManager =
+models::manager::ClientConsoleManager* HomeCLIController::consoleManager =
         new manager::ClientConsoleManager();
-models::manager::ClientNotificationManager* HomeController::notificationManager =
+models::manager::ClientNotificationManager* HomeCLIController::notificationManager =
         models::manager::ClientNotificationManager::get_instance();
-ClientCommunicationManager* HomeController::communicationManager =
+ClientCommunicationManager* HomeCLIController::communicationManager =
         new ClientCommunicationManager();
-std::string HomeController::command;
-views::IView* HomeController::homeView;
+std::string HomeCLIController::command;
+views::IView* HomeCLIController::homeView;
 
 
 //-------------------------------------------------------------------------
 //      Constructor & Destructor
 //-------------------------------------------------------------------------
-HomeController::HomeController(std::string username)
+HomeCLIController::HomeCLIController(std::string username)
 {
-    //wniemiec::io::consolex::Consolex::write_info("Hello!");
     this->user = new User(username);
     
-    homeView = new HomeView(this, user, 0);
+    homeView = new HomeCLIView(this, user);
     notificationManager->attach(homeView);
     consoleManager->attach(homeView);
 
@@ -48,69 +44,44 @@ HomeController::HomeController(std::string username)
 //-------------------------------------------------------------------------
 //      Methods
 //-------------------------------------------------------------------------
-bool HomeController::OnInit()
+void HomeCLIController::build_home_view()
 {
-    bool wxsOK = true;
-
-    wxInitAllImageHandlers();
-
-    if (wxsOK)
-    {
-        build_home_view();
-    	homeView->Show();
-    	SetTopWindow(homeView);
-    }
-
-    return wxsOK;
-}
-
-void HomeController::build_home_view()
-{
-    
-    homeView->render();
-    
-    //notificationManager->fetch_notifications();
     
     consoleManager->welcome_message(user->get_username());
+    homeView->render();
 }
 
-void HomeController::on_shutdown()
+void HomeCLIController::on_shutdown()
 {
-    signal(SIGINT, HomeController::shutdown_handler);
+    signal(SIGINT, HomeCLIController::shutdown_handler);
 }
 
-void HomeController::shutdown_handler()
+void HomeCLIController::shutdown_handler()
 {
     shutdown_handler(-1);
 }
 
-void HomeController::shutdown_handler(int sigcode)
+void HomeCLIController::shutdown_handler(int sigcode)
 {
     communicationManager->logout();
 
     exit(0);
 }
 
-void HomeController::open()
+void HomeCLIController::open()
 {
-    OnInit();
+    build_home_view();
 }
 
-void HomeController::send_message(std::string message)
+void HomeCLIController::do_command(std::string command)
 {
-    consoleManager->send("Sending message '" + message + "' ...");
-    do_command("SEND " + message);
-}
-
-void HomeController::do_command(std::string command)
-{
-    HomeController::command = command;  // Avoids std::bad_aloc
+    HomeCLIController::command = command;  // Avoids std::bad_aloc
 
     pthread_t commandThread;
-    pthread_create(&commandThread, NULL, command_runner, static_cast<void*>(&HomeController::command));
+    pthread_create(&commandThread, NULL, command_runner, static_cast<void*>(&HomeCLIController::command));
 }
 
-void* HomeController::command_runner(void* command)
+void* HomeCLIController::command_runner(void* command)
 {
     std::string &strCommand = *(static_cast<std::string*>(command));
 
@@ -119,12 +90,12 @@ void* HomeController::command_runner(void* command)
     return nullptr;
 }
 
-void HomeController::print_message_code(int code)
+void HomeCLIController::print_message_code(int code)
 {
     consoleManager->send(MessageHandler::from_code(code));
 }
 
-int HomeController::parse_command(std::string command)
+int HomeCLIController::parse_command(std::string command)
 {
     try
     {
@@ -140,7 +111,7 @@ int HomeController::parse_command(std::string command)
     }
 }
 
-int HomeController::parse_app_command(app_command appCommand)
+int HomeCLIController::parse_app_command(app_command appCommand)
 {
     int returnCode = ERROR_INVALID_COMMAND;
 
@@ -163,8 +134,3 @@ int HomeController::parse_app_command(app_command appCommand)
     return returnCode;
 }
 
-void HomeController::follow(std::string username)
-{
-    consoleManager->send("Follow user " + username);
-    do_command("FOLLOW " + username);
-}

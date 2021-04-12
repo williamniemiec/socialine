@@ -28,7 +28,7 @@ app_command CommandParser::parse(int argc, char* argv[])
 
 void CommandParser::validate_login(int argc, char* argv[])
 {
-    if (argc != 4)
+    if (argc < 4)
         throw std::invalid_argument("Invalid args. Usage: <username> <server_ip> <port>");
 
     if (!models::data::ArgumentValidator::validate_username(argv[1]))

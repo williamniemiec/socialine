@@ -17,6 +17,6 @@ namespace models::auth
     //      Methods
     //-------------------------------------------------------------------------
     public:
-        virtual std::string getUsername() = 0;
+        virtual std::string get_username() = 0;
     };
 }

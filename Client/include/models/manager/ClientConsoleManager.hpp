@@ -23,7 +23,7 @@ namespace models::manager
         void detatch(models::IObserver* observer);
         void notify_observers();
         void send(std::string message);
-        void welcomeMessage(std::string username);
-        std::string generateDateTime();
+        void welcome_message(std::string username);
+        std::string generate_date_time();
     };
 }

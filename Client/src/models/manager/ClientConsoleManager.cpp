@@ -31,12 +31,12 @@ void ClientConsoleManager::notify_observers()
 
 void ClientConsoleManager::send(std::string message)
 {
-    this->message = "{ " + generateDateTime() + " } " + message;
+    this->message = "{ " + generate_date_time() + " } " + message;
 
     notify_observers();
 }
 
-std::string ClientConsoleManager::generateDateTime()
+std::string ClientConsoleManager::generate_date_time()
 {
     time_t t = time(0);
     struct tm timeinfo = *localtime(&t);
@@ -77,7 +77,7 @@ std::string ClientConsoleManager::generateDateTime()
     return date.str();
 }
 
-void ClientConsoleManager::welcomeMessage(std::string username)
+void ClientConsoleManager::welcome_message(std::string username)
 {
     send("Welcome back " + username);
 }

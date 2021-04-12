@@ -1,7 +1,9 @@
 OBJS	= 	ClientApp.o\
 		HomeController.o\
+		HomeCLIController.o\
 		InvalidCredentialsException.o\
 		HomeView.o\
+		HomeCLIView.o\
 		ArgumentValidator.o\
 		CLIAuthenticator.o\
 		CommandBuilder.o\
@@ -15,6 +17,7 @@ OBJS	= 	ClientApp.o\
 		StringUtils.o
 SOURCE	= 	ClientApp.cpp\
 		src/controllers/HomeController.cpp\
+		src/controllers/HomeCLIController.cpp\
 		src/exceptions/InvalidCredentialsException.cpp\
 		src/models/auth/CLIAuthenticator.cpp\
 		src/models/command/CommandBuilder.cpp\
@@ -27,15 +30,26 @@ SOURCE	= 	ClientApp.cpp\
 		src/models/Notification.cpp\
 		src/models/User.cpp\
 		src/views/HomeView.cpp\
+		src/views/HomeCLIView.cpp
 HEADER	= 	../Utils/Types.h\
-			../Utils/StringUtils.hpp 
+			../Utils/StringUtils.hpp
+OBJ_WITHOUT_SOURCE 	= include/wniemiec/io/consolex/Consolex.o\
+					include/wniemiec/io/consolex/HistoryConsolex.o\
+					include/wniemiec/io/consolex/InputConsolex.o\
+					include/wniemiec/io/consolex/LoggerConsolex.o\
+					include/wniemiec/io/consolex/LogLevel.o\
+					include/wniemiec/io/consolex/LogMessage.o\
+					include/wniemiec/io/consolex/OutputConsolex.o\
+					include/wniemiec/util/data/StringUtils.o
+						
+
 OUT	= app_cliente.out
 CC	 = g++ 
-FLAGS	 = -g -c -Wall `wx-config --cflags` -Winvalid-pch -include include/wx_pch.h
+FLAGS	 = -g -c `wx-config --cflags` -Winvalid-pch -include include/wx_pch.h -Iinclude/wniemiec/io/consolex/ -Iinclude/wniemiec/data/util/
 LFLAGS	 =`wx-config --libs`
 
 all: $(OBJS)
-	$(CC) -g $(OBJS) -o $(OUT) $(LFLAGS) -std=c++17
+	$(CC) -g $(OBJS) -o $(OUT) $(OBJ_WITHOUT_SOURCE) $(LFLAGS) -std=c++17
 
 ClientApp.o: ClientApp.cpp
 	$(CC) $(FLAGS) ClientApp.cpp -std=c++17
@@ -43,11 +57,17 @@ ClientApp.o: ClientApp.cpp
 HomeController.o: src/controllers/HomeController.cpp
 	$(CC) $(FLAGS) src/controllers/HomeController.cpp -std=c++17
 
+HomeCLIController.o: src/controllers/HomeCLIController.cpp
+	$(CC) $(FLAGS) src/controllers/HomeCLIController.cpp -std=c++17
+
 InvalidCredentialsException.o: src/exceptions/InvalidCredentialsException.cpp
 	$(CC) $(FLAGS) src/exceptions/InvalidCredentialsException.cpp -std=c++17
 
 HomeView.o: src/views/HomeView.cpp
 	$(CC) $(FLAGS) src/views/HomeView.cpp -std=c++17
+
+HomeCLIView.o: src/views/HomeCLIView.cpp
+	$(CC) $(FLAGS) src/views/HomeCLIView.cpp -std=c++17
 
 ArgumentValidator.o: src/models/data/ArgumentValidator.cpp
 	$(CC) $(FLAGS) src/models/data/ArgumentValidator.cpp -std=c++17
@@ -85,5 +105,13 @@ StringUtils.o: ../Utils/StringUtils.cpp
 clean:
 	rm -f $(OBJS) $(OUT)
 
+wx-brew:
+	brew install wxmac --dev --use-llvm
+
+wx-ubuntu:
+	sudo apt-add-repository universe
+	sudo apt-get update
+	sudo apt-get install libwxbase3.0-dev libwxgtk3.0-dev
+
 run: $(OUT)
-	./$(OUT) $(user) $(server) $(port) 
+	./$(OUT) $(user) $(server) $(port) $(debug)

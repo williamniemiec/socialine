@@ -29,15 +29,15 @@ namespace models
     public:
         std::string to_string();
     private:
-        std::string getDateFromNotification(uint32_t timestamp);
+        std::string get_date_from_notification(uint32_t timestamp);
 
 
     //-------------------------------------------------------------------------
     //      Getters
     //-------------------------------------------------------------------------
     public:
-        std::string getUsername();
-        std::string getMessage();
-        std::string getDate();
+        std::string get_username();
+        std::string get_message();
+        std::string get_date();
     };
 }

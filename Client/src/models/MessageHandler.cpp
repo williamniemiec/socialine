@@ -37,7 +37,7 @@ std::map<int, std::string> MessageHandler::create_map()
     return mapping;
 }
 
-std::string MessageHandler::fromCode(int code)
+std::string MessageHandler::from_code(int code)
 {
     if (code == 0)
         return "Success!";

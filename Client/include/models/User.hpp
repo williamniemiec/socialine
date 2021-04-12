@@ -23,6 +23,6 @@ namespace models
     //      Methods
     //-------------------------------------------------------------------------
     public:
-        std::string getUsername();
+        std::string get_username();
     };
 }
