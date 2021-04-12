@@ -2,9 +2,10 @@
 #include <regex>
 #include "../../../include/models/data/ArgumentValidator.hpp"
 #include "../../../../Utils/Types.h"
-#include "../../../../Utils/StringUtils.hpp"
+#include "../../../../Utils/wniemiec/util/data/StringUtils.hpp"
 
 using namespace models::data;
+using namespace wniemiec::util::data;
 
 //-------------------------------------------------------------------------
 //      Constructor
@@ -42,5 +43,5 @@ bool ArgumentValidator::validate_command(std::string command)
 {
     const std::regex REGEX_COMMAND("[A-Z]+[\\s\\t]+.+");
 
-    return std::regex_match(utils::StringUtils::to_upper(command), REGEX_COMMAND);
+    return std::regex_match(StringUtils::to_upper(command), REGEX_COMMAND);
 }

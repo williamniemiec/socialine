@@ -3,7 +3,7 @@
 //
 
 #include "../include/ServerCommunicationManager.h"
-#include "../../Utils/StringUtils.hpp"
+#include "../../Utils/wniemiec/util/data/StringUtils.hpp"
 #include "../../Utils/wniemiec/io/consolex/Consolex.hpp"
 
 #include <iostream>
@@ -24,6 +24,7 @@
 #define PORT 4000
 
 using namespace wniemiec::io::consolex;
+using namespace wniemiec::util::data;
 
 /**
  * Inicializa o connectionSocket, que fica aberto ouvindo mensagens de clientes enviadas na porta 4000.
@@ -121,7 +122,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     response_buffer = (char *) calloc(MAX_MAIL_SIZE, sizeof(char));
     response_buffer = response_packet.Serialize();
 
-    std::vector<std::string> args = utils::StringUtils::split(received_packet._payload,"\n");
+    std::vector<std::string> args = StringUtils::split(received_packet._payload,"\n");
 
     auto it = client_sessions.find(cookie);
     if (it == client_sessions.end() && received_packet.type == CMD_LOGIN) {

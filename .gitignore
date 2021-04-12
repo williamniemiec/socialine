@@ -4,8 +4,7 @@
 # Compiled Object files
 *.slo
 *.lo
-Client/*.o
-Server/*.o
+*.o
 *.obj
 *.out
 

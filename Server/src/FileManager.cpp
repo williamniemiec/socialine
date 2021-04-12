@@ -4,7 +4,7 @@
 
 #include "../include/FileManager.h"
 #include "../../Utils/Types.h"
-#include "../../Utils/StringUtils.hpp"
+#include "../../Utils/wniemiec/util/data/StringUtils.hpp"
 #include "../../Utils/wniemiec/io/consolex/Consolex.hpp"
 
 #include <iostream>
@@ -15,6 +15,7 @@
 #include <vector>
 
 using namespace wniemiec::io::consolex;
+using namespace wniemiec::util::data;
 using namespace std;
 
 
@@ -36,7 +37,7 @@ unordered_map<string, vector<string>> FileManager::read_profiles_file( )
     {
         while(getline(profiles_file, profiles_line))
         {
-            profiles_line = utils::StringUtils::trim(profiles_line);
+            profiles_line = StringUtils::trim(profiles_line);
             pos = profiles_line.find_first_of(':', 0);
             username = profiles_line.substr(0, pos);
             profiles_line.erase(0, pos+2);

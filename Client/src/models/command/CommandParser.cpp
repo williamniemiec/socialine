@@ -4,9 +4,10 @@
 #include "../../../include/models/command/CommandBuilder.hpp"
 #include "../../../include/models/command/CommandParser.hpp"
 #include "../../../include/models/data/ArgumentValidator.hpp"
-#include "../../../../Utils/StringUtils.hpp"
+#include "../../../../Utils/wniemiec/util/data/StringUtils.hpp"
 
 using namespace models::command;
+using namespace wniemiec::util::data;
 
 //-------------------------------------------------------------------------
 //      Constructor
@@ -52,13 +53,13 @@ app_command CommandParser::parse(std::string command)
 
 app_command CommandParser::parse(std::string command, std::string arg)
 {
-    if (utils::StringUtils::to_upper(command) == "FOLLOW")
+    if (StringUtils::to_upper(command) == "FOLLOW")
     {
         validate_username(arg);
 
         return CommandBuilder::build_follow_command(arg);
     }
-    else if (utils::StringUtils::to_upper(command) == "SEND")
+    else if (StringUtils::to_upper(command) == "SEND")
     {
         return CommandBuilder::build_send_command(arg);
     }

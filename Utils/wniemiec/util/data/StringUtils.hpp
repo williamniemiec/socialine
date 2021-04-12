@@ -54,5 +54,16 @@ namespace wniemiec::util::data
         ///     If string is null
         /// </exception>
         static std::string to_upper(std::string str);
+		
+		/// <summary>
+        ///     Removes whitespaces from both sides of a string.
+        /// </summary>
+        ///
+        /// <param name="str">
+        ///     Some string
+        /// </param>
+        ///
+        /// <returns>String with no whitespaces on both sides</returns>
+		static std::string trim(const std::string& str);
     };
 }

@@ -4,10 +4,11 @@
 #include "include/exceptions/InvalidCredentialsException.hpp"
 #include "include/controllers/HomeController.hpp"
 #include "include/controllers/HomeCLIController.hpp"
-#include "../Utils/StringUtils.hpp"
+#include "../Utils/wniemiec/util/data/StringUtils.hpp"
 #include "../Utils/wniemiec/io/consolex/Consolex.hpp"
 
 using namespace wniemiec::io::consolex;
+using namespace wniemiec::util::data;
 
 //-------------------------------------------------------------------------
 //      Prototypes
@@ -49,7 +50,7 @@ int main(int argc, char* argv[])
 bool is_debug_mode(int argc, char* argv[])
 {
     return  (argc > 4) 
-            && utils::StringUtils::to_upper(std::string (argv[4])) == "TRUE";
+            && StringUtils::to_upper(std::string (argv[4])) == "TRUE";
 }
 
 void run_gui(int argc, char* argv[])

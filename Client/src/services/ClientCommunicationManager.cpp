@@ -9,11 +9,12 @@
 #include <pthread.h>
 #include <ctime>
 #include "../../include/services/ClientCommunicationManager.h"
-#include "../../../Utils/StringUtils.hpp"
+#include "../../../Utils/wniemiec/util/data/StringUtils.hpp"
 #include "../../../Utils/Types.h"
 #include "../../../Utils/wniemiec/io/consolex/Consolex.hpp"
 
 using namespace wniemiec::io::consolex;
+using namespace wniemiec::util::data;
 
 std::string ClientCommunicationManager::username;
 std::string ClientCommunicationManager::server;
@@ -279,7 +280,7 @@ void* ClientCommunicationManager::thread_listen_notif(void* arg)
             received_packet.Deserialize(buffer);
             received_packet.print("[Notification Service] RECEIVED");
 
-            std::vector<std::string> fields = utils::StringUtils::split(received_packet._payload, "\n");
+            std::vector<std::string> fields = StringUtils::split(received_packet._payload, "\n");
 
             
             notificationManager->receive_notification(

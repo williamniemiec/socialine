@@ -7,10 +7,11 @@
 #include "../include/ServerNotificationManager.h"
 #include "../include/ServerCommunicationManager.h"
 #include "../../Utils/Types.h"
-#include "../../Utils/StringUtils.hpp"
+#include "../../Utils/wniemiec/util/data/StringUtils.hpp"
 #include "../../Utils/wniemiec/io/consolex/Consolex.hpp"
 
 using namespace wniemiec::io::consolex;
+using namespace wniemiec::util::data;
 using namespace std;
 
 ServerNotificationManager notification_manager;
@@ -23,7 +24,7 @@ int TaskManager::run_command(int type, string payload, string session_id )
     vector<notification> notifications;
     std::unordered_map<std::string, notification> notifications_map;
     vector<string> arguments;
-    arguments = utils::StringUtils::split(payload, "\n");
+    arguments = StringUtils::split(payload, "\n");
 
 
     switch(type)

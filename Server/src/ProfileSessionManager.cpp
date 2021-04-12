@@ -4,12 +4,13 @@
 
 #include "../include/ProfileSessionManager.h"
 #include "../../Utils/Types.h"
-#include "../../Utils/StringUtils.hpp"
+#include "../../Utils/wniemiec/util/data/StringUtils.hpp"
 #include "../../Utils/wniemiec/io/consolex/Consolex.hpp"
 #include <sstream>
 #include <iostream>
 
 using namespace wniemiec::io::consolex;
+using namespace wniemiec::util::data;
 using namespace std;
 
 int ProfileSessionManager::login( std::string username, std::string session_id)
@@ -57,7 +58,7 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 {
     int code = 0;
 
-    session_id = utils::StringUtils::trim(session_id);
+    session_id = StringUtils::trim(session_id);
 
     sem_wait(&write_session_semaphore);
 
@@ -103,7 +104,7 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 void ProfileSessionManager::close_session(std::string username, std::string session_id)
 {
     Consolex::write_debug("LENG: " + session_id.length());
-    session_id = utils::StringUtils::trim(session_id);
+    session_id = StringUtils::trim(session_id);
     Consolex::write_debug(std::to_string(session_id.length()));
 
     sem_wait(&write_session_semaphore);
