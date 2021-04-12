@@ -5,6 +5,9 @@
 #include "include/controllers/HomeController.hpp"
 #include "include/controllers/HomeCLIController.hpp"
 #include "../Utils/StringUtils.hpp"
+#include "../Utils/wniemiec/io/consolex/Consolex.hpp"
+
+using namespace wniemiec::io::consolex;
 
 //-------------------------------------------------------------------------
 //      Prototypes
@@ -21,12 +24,18 @@ int main(int argc, char* argv[])
 {
     try {
         if (is_debug_mode(argc, argv))
+        {
+            Consolex::set_logger_level(LogLevel::DEBUG());
             run_cli(argc, argv);
+        }
         else
+        {
+            Consolex::set_logger_level(LogLevel::INFO());
             run_gui(argc, argv);
+        }
     }
     catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
+        Consolex::write_error(e.what());
         return -1;
     }
 

@@ -13,10 +13,12 @@
 #include "../../include/services/ClientCommunicationManager.h"
 #include "../../include/models/manager/ClientNotificationManager.h"
 #include "../../include/models/manager/ClientConsoleManager.hpp"
+#include "../../../Utils/wniemiec/io/consolex/Consolex.hpp"
 
 using namespace views;
 using namespace controllers;
 using namespace models;
+using namespace wniemiec::io::consolex;
 
 //-------------------------------------------------------------------------
 //      Attributes
@@ -49,7 +51,7 @@ void HomeCLIView::update(IObservable *observable, std::list<std::string> data)
 
         for (std::string message : data)
         {
-            std::cout << message << std::endl;
+            Consolex::write_line(message);
         }
 
         std::cout << "\n--- END ---" << std::endl;
@@ -58,7 +60,7 @@ void HomeCLIView::update(IObservable *observable, std::list<std::string> data)
     {
         for (std::string message : data)
         {
-            std::cout << message << std::endl;
+            Consolex::write_info(message);
         }
     }
 }
@@ -72,11 +74,9 @@ void HomeCLIView::render()
 
 void HomeCLIView::run()
 {
-    std::string command;
-
     while (true)
     {
-        std::getline(std::cin, command);
+        std::string command = Consolex::read_line();
 
         this->homeController->do_command(command);
     }

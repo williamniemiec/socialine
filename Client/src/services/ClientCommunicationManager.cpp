@@ -1,8 +1,4 @@
-#include "../../include/services/ClientCommunicationManager.h"
-#include "../../../Utils/StringUtils.hpp"
-#include "../../../Utils/Types.h"
 #include <iostream>
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -12,6 +8,12 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <ctime>
+#include "../../include/services/ClientCommunicationManager.h"
+#include "../../../Utils/StringUtils.hpp"
+#include "../../../Utils/Types.h"
+#include "../../../Utils/wniemiec/io/consolex/Consolex.hpp"
+
+using namespace wniemiec::io::consolex;
 
 std::string ClientCommunicationManager::username;
 std::string ClientCommunicationManager::server;
@@ -48,12 +50,12 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
 
     if (server_host == NULL) {
-        printf("ERROR: no such host!!");
+        Consolex::write_error("No such host!");
         exit(0);
     }
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        printf("ERROR opening socket\n");
+        Consolex::write_error("Opening socket");
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(4000);
@@ -61,7 +63,7 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     bzero(&(server_addr.sin_zero), 8);
 
     if (connect(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
-        printf("ERROR connecting\n");
+        Consolex::write_error("Connecting");
 
     packet->print("SENT");
 
@@ -72,14 +74,14 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     // write
     n = write(sockfd, buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        printf("ERROR writing to socket\n");
+        Consolex::write_error("Writing to socket");
 
     char buffer_response[MAX_MAIL_SIZE];
     bzero(buffer_response, MAX_MAIL_SIZE);
 
     n = read(sockfd, buffer_response, MAX_MAIL_SIZE);
     if (n < 0)
-        printf("ERROR reading from socket\n");
+        Consolex::write_error("Reading from socket");
 
     char received_packet_buffer[MAX_DATA_SIZE];
     struct __packet received_packet = {0, 0, 0, 0, received_packet_buffer };
@@ -169,7 +171,7 @@ void ClientCommunicationManager::listen_notifications(std::string *listen_notifi
     std::string input;
 
     if ((notification_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        printf("ERROR opening socket\n");
+        Consolex::write_error("Opening socket");
 
     notf_addr.sin_family = AF_INET;
     notf_addr.sin_addr.s_addr = INADDR_ANY;
@@ -177,20 +179,22 @@ void ClientCommunicationManager::listen_notifications(std::string *listen_notifi
     bzero(&(notf_addr.sin_zero), 8);
 
     if (bind(notification_socket, (struct sockaddr *) &notf_addr, sizeof(notf_addr)) < 0)
-        printf("[Notification Service] ERROR on binding\n");
+        Consolex::write_error("[Notification Service] On binding");
 
     listen(notification_socket, 5);
 
     socklen_t len = sizeof(notf_addr);
     if (getsockname(notification_socket, (struct sockaddr *) &notf_addr, &len) == -1) {
-        printf("[Notification Service] ERROR on getsockname\n");
-    } else {
+        Consolex::write_error("[Notification Service] On getsockname");
+    } 
+    else {
         *listen_notification_port = std::to_string(ntohs(notf_addr.sin_port));
-        printf("[Notification Service] port number %d\n", ntohs(notf_addr.sin_port));
+        
+        Consolex::write_debug("[Notification Service] port number " + std::to_string(ntohs(notf_addr.sin_port)));
     }
     clilen = sizeof(struct sockaddr_in);
 
-    printf("[Notification Service] Ready to receive\n");
+    Consolex::write_debug("[Notification Service] Ready to receive");
 
 
     notificationManager = models::manager::ClientNotificationManager::get_instance();
@@ -249,7 +253,7 @@ void ClientCommunicationManager::listen_notifications(std::string *listen_notifi
 
 void* ClientCommunicationManager::thread_listen_notif(void* arg)
 {
-    printf("started notification listening service\n");
+    Consolex::write_debug("Started notification listening service");
 
         int n;
 
@@ -260,7 +264,7 @@ void* ClientCommunicationManager::thread_listen_notif(void* arg)
             struct sockaddr_in cli_addr;
 
             if ((connection_socket = accept(notification_socket, (struct sockaddr *) &cli_addr, &clilen)) == -1) {
-                printf("ERROR on accept");
+                Consolex::write_error("On accept");
                 continue;
             }
 
@@ -268,7 +272,7 @@ void* ClientCommunicationManager::thread_listen_notif(void* arg)
             bzero(buffer, MAX_MAIL_SIZE);
             n = read(connection_socket, buffer, MAX_MAIL_SIZE);
             if (n < 0)
-                printf("[Notification Service] ERROR reading from socket");
+                Consolex::write_error("[Notification Service] Reading from socket");
 
             char received_packet_buffer[MAX_DATA_SIZE];
             struct __packet received_packet = {0, 0, 0, 0, received_packet_buffer };

@@ -33,19 +33,19 @@ SOURCE	= 	ClientApp.cpp\
 		src/views/HomeCLIView.cpp
 HEADER	= 	../Utils/Types.h\
 			../Utils/StringUtils.hpp
-OBJ_WITHOUT_SOURCE 	= include/wniemiec/io/consolex/Consolex.o\
-					include/wniemiec/io/consolex/HistoryConsolex.o\
-					include/wniemiec/io/consolex/InputConsolex.o\
-					include/wniemiec/io/consolex/LoggerConsolex.o\
-					include/wniemiec/io/consolex/LogLevel.o\
-					include/wniemiec/io/consolex/LogMessage.o\
-					include/wniemiec/io/consolex/OutputConsolex.o\
-					include/wniemiec/util/data/StringUtils.o
+OBJ_WITHOUT_SOURCE 	= ../Utils/wniemiec/io/consolex/Consolex.o\
+					../Utils/wniemiec/io/consolex/HistoryConsolex.o\
+					../Utils/wniemiec/io/consolex/InputConsolex.o\
+					../Utils/wniemiec/io/consolex/LoggerConsolex.o\
+					../Utils/wniemiec/io/consolex/LogLevel.o\
+					../Utils/wniemiec/io/consolex/LogMessage.o\
+					../Utils/wniemiec/io/consolex/OutputConsolex.o\
+					../Utils/wniemiec/util/data/StringUtils.o
 						
 
 OUT	= app_cliente.out
 CC	 = g++ 
-FLAGS	 = -g -c `wx-config --cflags` -Winvalid-pch -include include/wx_pch.h -Iinclude/wniemiec/io/consolex/ -Iinclude/wniemiec/data/util/
+FLAGS	 = -g -c `wx-config --cflags` -Winvalid-pch -include include/wx_pch.h
 LFLAGS	 =`wx-config --libs`
 
 all: $(OBJS)

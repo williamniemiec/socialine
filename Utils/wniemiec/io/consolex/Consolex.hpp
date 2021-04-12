@@ -146,7 +146,7 @@ namespace wniemiec::io::consolex
         static void write_warning(std::string message);
 
         /// <summary>
-        ///     Displays an warning message. <br />
+        ///     Displays an info message. <br />
         ///     <b>Format:</b> <code>[INFO] &lt;message&gt;</code>
         /// </summary>
         ///
@@ -154,7 +154,7 @@ namespace wniemiec::io::consolex
         static void write_info(std::string message);
 
         /// <summary>
-        ///     Displays an warning message. <br />
+        ///     Displays a debug message. <br />
         ///     <b>Format:</b> <code>[DEBUG] &lt;message&gt;</code>
         /// </summary>
         ///

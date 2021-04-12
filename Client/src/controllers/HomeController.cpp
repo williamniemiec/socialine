@@ -10,7 +10,7 @@
 #include "../../include/views/HomeView.hpp"
 #include "../../include/exceptions/InvalidCredentialsException.hpp"
 #include "../../../Utils/Types.h"
-//#include "../../include/wniemiec/io/consolex/Consolex.hpp"
+#include "../../../Utils/wniemiec/io/consolex/Consolex.hpp"
 
 using namespace controllers;
 using namespace models;
@@ -34,7 +34,6 @@ views::IView* HomeController::homeView;
 //-------------------------------------------------------------------------
 HomeController::HomeController(std::string username)
 {
-    //wniemiec::io::consolex::Consolex::write_info("Hello!");
     this->user = new User(username);
     
     homeView = new HomeView(this, user, 0);
@@ -68,9 +67,6 @@ void HomeController::build_home_view()
 {
     
     homeView->render();
-    
-    //notificationManager->fetch_notifications();
-    
     consoleManager->welcome_message(user->get_username());
 }
 
