@@ -8,7 +8,6 @@
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "../../../Utils/StringUtils.hpp"
 #include "../../include/views/HomeCLIView.hpp"
 #include "../../include/services/ClientCommunicationManager.h"
 #include "../../include/models/manager/ClientNotificationManager.h"
