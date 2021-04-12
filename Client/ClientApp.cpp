@@ -1,74 +1,79 @@
-//
-// Created by Farias, Karine on 3/17/21.
-//
-
-#include "include/ClientCommunicationManager.h"
-#include "include/Interface.h"
-
 #include <iostream>
-#include <vector>
+#include "include/models/auth/IAuthenticator.hpp"
+#include "include/models/auth/CLIAuthenticator.hpp"
+#include "include/exceptions/InvalidCredentialsException.hpp"
+#include "include/controllers/HomeController.hpp"
+#include "include/controllers/HomeCLIController.hpp"
+#include "../Utils/StringUtils.hpp"
+#include "../Utils/wniemiec/io/consolex/Consolex.hpp"
+
+using namespace wniemiec::io::consolex;
+
+//-------------------------------------------------------------------------
+//      Prototypes
+//-------------------------------------------------------------------------
+void run_gui(int argc, char* argv[]);
+void run_cli(int argc, char* argv[]);
+bool is_debug_mode(int argc, char* argv[]);
 
 
+//-------------------------------------------------------------------------
+//      Main
+//-------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {
-        Interface interfaceModule;
-        ClientCommunicationManager communicationModule;
-        app_command command_to_execute;
-        std::string input;
-        auto keep_running = true;
-        int return_code;
-
-
-
-        std::cout << "Hi, I am the main! I have just started!" << NEW_LINE;
-        command_to_execute = interfaceModule.parse_command(argc, argv);
-
-        //First command should always be "login"
-        if( command_to_execute.type == CMD_LOGIN )
+    try {
+        if (is_debug_mode(argc, argv))
         {
-            std::cout << "The command is: login"<< NEW_LINE;
-            return_code = communicationModule.establish_connection(command_to_execute.arguments[1], command_to_execute.arguments[2], command_to_execute.arguments[3]);
+            Consolex::set_logger_level(LogLevel::DEBUG());
+            run_cli(argc, argv);
         }
         else
         {
-            std::cout << "My first command is not login" << NEW_LINE;
-            interfaceModule.print_message(ERROR_START_WITH_LOGIN);
-            keep_running = false;
+            Consolex::set_logger_level(LogLevel::INFO());
+            run_gui(argc, argv);
         }
+    }
+    catch (std::exception &e) {
+        Consolex::write_error(e.what());
+        return -1;
+    }
 
-        std::cout << "Hi, I am back to the app. Waiting for new commands" << NEW_LINE;
-        //After executing login keep waiting for new commands until user stops execution or an error occurs
-        while( keep_running && std::getline(std::cin, input) )
-        {
-            command_to_execute = interfaceModule.parse_command(input);
+    return 0;
+}
 
-            if (input.empty())
-                continue;
 
-            switch(command_to_execute.type)
-            {
-                case CMD_LOGIN:
-                    std::cout << "I am already logged in" << NEW_LINE;
-                    return_code = ERROR_SESSION_ALREADY_STARTED;
-                    keep_running = false;
-                    break;
-                case CMD_FOLLOW:
-                    std::cout << "The command is: follow" << NEW_LINE;
-                    return_code = communicationModule.follow(command_to_execute.arguments[1]);
-                    break;
-                case CMD_OTHERS:
-                    std::cout << "I don't recognise this command" << NEW_LINE;
-                    return_code = ERROR_INVALID_COMMAND;
-                    keep_running = false;
-                    break;
-            }
+//-------------------------------------------------------------------------
+//      Methods
+//-------------------------------------------------------------------------
+bool is_debug_mode(int argc, char* argv[])
+{
+    return  (argc > 4) 
+            && utils::StringUtils::to_upper(std::string (argv[4])) == "TRUE";
+}
 
-            interfaceModule.print_message(return_code);
+void run_gui(int argc, char* argv[])
+{
+    // Home must be created before 'establish_connection'
+    controllers::HomeController* home = new controllers::HomeController(argv[1]);
 
-        };
+    models::auth::IAuthenticator* auth = new models::auth::CLIAuthenticator(argc, argv);
+    auth->login();
 
-        interfaceModule.print_message(MESSAGE_SHUT_DOWN);
+    wxApp::SetInstance(home);
+    wxEntryStart(argc, argv);
+    wxTheApp->CallOnInit();
+    wxTheApp->OnRun();
+    wxTheApp->OnExit();
+    wxEntryCleanup();
+}
 
-        return(0);
+void run_cli(int argc, char* argv[])
+{
+    controllers::HomeCLIController* home = new controllers::HomeCLIController(argv[1]);
 
+    models::auth::IAuthenticator* auth = new models::auth::CLIAuthenticator(argc, argv);
+    auth->login();
+
+    home->open();
 }

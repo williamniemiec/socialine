@@ -6,6 +6,7 @@
 *.lo
 *.o
 *.obj
+*.out
 
 # Precompiled Headers
 *.gch
@@ -15,12 +16,25 @@
 obj/
 bin/
 
-#MacOS Files
+# MacOS Files
 .DS_Store
 
+<<<<<<< HEAD
+# Visual code
+.vscode
+
 #CLion Files
+=======
+# CLion Files
+>>>>>>> 46ed9a2d937d10b2e636462a13ba84ecdd2e8b31
 .idea/
+
+# Visual code files
+.vscode
 
 # CMake
 *cmake-build-*/
 *CMakeLists.txt
+
+# Ignore "database" files
+*profiles.txt

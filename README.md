@@ -9,7 +9,7 @@
 ```
 cd Client
 make
-make run p1 = <primeiro parametro que quiserem passar> p2 = < segundo parametro que quiserem passar> ..... (por enquanto nosso make file aceita apenas 5 parametros p1 até p5)
+make run user=@<username> server=<ip> port=<port>
 ```
 
 ### Server
@@ -18,6 +18,14 @@ cd Server
 make
 make run
 ```
+
+## ⚠ Requirements
+#### wxWidgets
+|        OS        |Make command|
+|----------------|-------------------------------|
+|Ubuntu |`make wx-ubuntu`|
+|MacOS |`make wx-mac`|
+|Windows| 😥 |
 
 ## 📁 Files
 
