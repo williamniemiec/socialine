@@ -106,12 +106,12 @@ clean:
 	rm -f $(OBJS) $(OUT)
 
 wx-mac:
-	brew install wxmac --dev --use-llvm
+	brew install wxmac
 
 wx-ubuntu:
 	sudo apt-add-repository universe
 	sudo apt-get update
-	sudo apt-get install libwxbase3.0-dev libwxgtk3.0-dev
+	sudo apt-get install libwxbase3.0-dev libwxgtk3.0-gtk3-dev
 
 run: $(OUT)
 	./$(OUT) $(user) $(server) $(port) $(debug) 
