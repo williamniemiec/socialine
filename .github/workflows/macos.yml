@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: make -C Client/ wx-macos
+      run: make -C Client/ wx-mac
     - name: make client
       run: make -C Client/
       
