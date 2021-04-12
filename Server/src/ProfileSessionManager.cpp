@@ -4,19 +4,24 @@
 
 #include "../include/ProfileSessionManager.h"
 #include "../../Utils/Types.h"
+#include "../../Utils/StringUtils.hpp"
+#include "../../Utils/wniemiec/io/consolex/Consolex.hpp"
+#include <sstream>
+#include <iostream>
 
+using namespace wniemiec::io::consolex;
 using namespace std;
 
 int ProfileSessionManager::login( std::string username, std::string session_id)
 {
     int return_code = 0;
-    //ToDo: Remove prints
-    cout << "Welcome to Profile and Session Manager" << NEW_LINE ;
-    cout << "I am trying to log you in, " << username << NEW_LINE;
+    
+    Consolex::write_debug("Welcome to Profile and Session Manager");
+    Consolex::write_debug("I am trying to log you in, " + username);
 
     return_code = open_session(username, session_id);
 
-    cout << "Finishing method login, code: " << return_code << NEW_LINE;
+    Consolex::write_debug("Finishing method login, code: " + std::to_string(return_code));
 
     return return_code;
 }
@@ -26,26 +31,24 @@ int ProfileSessionManager::follow( std::string follower, std::string followed )
 
     int return_code = 0;
 
-    //ToDo: Remove prints
-    cout << "Welcome to Profile and Session Manager" << NEW_LINE ;
-    cout << "I am trying to follow this profile: " << followed << NEW_LINE;
+    Consolex::write_debug("Welcome to Profile and Session Manager");
+    Consolex::write_debug("I am trying to follow this profile: " + followed);
 
     if(follower == followed)
         return ERROR_FOLLOW_YOURSELF;
 
     return_code = write_follower(follower, followed);
 
-    //ToDo: Remove prints
-    cout << "Finishing method follow, code: " << return_code << NEW_LINE;
+    Consolex::write_debug("Finishing method follow, code: " + std::to_string(return_code));
 
     return return_code;
 }
 
 int ProfileSessionManager::logout( std::string username, std::string session_id )
 {
-    cout << "LOGOUT LENG\n" << session_id.length() << endl;
+    Consolex::write_debug("LOGOUT LENG: " + session_id.length());
     close_session(username, session_id);
-    cout << session_id.length() << endl;
+    Consolex::write_debug(std::to_string(session_id.length()));
 
     return 0;
 }
@@ -54,16 +57,19 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 {
     int code = 0;
 
-    session_id = myFileManager.trim(session_id);
+    session_id = utils::StringUtils::trim(session_id);
 
     sem_wait(&write_session_semaphore);
 
-    cout << "Active sessions: " << NEW_LINE;
+    Consolex::write_debug("Active sessions:");
+    stringstream activeSessions;
+    
     for(int i = 0; i < sessions_map[username].size(); i++ )
     {
-        cout << sessions_map[username][i] << " ";
+        activeSessions << sessions_map[username][i];
+        activeSessions << " ";
     }
-    cout << NEW_LINE;
+    Consolex::write_debug(activeSessions.str());
 
     if(sessions_map[username].size() >= 2)
     {
@@ -78,13 +84,17 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
     if( code == 0 )
         sessions_map[username].push_back(session_id);
 
-    cout << "After execution: " << NEW_LINE;
+    Consolex::write_debug("After execution: ");
+    stringstream activeSessionsAfterExecution;
+
     for(int i = 0; i < sessions_map[username].size(); i++ )
     {
-        cout << sessions_map[username][i] << " ";
+        activeSessionsAfterExecution << sessions_map[username][i];
+        activeSessionsAfterExecution << " ";
     }
 
-    cout << NEW_LINE;
+    Consolex::write_debug(activeSessionsAfterExecution.str());
+
     sem_post(&write_session_semaphore);
 
     return code;
@@ -92,27 +102,37 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 
 void ProfileSessionManager::close_session(std::string username, std::string session_id)
 {
-    cout << "LENG\n" << session_id.length() << endl;
-    session_id = myFileManager.trim(session_id);
-    cout << session_id.length() << endl;
+    Consolex::write_debug("LENG: " + session_id.length());
+    session_id = utils::StringUtils::trim(session_id);
+    Consolex::write_debug(std::to_string(session_id.length()));
 
-    //ToDo: clean up prints
     sem_wait(&write_session_semaphore);
-    cout << session_id << endl;
-    cout << "Active sessions: ";
+    Consolex::write_debug(std::to_string(session_id.length()));
+    
+    Consolex::write_debug("Active sessions:");
+    stringstream activeSessions;
+
     for(int i = 0; i < sessions_map[username].size(); i++ )
     {
-        cout << sessions_map[username][i] << " ";
+        activeSessions << sessions_map[username][i];
+        activeSessions << " ";
         if(sessions_map[username][i] == session_id)
         {
             sessions_map[username].erase(sessions_map[username].begin()+i);
         }
     }
-    cout << "After deletion: ";
+    
+    Consolex::write_debug(activeSessions.str());
+
+    Consolex::write_debug("After deletion:");
+    stringstream sessionsAfterDelete;
     for(int i = 0; i < sessions_map[username].size(); i++ )
     {
-        cout << sessions_map[username][i] << " ";
+        sessionsAfterDelete << sessions_map[username][i];
+        sessionsAfterDelete << " ";
     }
+    Consolex::write_debug(sessionsAfterDelete.str());
+
     sem_post(&write_session_semaphore);
 }
 
@@ -181,14 +201,13 @@ vector<string> ProfileSessionManager::read_followed(std::string username)
 
 int ProfileSessionManager::write_follower(std::string follower, std::string followed)
 {
-
     int code = 0;
 
     sem_wait(&write_followers_semaphore);
-    //ToDo: Remove prints
-    cout << "I am " << follower << " and I follow this accounts:" << NEW_LINE;
+
+    Consolex::write_debug("I am " + follower + " and I follow this accounts:");
     for (int k = 0; k < followers_map[follower].size() ; ++k)
-        cout << "\t" << followers_map[follower][k] << NEW_LINE;
+        Consolex::write_debug("\t" + followers_map[follower][k]);
 
     //To ensure we only follow someone once
     if(followers_map[follower].size() != 0)
@@ -202,18 +221,14 @@ int ProfileSessionManager::write_follower(std::string follower, std::string foll
 
     if(code == 0)
     {
-        cout << "I am here!!!!" << NEW_LINE;
+        Consolex::write_debug("I am here!!!!");
         followers_map[follower].push_back(followed);
         followed_by_map[followed].push_back(follower);
     }
 
-
-    //ToDo: Remove prints
-    cout << "I am " << follower << " and I follow this accounts:" << NEW_LINE;
+    Consolex::write_debug("I am " + follower + " and I follow this accounts:");
     for (int k = 0; k < followers_map[follower].size() ; ++k)
-        cout << "\t" << followers_map[follower][k] << NEW_LINE;
-
-    cout << "\n\n";
+        Consolex::write_debug("\t" + followers_map[follower][k]);
 
     sem_post(&write_followers_semaphore);
 

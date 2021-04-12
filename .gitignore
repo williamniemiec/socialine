@@ -19,6 +19,9 @@ bin/
 #MacOS Files
 .DS_Store
 
+# Visual code
+.vscode
+
 #CLion Files
 .idea/
 

@@ -4,6 +4,8 @@
 
 #include "../include/FileManager.h"
 #include "../../Utils/Types.h"
+#include "../../Utils/StringUtils.hpp"
+#include "../../Utils/wniemiec/io/consolex/Consolex.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -12,6 +14,7 @@
 #include <string>
 #include <vector>
 
+using namespace wniemiec::io::consolex;
 using namespace std;
 
 
@@ -33,26 +36,23 @@ unordered_map<string, vector<string>> FileManager::read_profiles_file( )
     {
         while(getline(profiles_file, profiles_line))
         {
-            profiles_line = trim( profiles_line );
+            profiles_line = utils::StringUtils::trim(profiles_line);
             pos = profiles_line.find_first_of(':', 0);
             username = profiles_line.substr(0, pos);
             profiles_line.erase(0, pos+2);
-            //ToDo: remove prints and adhere to logger
-            //cout << username << " should follow: " << profiles_line << NEW_LINE;
+            Consolex::write_debug(username + " should follow: " + profiles_line);
             pos = profiles_line.find_first_of(' ', 0);
 
             while(pos > 0)
             {
                 followers.push_back(profiles_line.substr(0, pos));
-                //ToDo: remove prints and adhere to logger
-                //cout << "User: " << username << " Following: " << profiles_line.substr(0, pos) << NEW_LINE;
+                Consolex::write_debug("User: " + username + " Following: " + profiles_line.substr(0, pos));
                 profiles_line.erase(0, pos+1);
                 pos = profiles_line.find_first_of(' ', 0);
             }
 
             followers.push_back(profiles_line);
-            //ToDo: remove prints and adhere to logger
-            //cout << "User: " << username << " Following: " << profiles_line.substr(0, pos) << NEW_LINE;
+            Consolex::write_debug("User: " + username + " Following: " + profiles_line.substr(0, pos));
             followers_map[username] = followers;
         }
     }
@@ -65,16 +65,4 @@ unordered_map<string, vector<string>> FileManager::read_profiles_file( )
 void FileManager::write_profiles_file( std::unordered_map<std::string, std::vector<std::string>> final_followers_map )
 {
     //ToDo: create write file;
-}
-
-std::string FileManager::trim(const std::string& str)
-{
-    size_t first = str.find_first_not_of(' ');
-    if (string::npos == first)
-    {
-        return str;
-    }
-    size_t last = str.find_last_not_of(' ');
-
-    return str.substr(first, (last - first + 1));
 }

@@ -114,4 +114,4 @@ wx-ubuntu:
 	sudo apt-get install libwxbase3.0-dev libwxgtk3.0-dev
 
 run: $(OUT)
-	./$(OUT) $(user) $(server) $(port) $(debug)
+	./$(OUT) $(user) $(server) $(port) $(debug) 
