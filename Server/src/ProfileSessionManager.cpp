@@ -47,7 +47,7 @@ int ProfileSessionManager::follow( std::string follower, std::string followed )
 
 int ProfileSessionManager::logout( std::string username, std::string session_id )
 {
-    Consolex::write_debug("LOGOUT LENG: " + session_id.length());
+    Consolex::write_debug("LOGOUT LENG: " + std::to_string(session_id.length()));
     close_session(username, session_id);
     Consolex::write_debug(std::to_string(session_id.length()));
 
@@ -103,7 +103,7 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 
 void ProfileSessionManager::close_session(std::string username, std::string session_id)
 {
-    Consolex::write_debug("LENG: " + session_id.length());
+    Consolex::write_debug("LENG: " + std::to_string(session_id.length()));
     session_id = StringUtils::trim(session_id);
     Consolex::write_debug(std::to_string(session_id.length()));
 
