@@ -25,9 +25,11 @@ LogMessage::LogMessage()
 //-------------------------------------------------------------------------
 void LogMessage::log(std::string type, std::string message, bool breakline)
 {
-    std::string format = "%-" + std::to_string(PADDING_LEFT) + "s %s";
+    std::string format = "%-" + std::to_string(PADDING_LEFT) + "s ";
     
-    printf(format.c_str(), format_type(type).c_str(), message.c_str());
+    printf(format.c_str(), format_type(type).c_str());
+
+	std::cout << message;
 
     if (breakline)
         std::cout << std::endl;
