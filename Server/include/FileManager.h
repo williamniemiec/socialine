@@ -5,8 +5,17 @@
 #ifndef PROJECT_FILEMANAGER_H
 #define PROJECT_FILEMANAGER_H
 
-#include <vector>
+#include "../../Utils/Logger.h"
+#include "../../Utils/StringUtils.h"
+
+#include <iostream>
+#include <fstream>
+
 #include <unordered_map>
+#include <string>
+#include <vector>
+
+using namespace socialine::utils;
 
 class FileManager {
 

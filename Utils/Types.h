@@ -15,6 +15,11 @@
 #define MAX_ARGS 10
 #define NEW_LINE '\n'
 
+#define LEVEL_ALL   0
+#define LEVEL_ERROR 1
+#define LEVEL_DEBUG 2
+#define LEVEL_INFO  3
+
 #define CMD_LOGIN 1
 #define CMD_FOLLOW 2
 #define CMD_LOGOUT 3

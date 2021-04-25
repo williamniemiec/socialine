@@ -9,6 +9,7 @@
 #include <string.h>
 #include <algorithm>
 
+using namespace socialine::utils;
 
 std::vector<std::string> StringUtils::split(std::string str, std::string sep)
 {

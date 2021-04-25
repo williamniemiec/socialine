@@ -7,6 +7,13 @@
 
 #include "../include/ProfileSessionManager.h"
 #include "../../Utils/Types.h"
+#include "../../Utils/Logger.h"
+
+#include <semaphore.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/sem.h>
 
 class ServerNotificationManager {
 

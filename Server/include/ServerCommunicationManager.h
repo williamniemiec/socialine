@@ -15,6 +15,8 @@
 
 #include "../include/TaskManager.h"
 #include "../../Utils/Types.h"
+#include "../../Utils/StringUtils.h"
+#include "../../Utils/Logger.h"
 
 typedef struct __client_session {
     std::string session_id;

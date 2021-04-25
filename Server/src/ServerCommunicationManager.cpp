@@ -3,7 +3,6 @@
 //
 
 #include "../include/ServerCommunicationManager.h"
-#include "../../Utils/StringUtils.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -29,6 +28,7 @@
  * - Ao receber uma mensagem, criar uma nova thread com um clientSocket que irá tratá-la, e voltar a ouvir a porta.
  */
 
+using namespace socialine::utils;
 
 std::unordered_map<std::string, client_session> ServerCommunicationManager::client_sessions;
 
@@ -42,8 +42,7 @@ void ServerCommunicationManager::start( )
     std::string input;
 
     if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        printf("ERROR opening socket");
-        //Consolex::write_error("ERROR opening socket");
+        Logger.write_error("ERROR opening socket");
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
@@ -52,25 +51,21 @@ void ServerCommunicationManager::start( )
     bzero(&(serv_addr.sin_zero), 8);
 
     if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-        printf("ERROR on binding");
-        //Consolex::write_error("ERROR on binding");
+        Logger.write_error("ERROR on binding");
 
+    Logger.write_info("Server will start listening");
     listen(server_socket, 5);
 
     clilen = sizeof(struct sockaddr_in);
 
-    //Consolex::write_info("Server is ready to receive");
-    printf("Server is ready");
-
-    //Todo: change loop to detect the end of execution, so it can return to the app;
+    //ToDo: change loop to detect the end of execution, so it can return to the app;
     while (true) {
 
         int connection_socket;
         struct sockaddr_in cli_addr;
 
         if ((connection_socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen)) == -1) {
-            printf("On accept");
-            //Consolex::write_error("On accept");
+            Logger.write_error("Error accepting request");
             continue;
         }
 
@@ -93,12 +88,15 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
 
     n = read(connection_socket, buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        printf("Reading from socket");
+        Logger.write_debug("Reading data from socket");
 
     char received_packet_buffer[MAX_DATA_SIZE];
     struct __packet received_packet = {0, 0, 0, 0, NO_COOKIE, received_packet_buffer };
     received_packet.Deserialize(buffer);
-    received_packet.print(std::string("RECEIVED"));
+    if( Logger.get_log_level() == LEVEL_DEBUG)
+    {
+        received_packet.print(std::string("RECEIVED"));
+    }
 
     std::string cookie;
     if(received_packet.cookie == NO_COOKIE)
@@ -127,7 +125,8 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     auto it = client_sessions.find(cookie);
     if (it == client_sessions.end() && received_packet.type == CMD_LOGIN) {
         client_session new_session;
-        new_session.ip = std::string(inet_ntoa(cli_addr->sin_addr));   //"127.0.0.1"; // TODO: pegar dinamicamente
+        new_session.ip = std::string(inet_ntoa(cli_addr->sin_addr));
+        //ToDo: pegar dinamicamente //"127.0.0.1";
         new_session.notification_port = args[1];
         client_sessions[cookie] = new_session;
 
@@ -137,7 +136,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
 
     n = write(connection_socket, response_buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        printf("E: Writing to socket");
+        Logger.write_error("Failed to write to socket");
 
     close(connection_socket);
 }
@@ -217,10 +216,8 @@ std::unordered_map<std::string, client_session> client_sessions;
 void ServerCommunicationManager::sendNotification(std::string session_id, notification current_notification) {
     client_session session = ServerCommunicationManager::client_sessions[session_id];
 
-    //Consolex::write_debug("VICTOR IP: " + session.ip);
-    //Consolex::write_debug("VICTOR PORT: " + session.notification_port);
-    std::cout << "Victor IP" << session.ip << '\n';
-
+    Logger.write_debug("IP: " + session.ip );
+    Logger.write_debug("PORT: " + session.notification_port);
 
     std::string payload = current_notification.owner + '\n' + std::to_string( current_notification.timestamp ) + '\n' + current_notification._message + '\n';
 
@@ -240,13 +237,13 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     receiver_host = gethostbyaddr(&addr, sizeof(receiver_ip), AF_INET);
 
     if (receiver_host == NULL) {
-        std::cout << "[Send Notification] No such client found!" << '\n';
+        Logger.write_error("[Send Notification] No such client found!");
     }
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        std::cout << "[Send Notification] Opening socket" << '\n';
+        Logger.write_debug("[Send Notification] Opening socket");
 
-    std::cout << "[Send Notification] receiver port: " << receiver_port << '\n';
+    Logger.write_debug("[Send Notification] receiver port: " + receiver_port );
 
     receiver_addr.sin_family = AF_INET;
     receiver_addr.sin_port = htons(std::stoi(receiver_port.c_str()));
@@ -254,14 +251,16 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     bzero(&(receiver_addr.sin_zero), 8);
 
     if (connect(sockfd, (struct sockaddr *) &receiver_addr, sizeof(receiver_addr)) < 0)
-        std::cout << "[Send Notification] Connecting" << '\n';
+        Logger.write_debug("[Send Notification] Connecting");
 
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
     packet packet_sent = {0,0,0,0, session_id, bufferPayload };
 
     buildPacket(NOTIFICATION_TWEET, 0, message, &packet_sent);
 
-    packet_sent.print(std::string("SENT"));
+    if (Logger.get_log_level() == LEVEL_DEBUG){
+        packet_sent.print(std::string("SENT"));
+    }
 
     char* buffer;
     buffer = (char *) calloc(MAX_MAIL_SIZE, sizeof(char));
@@ -270,7 +269,7 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     // write
     n = write(sockfd, buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        std::cout << "[Send Notification] Writing to socket" << '\n';
+        Logger.write_debug("[Send Notification] Writing to socket");
 
     close(sockfd);
 }

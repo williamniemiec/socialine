@@ -3,24 +3,21 @@
 //
 
 #include "../include/ProfileSessionManager.h"
-#include "../../Utils/Types.h"
-#include "../../Utils/StringUtils.h"
 
-#include <sstream>
-#include <iostream>
 
 using namespace std;
+using namespace socialine::utils;
 
 int ProfileSessionManager::login( std::string username, std::string session_id)
 {
     int return_code = 0;
-    
-    //Consolex::write_debug("Welcome to Profile and Session Manager");
-    //Consolex::write_debug("I am trying to log you in, " + username);
+
+    Logger.write_debug("Welcome to Profile and Session Manager");
+    Logger.write_debug("I am trying to log you in, " + username);
 
     return_code = open_session(username, session_id);
 
-    //Consolex::write_debug("Finishing method login, code: " + std::to_string(return_code));
+    Logger.write_debug("Finishing method login, code: " + std::to_string(return_code));
 
     return return_code;
 }
@@ -30,24 +27,24 @@ int ProfileSessionManager::follow( std::string follower, std::string followed )
 
     int return_code = 0;
 
-    //Consolex::write_debug("Welcome to Profile and Session Manager");
-    //Consolex::write_debug("I am trying to follow this profile: " + followed);
+    Logger.write_debug("Welcome to Profile and Session Manager");
+    Logger.write_debug("I am trying to follow this profile: " + followed);
 
     if(follower == followed)
         return ERROR_FOLLOW_YOURSELF;
 
     return_code = write_follower(follower, followed);
 
-    //Consolex::write_debug("Finishing method follow, code: " + std::to_string(return_code));
+    Logger.write_debug("Finishing method follow, code: " + std::to_string(return_code));
 
     return return_code;
 }
 
 int ProfileSessionManager::logout( std::string username, std::string session_id )
 {
-    //Consolex::write_debug("LOGOUT LENG: " + std::to_string(session_id.length()));
+    Logger.write_debug("LOGOUT LENG: " + std::to_string(session_id.length()));
     close_session(username, session_id);
-    //Consolex::write_debug(std::to_string(session_id.length()));
+    Logger.write_debug(std::to_string(session_id.length()));
 
     return 0;
 }
@@ -60,7 +57,7 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 
     sem_wait(&write_session_semaphore);
 
-    //Consolex::write_debug("Active sessions:");
+    Logger.write_debug("Active sessions:");
     stringstream activeSessions;
     
     for(int i = 0; i < sessions_map[username].size(); i++ )
@@ -68,7 +65,7 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
         activeSessions << sessions_map[username][i];
         activeSessions << " ";
     }
-    //Consolex::write_debug(activeSessions.str());
+    Logger.write_debug(activeSessions.str());
 
     if(sessions_map[username].size() >= 2)
     {
@@ -83,7 +80,7 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
     if( code == 0 )
         sessions_map[username].push_back(session_id);
 
-    //Consolex::write_debug("After execution: ");
+    Logger.write_debug("After execution: ");
     stringstream activeSessionsAfterExecution;
 
     for(int i = 0; i < sessions_map[username].size(); i++ )
@@ -92,7 +89,7 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
         activeSessionsAfterExecution << " ";
     }
 
-    //Consolex::write_debug(activeSessionsAfterExecution.str());
+    Logger.write_debug(activeSessionsAfterExecution.str());
 
     sem_post(&write_session_semaphore);
 
@@ -101,14 +98,14 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 
 void ProfileSessionManager::close_session(std::string username, std::string session_id)
 {
-    //Consolex::write_debug("LENG: " + std::to_string(session_id.length()));
+    Logger.write_debug("LENG: " + std::to_string(session_id.length()));
     session_id = StringUtils::trim(session_id);
-    //Consolex::write_debug(std::to_string(session_id.length()));
+    Logger.write_debug(std::to_string(session_id.length()));
 
     sem_wait(&write_session_semaphore);
-    //Consolex::write_debug(std::to_string(session_id.length()));
-    
-    //Consolex::write_debug("Active sessions:");
+    Logger.write_debug(std::to_string(session_id.length()));
+
+    Logger.write_debug("Active sessions:");
     stringstream activeSessions;
 
     for(int i = 0; i < sessions_map[username].size(); i++ )
@@ -120,17 +117,17 @@ void ProfileSessionManager::close_session(std::string username, std::string sess
             sessions_map[username].erase(sessions_map[username].begin()+i);
         }
     }
-    
-    //Consolex::write_debug(activeSessions.str());
 
-    //Consolex::write_debug("After deletion:");
+    Logger.write_debug(activeSessions.str());
+
+    Logger.write_debug("After deletion:");
     stringstream sessionsAfterDelete;
     for(int i = 0; i < sessions_map[username].size(); i++ )
     {
         sessionsAfterDelete << sessions_map[username][i];
         sessionsAfterDelete << " ";
     }
-    //Consolex::write_debug(sessionsAfterDelete.str());
+    Logger.write_debug(sessionsAfterDelete.str());
 
     sem_post(&write_session_semaphore);
 }
@@ -204,9 +201,9 @@ int ProfileSessionManager::write_follower(std::string follower, std::string foll
 
     sem_wait(&write_followers_semaphore);
 
-    //Consolex::write_debug("I am " + follower + " and I follow this accounts:");
+    Logger.write_debug("I am " + follower + " and I follow this accounts:");
     for (int k = 0; k < followers_map[follower].size() ; ++k)
-        //Consolex::write_debug("\t" + followers_map[follower][k]);
+        Logger.write_debug("\t" + followers_map[follower][k]);
 
     //To ensure we only follow someone once
     if(followers_map[follower].size() != 0)
@@ -220,14 +217,14 @@ int ProfileSessionManager::write_follower(std::string follower, std::string foll
 
     if(code == 0)
     {
-        //Consolex::write_debug("I am here!!!!");
+        Logger.write_debug("I am here!!!!");
         followers_map[follower].push_back(followed);
         followed_by_map[followed].push_back(follower);
     }
 
-    //Consolex::write_debug("I am " + follower + " and I follow this accounts:");
+    Logger.write_debug("I am " + follower + " and I follow this accounts:");
     for (int k = 0; k < followers_map[follower].size() ; ++k)
-        //Consolex::write_debug("\t" + followers_map[follower][k]);
+        Logger.write_debug("\t" + followers_map[follower][k]);
 
     sem_post(&write_followers_semaphore);
 

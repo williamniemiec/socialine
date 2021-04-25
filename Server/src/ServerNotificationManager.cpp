@@ -3,11 +3,6 @@
 //
 
 #include "../include/ServerNotificationManager.h"
-#include <semaphore.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/sem.h>
 
 using namespace std;
 

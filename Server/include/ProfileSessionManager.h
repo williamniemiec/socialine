@@ -6,7 +6,14 @@
 #include <vector>
 #include <string>
 #include <semaphore.h>
+#include <sstream>
+
 #include "FileManager.h"
+#include "../../Utils/Logger.h"
+#include "../../Utils/Types.h"
+#include "../../Utils/StringUtils.h"
+
+using namespace socialine::utils;
 
 class ProfileSessionManager {
 
@@ -30,9 +37,6 @@ public:
     {
 
         followers_map = myFileManager.read_profiles_file();
-
-        //ToDo: Remove cout
-        std::cout << "Followers map size is: " << followers_map.size() << '\n';
 
         sem_init(&write_session_semaphore, 1, 1);
         sem_init(&session_readers_mutex, 1, 1);

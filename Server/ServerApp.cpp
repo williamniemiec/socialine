@@ -4,39 +4,57 @@
 #include "include/ServerCommunicationManager.h"
 #include "../Utils/Types.h"
 #include "../Utils/StringUtils.h"
+#include "../Utils/Logger.h"
 
 #include <iostream>
 #include <vector>
 #include <string>
 #include <sstream>
 
-using namespace std;
-
-bool is_debug_mode(int argc, char* argv[]);
+using namespace socialine::utils;
 
 
+///Function to check the parameters and check the execution mode to define log level
+///@param: argc - count of parameters passed to the function
+///@param: argv - vector containing the arguments passed to the function
+///@returns: log level code
+///Log Level ERROR: Messages reporting unrecoverable errors
+///Log Level INFO:  Messages reporting operations status
+///Log Level DEBUG: Messages containing data (variable contents, returning values) for debug purposes
+///Log Level ALL:   All messages explained above will be shown
+
+int check_mode(int argc, char* argv[]);
+
+///Main function to orchestrate app execution
 int main(int argc, char* argv[])
 {
-//    if (is_debug_mode(argc, argv))
-//        Consolex::set_logger_level(LogLevel::DEBUG());
-//    else
-//        Consolex::set_logger_level(LogLevel::INFO());
-    
+    Logger.set_log_level(check_mode(argc, argv));
+
     ServerCommunicationManager server;
 
     server.start();
 
     //ToDo: call function to persist server data
 
-    cout << "Finishing session" << "\n";
-
-//    Consolex::write_debug("I am finishing the session!");
+    Logger.write_debug("Closing Server Session");
 
     return(0);
 }
 
-bool is_debug_mode(int argc, char* argv[])
+int check_mode(int argc, char* argv[])
 {
-    return (argc > 1)
-            && StringUtils::to_upper(std::string (argv[1])) == "TRUE";
+    int level = LEVEL_ALL;
+
+    if(argc > 1) {
+        std::string argument = StringUtils::to_upper(argv[1]);
+
+        if(!argument.compare("DEBUG"))
+            level = LEVEL_DEBUG;
+        else if(!argument.compare("ERROR"))
+            level = LEVEL_ERROR;
+        else if(!argument.compare("INFO"))
+            level = LEVEL_INFO;
+    }
+
+    return level;
 }

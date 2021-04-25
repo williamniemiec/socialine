@@ -3,13 +3,9 @@
 //
 
 #include "../include/TaskManager.h"
-#include "../include/ProfileSessionManager.h"
-#include "../include/ServerNotificationManager.h"
-#include "../include/ServerCommunicationManager.h"
-#include "../../Utils/Types.h"
-#include "../../Utils/StringUtils.h"
 
 using namespace std;
+using namespace socialine::utils;
 
 ServerNotificationManager notification_manager;
 ServerCommunicationManager comunication_manager;
@@ -18,6 +14,7 @@ int TaskManager::run_command(int type, string payload, string session_id )
 {
     int code = 0;
 
+    Logger.write_info("I am running the TASK Manager!!");
     vector<notification> notifications;
     std::unordered_map<std::string, notification> notifications_map;
     vector<string> arguments;

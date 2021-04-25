@@ -4,9 +4,11 @@ OBJS	= ServerApp.o\
 		ProfileSessionManager.o\
 		TaskManager.o\
 		ServerCommunicationManager.o\
-		StringUtils.o
+		StringUtils.o\
+		Logger.o
 SOURCE	= ServerApp.cpp\
 		../Utils/StringUtils.cpp\
+		../Utils/Logger.cpp\
 		FileManager.cpp\
 		src/ServerNotificationManager.cpp\
 		src/ProfileSessionManager.cpp\
@@ -14,6 +16,7 @@ SOURCE	= ServerApp.cpp\
 		src/ServerCommunicationManager.cpp
 HEADER	= ../Utils/Types.h\
 		../Utils/StringUtils.h\
+		../Utils/Logger.h\
 		include/FileManager.h\
 		include/ServerNotificationManager.h\
 		include/ProfileSessionManager.h\
@@ -32,6 +35,9 @@ ServerApp.o: ServerApp.cpp
 
 StringUtils.o: ../Utils/StringUtils.cpp
 	$(CC) $(FLAGS) ../Utils/StringUtils.cpp -std=c++17
+
+Logger.o: ../Utils/Logger.cpp
+	$(CC) $(FLAGS) ../Utils/Logger.cpp -std=c++17
 
 FileManager.o: src/FileManager.cpp
 	$(CC) $(FLAGS) src/FileManager.cpp -std=c++17
@@ -53,4 +59,4 @@ clean:
 	rm -f $(OBJS) $(OUT)
 
 run: $(OUT)
-	./$(OUT) $(debug) 
+	./$(OUT) $(mode)

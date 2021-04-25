@@ -8,12 +8,11 @@
 #include <iostream>
 #include <vector>
 
-class StringUtils {
-    private:
-        StringUtils();
+namespace socialine::utils
+{
+    class StringUtils {
 
     public:
-
         /// Function that splits a string using the delimiter provided
         /// @param: str
         /// @param: sep
@@ -31,7 +30,8 @@ class StringUtils {
         /// @returns: the given string without spare whitespaces
         static std::string trim(const std::string& str);
 
-};
+    };
 
+}
 
 #endif //SOCIALINE_STRINGUTILS_H
