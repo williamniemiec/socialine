@@ -15,13 +15,7 @@ OBJS	= 	ClientApp.o\
 		Notification.o\
 		User.o\
 		StringUtils.o\
-		Consolex.o\
-		HistoryConsolex.o\
-		InputConsolex.o\
-		LoggerConsolex.o\
-		LogLevel.o\
-		LogMessage.o\
-		OutputConsolex.o
+
 SOURCE	= 	ClientApp.cpp\
 		src/controllers/HomeController.cpp\
 		src/controllers/HomeCLIController.cpp\
@@ -37,9 +31,10 @@ SOURCE	= 	ClientApp.cpp\
 		src/models/Notification.cpp\
 		src/models/User.cpp\
 		src/views/HomeView.cpp\
-		src/views/HomeCLIView.cpp
+		src/views/HomeCLIView.cpp\
+
 HEADER	= 	../Utils/Types.h\
-			../Utils/StringUtils.hpp
+			../Utils/StringUtils.hpp\
 						
 
 OUT	= app_cliente.out
@@ -97,30 +92,6 @@ Notification.o: src/models/Notification.cpp
 
 User.o: src/models/User.cpp
 	$(CC) $(FLAGS) src/models/User.cpp -std=c++17
-
-Consolex.o: ../Utils/wniemiec/io/consolex/Consolex.cpp
-	$(CC) $(FLAGS) ../Utils/wniemiec/io/consolex/Consolex.cpp -std=c++17
-
-HistoryConsolex.o: ../Utils/wniemiec/io/consolex/HistoryConsolex.cpp
-	$(CC) $(FLAGS) ../Utils/wniemiec/io/consolex/HistoryConsolex.cpp -std=c++17
-
-InputConsolex.o: ../Utils/wniemiec/io/consolex/InputConsolex.cpp
-	$(CC) $(FLAGS) ../Utils/wniemiec/io/consolex/InputConsolex.cpp -std=c++17
-
-LoggerConsolex.o: ../Utils/wniemiec/io/consolex/LoggerConsolex.cpp
-	$(CC) $(FLAGS) ../Utils/wniemiec/io/consolex/LoggerConsolex.cpp -std=c++17
-
-LogLevel.o: ../Utils/wniemiec/io/consolex/LogLevel.cpp
-	$(CC) $(FLAGS) ../Utils/wniemiec/io/consolex/LogLevel.cpp -std=c++17
-
-LogMessage.o: ../Utils/wniemiec/io/consolex/LogMessage.cpp
-	$(CC) $(FLAGS) ../Utils/wniemiec/io/consolex/LogMessage.cpp -std=c++17
-
-OutputConsolex.o: ../Utils/wniemiec/io/consolex/OutputConsolex.cpp
-	$(CC) $(FLAGS) ../Utils/wniemiec/io/consolex/OutputConsolex.cpp -std=c++17
-
-StringUtils.o: ../Utils/wniemiec/util/data/StringUtils.cpp
-	$(CC) $(FLAGS) ../Utils/wniemiec/util/data/StringUtils.cpp -std=c++17
 
 clean:
 	rm -f $(OBJS) $(OUT)
