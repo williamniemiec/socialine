@@ -7,11 +7,8 @@
 #include "../include/ServerNotificationManager.h"
 #include "../include/ServerCommunicationManager.h"
 #include "../../Utils/Types.h"
-#include "../../Utils/wniemiec/util/data/StringUtils.hpp"
-#include "../../Utils/wniemiec/io/consolex/Consolex.hpp"
+#include "../../Utils/StringUtils.h"
 
-using namespace wniemiec::io::consolex;
-using namespace wniemiec::util::data;
 using namespace std;
 
 ServerNotificationManager notification_manager;
@@ -30,7 +27,7 @@ int TaskManager::run_command(int type, string payload, string session_id )
     switch(type)
     {
         case CMD_LOGIN:
-            Consolex::write_debug("Hi! This is the task Manager running command LOGIN");
+            cout << "Hi! This is the task Manager running command LOGIN" << "\n";
             code = ProfileSessionManager::profileSessionManager.login(arguments[1], session_id);
             notifications = notification_manager.read_notifications(arguments[1]);
             for(int i = 0; i < notifications.size(); i++ )
@@ -39,17 +36,17 @@ int TaskManager::run_command(int type, string payload, string session_id )
             }
             break;
         case CMD_FOLLOW:
-            Consolex::write_debug("Hi! This is the task Manager running command FOLLOW");
-            Consolex::write_debug("Follower: " + arguments[1] + " Followed: " + arguments[2]);
+            cout << "Hi! This is the task Manager running command FOLLOW" << "\n";
+            cout << "Follower: " + arguments[1] + " Followed: " + arguments[2] << "\n";
             code = ProfileSessionManager::profileSessionManager.follow(arguments[1], arguments[2]);
             break;
         case CMD_LOGOUT:
-            Consolex::write_debug("Hi! This is the task Manager running command LOGOUT");
-            Consolex::write_debug("session id: " + session_id);
+            cout << "Hi! This is the task Manager running command LOGOUT" << "\n";
+            cout << "session id: " + session_id << "\n";
             ProfileSessionManager::profileSessionManager.logout(arguments[1], session_id);
             break;
         case CMD_TWEET:
-            Consolex::write_debug("Hi! This is the task Manager running command TWEET");
+            cout << "Hi! This is the task Manager running command TWEET" << "\n";
             notifications_map = notification_manager.tweet( arguments[1], arguments[2], arguments[0] );
             for (auto const& x : notifications_map)
             {
@@ -57,7 +54,7 @@ int TaskManager::run_command(int type, string payload, string session_id )
             }
             break;
         default:
-            Consolex::write_debug("Oops! Something went wrong!");
+            cout << "Oops! Something went wrong!" << "\n";
     }
 
     return code;

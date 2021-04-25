@@ -3,8 +3,7 @@
 //
 
 #include "../include/ServerCommunicationManager.h"
-#include "../../Utils/wniemiec/util/data/StringUtils.hpp"
-#include "../../Utils/wniemiec/io/consolex/Consolex.hpp"
+#include "../../Utils/StringUtils.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -22,9 +21,6 @@
 #include <ctime>
 
 #define PORT 4000
-
-using namespace wniemiec::io::consolex;
-using namespace wniemiec::util::data;
 
 /**
  * Inicializa o connectionSocket, que fica aberto ouvindo mensagens de clientes enviadas na porta 4000.
@@ -46,7 +42,8 @@ void ServerCommunicationManager::start( )
     std::string input;
 
     if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        Consolex::write_error("ERROR opening socket");
+        printf("ERROR opening socket");
+        //Consolex::write_error("ERROR opening socket");
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
@@ -55,13 +52,15 @@ void ServerCommunicationManager::start( )
     bzero(&(serv_addr.sin_zero), 8);
 
     if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-        Consolex::write_error("ERROR on binding");
+        printf("ERROR on binding");
+        //Consolex::write_error("ERROR on binding");
 
     listen(server_socket, 5);
 
     clilen = sizeof(struct sockaddr_in);
 
-    Consolex::write_info("Server is ready to receive");
+    //Consolex::write_info("Server is ready to receive");
+    printf("Server is ready");
 
     //Todo: change loop to detect the end of execution, so it can return to the app;
     while (true) {
@@ -70,7 +69,8 @@ void ServerCommunicationManager::start( )
         struct sockaddr_in cli_addr;
 
         if ((connection_socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen)) == -1) {
-            Consolex::write_error("On accept");
+            printf("On accept");
+            //Consolex::write_error("On accept");
             continue;
         }
 
@@ -93,7 +93,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
 
     n = read(connection_socket, buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        Consolex::write_error("Reading from socket");
+        printf("Reading from socket");
 
     char received_packet_buffer[MAX_DATA_SIZE];
     struct __packet received_packet = {0, 0, 0, 0, NO_COOKIE, received_packet_buffer };
@@ -137,7 +137,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
 
     n = write(connection_socket, response_buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        Consolex::write_error("Writing to socket");
+        printf("E: Writing to socket");
 
     close(connection_socket);
 }
@@ -217,8 +217,10 @@ std::unordered_map<std::string, client_session> client_sessions;
 void ServerCommunicationManager::sendNotification(std::string session_id, notification current_notification) {
     client_session session = ServerCommunicationManager::client_sessions[session_id];
 
-    Consolex::write_debug("VICTOR IP: " + session.ip);
-    Consolex::write_debug("VICTOR PORT: " + session.notification_port);
+    //Consolex::write_debug("VICTOR IP: " + session.ip);
+    //Consolex::write_debug("VICTOR PORT: " + session.notification_port);
+    std::cout << "Victor IP" << session.ip << '\n';
+
 
     std::string payload = current_notification.owner + '\n' + std::to_string( current_notification.timestamp ) + '\n' + current_notification._message + '\n';
 
@@ -238,13 +240,13 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     receiver_host = gethostbyaddr(&addr, sizeof(receiver_ip), AF_INET);
 
     if (receiver_host == NULL) {
-        Consolex::write_error("[Send Notification] No such client found!");
+        std::cout << "[Send Notification] No such client found!" << '\n';
     }
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        Consolex::write_error("[Send Notification] Opening socket");
+        std::cout << "[Send Notification] Opening socket" << '\n';
 
-    Consolex::write_info("[Send Notification] receiver port: " + receiver_port);
+    std::cout << "[Send Notification] receiver port: " << receiver_port << '\n';
 
     receiver_addr.sin_family = AF_INET;
     receiver_addr.sin_port = htons(std::stoi(receiver_port.c_str()));
@@ -252,7 +254,7 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     bzero(&(receiver_addr.sin_zero), 8);
 
     if (connect(sockfd, (struct sockaddr *) &receiver_addr, sizeof(receiver_addr)) < 0)
-        Consolex::write_error("[Send Notification] Connecting");
+        std::cout << "[Send Notification] Connecting" << '\n';
 
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
     packet packet_sent = {0,0,0,0, session_id, bufferPayload };
@@ -268,7 +270,7 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     // write
     n = write(sockfd, buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        Consolex::write_error("[Send Notification] Writing to socket");
+        std::cout << "[Send Notification] Writing to socket" << '\n';
 
     close(sockfd);
 }

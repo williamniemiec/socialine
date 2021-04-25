@@ -3,8 +3,7 @@
 //
 #include "include/ServerCommunicationManager.h"
 #include "../Utils/Types.h"
-#include "../Utils/wniemiec/io/consolex/Consolex.hpp"
-#include "../Utils/wniemiec/util/data/StringUtils.hpp"
+#include "../Utils/StringUtils.h"
 
 #include <iostream>
 #include <vector>
@@ -12,24 +11,16 @@
 #include <sstream>
 
 using namespace std;
-using namespace wniemiec::io::consolex;
-using namespace wniemiec::util::data;
 
-//-------------------------------------------------------------------------
-//      Prototypes
-//-------------------------------------------------------------------------
 bool is_debug_mode(int argc, char* argv[]);
 
 
-//-------------------------------------------------------------------------
-//      Main
-//-------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {
-    if (is_debug_mode(argc, argv))
-        Consolex::set_logger_level(LogLevel::DEBUG());
-    else
-        Consolex::set_logger_level(LogLevel::INFO());
+//    if (is_debug_mode(argc, argv))
+//        Consolex::set_logger_level(LogLevel::DEBUG());
+//    else
+//        Consolex::set_logger_level(LogLevel::INFO());
     
     ServerCommunicationManager server;
 
@@ -37,16 +28,15 @@ int main(int argc, char* argv[])
 
     //ToDo: call function to persist server data
 
-    Consolex::write_debug("I am finishing the session!");
+    cout << "Finishing session" << "\n";
+
+//    Consolex::write_debug("I am finishing the session!");
 
     return(0);
 }
 
-//-------------------------------------------------------------------------
-//      Methods
-//-------------------------------------------------------------------------
 bool is_debug_mode(int argc, char* argv[])
 {
-    return  (argc > 1) 
+    return (argc > 1)
             && StringUtils::to_upper(std::string (argv[1])) == "TRUE";
 }
