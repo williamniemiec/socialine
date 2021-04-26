@@ -15,8 +15,11 @@ OBJS	= 	ClientApp.o\
 		Notification.o\
 		User.o\
 		StringUtils.o\
+		Logger.o
 
 SOURCE	= 	ClientApp.cpp\
+		../Utils/StringUtils.cpp\
+		../Utils/Logger.cpp\
 		src/controllers/HomeController.cpp\
 		src/controllers/HomeCLIController.cpp\
 		src/exceptions/InvalidCredentialsException.cpp\
@@ -33,8 +36,9 @@ SOURCE	= 	ClientApp.cpp\
 		src/views/HomeView.cpp\
 		src/views/HomeCLIView.cpp\
 
-HEADER	= 	../Utils/Types.h\
-			../Utils/StringUtils.hpp\
+HEADER	= ../Utils/Types.h\
+		../Utils/StringUtils.h\
+		../Utils/Logger.h\
 						
 
 OUT	= app_cliente.out
@@ -47,6 +51,12 @@ all: $(OBJS)
 
 ClientApp.o: ClientApp.cpp
 	$(CC) $(FLAGS) ClientApp.cpp -std=c++17
+
+StringUtils.o: ../Utils/StringUtils.cpp
+	$(CC) $(FLAGS) ../Utils/StringUtils.cpp -std=c++17
+
+Logger.o: ../Utils/Logger.cpp
+	$(CC) $(FLAGS) ../Utils/Logger.cpp -std=c++17
 
 HomeController.o: src/controllers/HomeController.cpp
 	$(CC) $(FLAGS) src/controllers/HomeController.cpp -std=c++17
@@ -97,7 +107,7 @@ clean:
 	rm -f $(OBJS) $(OUT)
 
 wx-mac:
-	brew install wxmac
+	brew install cdalvaro/tap/wxmac
 
 wx-ubuntu:
 	sudo apt-add-repository universe
@@ -105,4 +115,4 @@ wx-ubuntu:
 	sudo apt-get install libwxbase3.0-dev libwxgtk3.0-gtk3-dev
 
 run: $(OUT)
-	./$(OUT) $(user) $(server) $(port) $(debug) 
+	./$(OUT) $(user) $(server) $(port) $(debug)

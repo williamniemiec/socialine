@@ -1,14 +1,15 @@
 #include <iostream>
+
 #include "include/models/auth/IAuthenticator.hpp"
 #include "include/models/auth/CLIAuthenticator.hpp"
 #include "include/exceptions/InvalidCredentialsException.hpp"
 #include "include/controllers/HomeController.hpp"
 #include "include/controllers/HomeCLIController.hpp"
-#include "../Utils/wniemiec/util/data/StringUtils.hpp"
-#include "../Utils/wniemiec/io/consolex/Consolex.hpp"
 
-using namespace wniemiec::io::consolex;
-using namespace wniemiec::util::data;
+#include "../Utils/StringUtils.h"
+#include "../Utils/Logger.h"
+
+using namespace socialine::utils;
 
 //-------------------------------------------------------------------------
 //      Prototypes
@@ -26,17 +27,16 @@ int main(int argc, char* argv[])
     try {
         if (is_debug_mode(argc, argv))
         {
-            Consolex::set_logger_level(LogLevel::DEBUG());
+            Logger.set_log_level(LEVEL_DEBUG);
             run_cli(argc, argv);
         }
         else
         {
-            Consolex::set_logger_level(LogLevel::INFO());
             run_gui(argc, argv);
         }
     }
     catch (std::exception &e) {
-        Consolex::write_error(e.what());
+        Logger.write_error(e.what());
         return -1;
     }
 

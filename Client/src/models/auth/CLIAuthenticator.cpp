@@ -3,10 +3,10 @@
 #include "../../../include/exceptions/InvalidCredentialsException.hpp"
 #include "../../../include/services/ClientCommunicationManager.h"
 #include "../../../../Utils/Types.h"
-#include "../../../../Utils/wniemiec/io/consolex/Consolex.hpp"
+#include "../../../../Utils/Logger.h"
 
 using namespace models::auth;
-using namespace wniemiec::io::consolex;
+using namespace socialine::utils;
 
 //-------------------------------------------------------------------------
 //      Constructor
@@ -23,14 +23,14 @@ CLIAuthenticator::CLIAuthenticator(int argc, char* argv[])
 //-------------------------------------------------------------------------
 void CLIAuthenticator::login()
 {
-    Consolex::write_info("Logging in...");
+    Logger.write_info("Logging in...");
 
     do_login();
 
     if (!was_login_successful())
         throw exceptions::InvalidCredentialsException("Incorrect credentials");
 
-    Consolex::write_info("Logged!");
+    Logger.write_info("Logged!");
 }
 
 void CLIAuthenticator::do_login()

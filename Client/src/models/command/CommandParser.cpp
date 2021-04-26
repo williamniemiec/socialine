@@ -4,10 +4,10 @@
 #include "../../../include/models/command/CommandBuilder.hpp"
 #include "../../../include/models/command/CommandParser.hpp"
 #include "../../../include/models/data/ArgumentValidator.hpp"
-#include "../../../../Utils/wniemiec/util/data/StringUtils.hpp"
+#include "../../../../Utils/StringUtils.h"
 
 using namespace models::command;
-using namespace wniemiec::util::data;
+using namespace socialine::utils;
 
 //-------------------------------------------------------------------------
 //      Constructor

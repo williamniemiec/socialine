@@ -2,6 +2,7 @@
 #define SOCIALINEV2_CLIENTCOMMUNICATIONMANAGER_H
 
 #include <iostream>
+
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,8 +12,14 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ctime>
+
+//ToDo: validate this includes, we are using thread or pthread?
 #include <thread>
-#include <unistd.h>
+#include <pthread.h>
+
+#include "../../../Utils/StringUtils.h"
+#include "../../../Utils/Types.h"
+#include "../../../Utils/Logger.h"
 #include "../../include/models/manager/ClientNotificationManager.h"
 
 class ClientCommunicationManager {

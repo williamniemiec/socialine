@@ -2,10 +2,10 @@
 #include <regex>
 #include "../../../include/models/data/ArgumentValidator.hpp"
 #include "../../../../Utils/Types.h"
-#include "../../../../Utils/wniemiec/util/data/StringUtils.hpp"
+#include "../../../../Utils/StringUtils.h"
 
 using namespace models::data;
-using namespace wniemiec::util::data;
+using namespace socialine::utils;
 
 //-------------------------------------------------------------------------
 //      Constructor

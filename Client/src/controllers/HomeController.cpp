@@ -10,7 +10,6 @@
 #include "../../include/views/HomeView.hpp"
 #include "../../include/exceptions/InvalidCredentialsException.hpp"
 #include "../../../Utils/Types.h"
-#include "../../../Utils/wniemiec/io/consolex/Consolex.hpp"
 
 using namespace controllers;
 using namespace models;
