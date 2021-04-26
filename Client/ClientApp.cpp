@@ -26,9 +26,10 @@ int main(int argc, char* argv[])
 {
     //ToDo: better way to validate inputs
     if(argc < 5)
+    {
         Logger.write_error("Please, inform all parameters in the following order: user, server, port, debug");
         return -1;
-
+    }
     try {
         if (is_debug_mode(argc, argv))
         {
