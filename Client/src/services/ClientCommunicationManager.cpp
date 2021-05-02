@@ -1,20 +1,24 @@
 
 #include "../../include/services/ClientCommunicationManager.h"
+#include "../../include/services/Frontend.h"
 
 using namespace socialine::utils;
 
 std::string ClientCommunicationManager::username;
-std::string ClientCommunicationManager::server;
-std::string ClientCommunicationManager::door;
 std::string ClientCommunicationManager::session_cookie;
 int ClientCommunicationManager::notification_socket;
 socklen_t ClientCommunicationManager::clilen;
 models::manager::ClientNotificationManager* ClientCommunicationManager::notificationManager;
 
 int ClientCommunicationManager::establish_connection(std::string username, std::string server , std::string door ) {
+
+    if (server.empty() || door.empty()) {
+        printf("[WARNING]: server and door are ignored");
+    }
+
+    Frontend::discoverPrimaryServer();
+
     ClientCommunicationManager::username = username;
-    ClientCommunicationManager::server = server;
-    ClientCommunicationManager::door = door;
     ClientCommunicationManager::session_cookie = NO_COOKIE;
 
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
@@ -34,7 +38,7 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     struct in_addr addr;
     std::string buffer_out, buffer_in;
 
-    inet_aton(server.c_str(), &addr);
+    inet_aton(Frontend::primaryServerIP.c_str(), &addr);
     server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
 
     if (server_host == NULL) {
@@ -46,7 +50,7 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
         Logger.write_error("Opening socket");
 
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(4000);
+    server_addr.sin_port = htons(Frontend::primaryServerPort);
     server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
     bzero(&(server_addr.sin_zero), 8);
 

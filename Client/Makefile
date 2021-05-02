@@ -8,6 +8,7 @@ OBJS	= 	ClientApp.o\
 		CLIAuthenticator.o\
 		CommandBuilder.o\
 		CommandParser.o\
+		Frontend.o\
 		ClientCommunicationManager.o\
 		ClientConsoleManager.o\
 		ClientNotificationManager.o\
@@ -84,6 +85,9 @@ CommandBuilder.o: src/models/command/CommandBuilder.cpp
 
 CommandParser.o: src/models/command/CommandParser.cpp
 	$(CC) $(FLAGS) src/models/command/CommandParser.cpp -std=c++17
+
+Frontend.o: src/services/Frontend.cpp
+	$(CC) $(FLAGS) src/services/Frontend.cpp -std=c++17
 
 ClientCommunicationManager.o: src/services/ClientCommunicationManager.cpp
 	$(CC) $(FLAGS) src/services/ClientCommunicationManager.cpp -std=c++17
