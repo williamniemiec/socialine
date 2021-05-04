@@ -2,6 +2,7 @@
 // Created by Farias, Karine on 3/17/21.
 //
 #include "include/ServerCommunicationManager.h"
+#include "include/ReplicManager.hpp"
 #include "../Utils/Types.h"
 #include "../Utils/StringUtils.h"
 #include "../Utils/Logger.h"
@@ -12,7 +13,6 @@
 #include <sstream>
 
 using namespace socialine::utils;
-
 
 ///Function to check the parameters and check the execution mode to define log level
 ///@param: argc - count of parameters passed to the function
@@ -28,6 +28,11 @@ int check_mode(int argc, char* argv[]);
 ///Main function to orchestrate app execution
 int main(int argc, char* argv[])
 {
+    ReplicManager::run();
+
+    exit(0); // TEMP - REPLIC MANAGER TESTS
+
+
     Logger.set_log_level(check_mode(argc, argv));
 
     ServerCommunicationManager server;
