@@ -3,7 +3,7 @@
 #include "../../Utils/Types.h"
 
 /// <summary>
-///     Responsible for executing routines within time intervals.
+///     Responsible for managing primary server and backup servers.
 /// </summary
 class ReplicManager
 {
@@ -35,7 +35,8 @@ private:
 //-------------------------------------------------------------------------
 public:
     /// <summary>
-    ///     Runs a routine within a timeout.
+    ///     Initializes a server as a primary if there is no server running,
+    ///     or as a backup if one exists.
     /// </summary>
     static void run();
 private:
