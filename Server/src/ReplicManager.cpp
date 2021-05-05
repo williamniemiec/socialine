@@ -12,7 +12,7 @@
 #include "../../Utils/Logger.h"
 
 #define MSG_HEARTBEAT               0
-#define MSG_COOKIE                  1
+#define MSG_NEW_SESSION             1
 #define MSG_PENDING_NOTIFICATIONS   2
 #define MSG_SESSIONS                3
 #define MSG_FOLLOWERS               4
@@ -199,6 +199,63 @@ void ReplicManager::heartbeat_receiver()
     }
 
     close(server_socket);
+}
+
+void ReplicManager::notify_new_session(client_session session)
+{
+    for (auto it = rm->begin(); it != rm->end(); it++)
+    {
+        int sockfd, n;
+        struct hostent *server_host;
+        struct in_addr addr;
+        std::string buffer_out, buffer_in;
+        std::string server = "127.0.0.1";
+        
+        inet_aton(server.c_str(), &addr);
+        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
+
+        if (server_host == NULL) {
+            Logger.write_error("No such host!");
+            exit(-1);
+        }
+        struct sockaddr_in backup_server_addr;
+        
+        backup_server_addr.sin_family = AF_INET;
+        backup_server_addr.sin_port = htons(it->first);
+        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        bzero(&(backup_server_addr.sin_zero), 8);
+
+        if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            Logger.write_error("ERROR: Opening socket");
+            continue;
+        }
+
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0) 
+        {
+            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            continue;
+        }
+        
+        std::cout << "PRIMARY IS SENDING COOKIES TO BACKUP AT PORT " << it->first << std::endl;
+        char *message = new char [MAX_MAIL_SIZE];
+
+        message[0] = MSG_NEW_SESSION;
+
+        // COOKIE
+        memcpy(&message[1], session.session_id.c_str(), COOKIE_LENGTH);
+
+        // IP
+        memcpy(&message[1+COOKIE_LENGTH], session.ip.c_str(), 16);
+
+        // NOTIFICATION PORT
+        memcpy(&message[1+COOKIE_LENGTH+16], session.notification_port.c_str(), 6);
+
+        n = write(sockfd, message, MAX_MAIL_SIZE);
+        
+        if (n < 0)
+            Logger.write_error("Failed to write to socket");
+    }
 }
 
 void ReplicManager::notify_new_backup()
@@ -455,6 +512,25 @@ void ReplicManager::init_server_as_backup()
 
             std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: " << g_availablePort << std::endl;
         }
+        else if (buffer_response[0] == MSG_NEW_SESSION) 
+        {
+            char cookie[COOKIE_LENGTH];
+            char ip[16];
+            char port[6];
+
+            // COOKIE
+            memcpy(&cookie, &buffer_response[1], COOKIE_LENGTH);
+
+            // IP
+            memcpy(&ip, &buffer_response[1+COOKIE_LENGTH], 16);
+
+            // NOTIFICATION PORT
+            memcpy(&port, &buffer_response[1+COOKIE_LENGTH+16], 6);
+
+            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: SESSION" << std::endl;
+
+            // TODO: Store session at server communication manager
+        }
         
         //g_primary_server_online = false;
     }
@@ -462,7 +538,7 @@ void ReplicManager::init_server_as_backup()
     close(connection_socket);
     close(server_socket);
 
-    std::cout << "BACKUP(" << getpid() << ") - PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
+    std::cout << "BACKUP(" << getpid() << ") PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
     std::cout << "BACKUP(" << getpid() << ") I'M THE LEADER!!!" << std::endl;
     std::cout << "BACKUP(" << getpid() << ") BECOMING PRIMARY" << std::endl;
 
