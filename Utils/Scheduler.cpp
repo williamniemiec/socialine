@@ -61,7 +61,7 @@ void Scheduler::wait_routine_for(long time)
 
     while ((time_elapsed_in_milliseconds(start) < (double) time) && !has_routine_finished())
     {
-        sleep(1);
+        usleep(200 * 1000);
     }
 }
 

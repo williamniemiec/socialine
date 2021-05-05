@@ -396,4 +396,6 @@ void ReplicManager::init_server_as_backup()
     close(server_socket);
 
     std::cout << "BACKUP(" << getpid() << ") - PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
+
+    
 }
