@@ -11,10 +11,16 @@
 #include "../../Utils/Scheduler.hpp"
 #include "../../Utils/Logger.h"
 
-#define MSG_HEARTBEAT 100
-#define TIMEOUT_SERVER_MS 6000
-#define HEARTBEAT_MS 3000
-#define MAX_WAITING_BACKUPS 5
+#define MSG_HEARTBEAT               0
+#define MSG_COOKIE                  1
+#define MSG_PENDING_NOTIFICATIONS   2
+#define MSG_SESSIONS                3
+#define MSG_FOLLOWERS               4
+#define MSG_FOLLOWED                5
+#define MSG_NEW_AVAILABLE_PORT      6
+#define TIMEOUT_SERVER_MS           6000
+#define HEARTBEAT_MS                3000
+#define MAX_WAITING_BACKUPS         5
 
 using namespace socialine::util::task;
 using namespace socialine::utils;
@@ -39,24 +45,26 @@ char ReplicManager::buffer_response[MAX_MAIL_SIZE];
 //-------------------------------------------------------------------------
 void ReplicManager::run()
 {
-    bool has_primary = is_primary_active();
-
-    if (!has_primary) {
-        std::cout << "NÃO TEM PRIMARIO ATIVO!" << std::endl;
-
-        std::thread thread_heartbeat_receiver(heartbeat_receiver);
-        thread_heartbeat_receiver.detach();
-
-        std::thread thread_new_backup(service_new_backup);
-        thread_new_backup.detach();
-
-        std::thread thread_heartbeat_sender(heartbeat_sender);
-        thread_heartbeat_sender.join();
-    }
-    else {
-        std::cout << "TEM PRIMARIO ATIVO!" << std::endl;
+    if (is_primary_active()) {
+        std::cout << "THERE IS AN ACTIVE PRIMARY!" << std::endl;
         init_server_as_backup();
     }
+    else {
+        std::cout << "THERE IS NO ACTIVE PRIMARY!" << std::endl;
+        init_server_as_primary();
+    }
+}
+
+void ReplicManager::init_server_as_primary()
+{
+    std::thread thread_heartbeat_receiver(heartbeat_receiver);
+    thread_heartbeat_receiver.detach();
+
+    std::thread thread_new_backup(service_new_backup);
+    thread_new_backup.detach();
+
+    std::thread thread_heartbeat_sender(heartbeat_sender);
+    thread_heartbeat_sender.join();
 }
 
 bool ReplicManager::is_primary_active()
@@ -136,7 +144,7 @@ void ReplicManager::heartbeat_sender()
                     break; // Avoids segmentation fault
                 }
                 
-                std::cout << "PRIMARY IS SENDING HEARTBEAT TO BACKUP AT " << it->first << std::endl;
+                std::cout << "PRIMARY IS SENDING HEARTBEAT TO BACKUP AT PORT " << it->first << std::endl;
                 char *message = new char [MAX_MAIL_SIZE];
  
                 message[0] = MSG_HEARTBEAT;
@@ -193,13 +201,67 @@ void ReplicManager::heartbeat_receiver()
     close(server_socket);
 }
 
+void ReplicManager::notify_new_backup()
+{
+    for (auto it = rm->begin(); it != rm->end(); it++)
+    {
+        int sockfd, n;
+        struct hostent *server_host;
+        struct in_addr addr;
+        std::string buffer_out, buffer_in;
+        std::string server = "127.0.0.1";
+        
+        inet_aton(server.c_str(), &addr);
+        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
+
+        if (server_host == NULL) {
+            Logger.write_error("No such host!");
+            exit(-1);
+        }
+        struct sockaddr_in backup_server_addr;
+        
+        backup_server_addr.sin_family = AF_INET;
+        backup_server_addr.sin_port = htons(it->first);
+        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        bzero(&(backup_server_addr.sin_zero), 8);
+
+        if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            Logger.write_error("ERROR: Opening socket");
+            continue;
+        }
+
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0) 
+        {
+            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            continue;
+        }
+        
+        std::cout << "PRIMARY IS SENDING NEW AVAILABLE PORT TO BACKUP AT PORT " << it->first << std::endl;
+        char *message = new char [MAX_MAIL_SIZE];
+
+        message[0] = MSG_NEW_AVAILABLE_PORT;
+        message[1] = htons(g_availablePort) >> 8; //MSB
+        message[2] = htons(g_availablePort); // LSB
+        
+        n = write(sockfd, message, MAX_MAIL_SIZE);
+        
+        if (n < 0)
+            Logger.write_error("Failed to write to socket");
+    }
+}
+
+
 void ReplicManager::add_new_backup_server(sockaddr_in cli_addr)
 {
     rm->insert(std::make_pair(g_availablePort, cli_addr));
+    std::cout << "NEW BACKUP SERVER ADDED AT PORT " << g_availablePort << std::endl;
 
     g_availablePort++;
-
-    std::cout << "NEW BACKUP SERVER ADDED AT PORT " << g_availablePort-1 << std::endl;
+    
+    std::cout << "SENDING AVAILABLE PORT FOR EACH BACKUP SERVER..." << std::endl;
+    notify_new_backup();
+    std::cout << "DONE!" << std::endl;
 }
 
 
@@ -314,7 +376,7 @@ uint16_t ReplicManager::ask_primary_available_port()
 
 void ReplicManager::init_server_as_backup()
 {
-    std::cout << "CONFIGURANDO SERVER PARA SER BACKUP" << std::endl;
+    std::cout << "CONFIGURING SERVER TO BE BACKUP" << std::endl;
 
     uint16_t port = ask_primary_available_port();
 
@@ -383,11 +445,16 @@ void ReplicManager::init_server_as_backup()
             close(connection_socket);
             continue;
         }
-        
-        uint8_t res = buffer_response[0];
 
-        if (res == MSG_HEARTBEAT)
+        if (buffer_response[0] == MSG_HEARTBEAT)
             std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: HEARTBEAT" << std::endl;
+        else if (buffer_response[0] == MSG_NEW_AVAILABLE_PORT)
+        {
+            uint16_t availablePort = ntohs(buffer_response[1] << 8 | buffer_response[2]);
+            g_availablePort = availablePort;
+
+            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: " << g_availablePort << std::endl;
+        }
         
         //g_primary_server_online = false;
     }
@@ -396,6 +463,8 @@ void ReplicManager::init_server_as_backup()
     close(server_socket);
 
     std::cout << "BACKUP(" << getpid() << ") - PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
+    std::cout << "BACKUP(" << getpid() << ") I'M THE LEADER!!!" << std::endl;
+    std::cout << "BACKUP(" << getpid() << ") BECOMING PRIMARY" << std::endl;
 
-    
+    init_server_as_primary();
 }

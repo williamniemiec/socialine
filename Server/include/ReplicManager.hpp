@@ -40,11 +40,13 @@ public:
     static void run();
 private:
     static bool is_primary_active();
+    static void init_server_as_primary();
     static void heartbeat_sender();
     static void heartbeat_receiver();
     static void add_new_backup_server(sockaddr_in cli_addr);
     static void config_new_backup_server(int connection_socket, sockaddr_in cli_addr);
     static void service_new_backup();
+    static void notify_new_backup();
     static uint16_t ask_primary_available_port();
     static void init_server_as_backup();
 };
