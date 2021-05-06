@@ -19,6 +19,7 @@
 #define MSG_CLOSE_SESSION               3
 #define MSG_FOLLOW                      4
 #define MSG_NEW_AVAILABLE_PORT          6
+#define MSG_LIST_BACKUP                 7
 #define TIMEOUT_SERVER_MS               6000
 #define HEARTBEAT_MS                    3000
 #define MAX_WAITING_BACKUPS             5
@@ -179,9 +180,15 @@ void ReplicManager::heartbeat_receiver()
 
     bzero(&(serv_addr.sin_zero), 8);
 
-    if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        std::cout << "erro bind";
-        exit(-1);
+    if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+    {
+        int option = 1;
+        if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0)
+        {
+            std::cout << "erro bind - backup server";
+            fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+            exit(-1);
+        }
     }
 
     listen(server_socket, 3);
@@ -473,6 +480,8 @@ void ReplicManager::notify_new_backup()
         message[0] = MSG_NEW_AVAILABLE_PORT;
         message[1] = htons(g_availablePort) >> 8; //MSB
         message[2] = htons(g_availablePort); // LSB
+
+        // TODO: send backup list
         
         n = write(sockfd, message, MAX_MAIL_SIZE);
         
@@ -750,6 +759,26 @@ void ReplicManager::init_server_as_backup()
             std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE SESSION" << std::endl;
 
             // TODO: send session to server communication manager
+        }
+        else if (buffer_response[0] == MSG_LIST_BACKUP)
+        {
+            uint8_t totalBackups = buffer_response[1];
+            std::map<int, sockaddr_in>* rms = new std::map<int, sockaddr_in>();
+
+            for (int i = 0; i < totalBackups; i++)
+            {
+                uint32_t port;
+                sockaddr_in server;
+
+                memcpy(&port, &buffer_response[1+i*sizeof(sockaddr_in)], 4);
+                port = ntohl(port);
+
+                memcpy(&server, &buffer_response[1+i*sizeof(sockaddr_in)+4], sizeof(sockaddr_in));
+
+                rms->insert(std::make_pair(port, server));
+            }
+
+            rm = rms;
         }
     }
 
