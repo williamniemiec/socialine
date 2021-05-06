@@ -48,6 +48,7 @@ private:
     static void add_new_backup_server(sockaddr_in cli_addr);
     static void config_new_backup_server(int connection_socket, sockaddr_in cli_addr);
     static void service_new_backup();
+    static void notify_pending_notification(std::string followed, notification current_notification);
     static void notify_new_session(client_session client_session);
     static void notify_new_backup();
     static uint16_t ask_primary_available_port();
