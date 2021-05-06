@@ -647,10 +647,9 @@ void ReplicManager::init_server_as_backup()
         }
         else if (buffer_response[0] == MSG_NEW_PENDING_NOTIFICATION)
         {
-            std::string followed;
+            char followed[MAX_DATA_SIZE];
             uint32_t timestampNormalized;
             notification n;
-
 
             memcpy(&followed, &buffer_response[1], MAX_DATA_SIZE);
             memcpy(&timestampNormalized, &buffer_response[1+MAX_DATA_SIZE], 4);
@@ -659,6 +658,16 @@ void ReplicManager::init_server_as_backup()
             n.timestamp = ntohl(timestampNormalized);
 
             // TODO: store new pending notification at server notification manager
+        }
+        else if (buffer_response[0] == MSG_FOLLOW)
+        {
+            char follower [MAX_DATA_SIZE];
+            char followed [MAX_DATA_SIZE];
+
+            memcpy(&follower, &buffer_response[1], MAX_DATA_SIZE);
+            memcpy(&followed, &buffer_response[1+MAX_DATA_SIZE], MAX_DATA_SIZE);
+
+            // TODO: send new follower to profile session manager
         }
     }
 
