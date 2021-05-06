@@ -209,6 +209,74 @@ void ReplicManager::heartbeat_receiver()
     close(server_socket);
 }
 
+void ReplicManager::notify_list_backups(std::map<int, sockaddr_in>* backups)
+{
+    for (auto it = backups->begin(); it != backups->end(); it++)
+    {
+        int sockfd, n;
+        struct hostent *server_host;
+        struct in_addr addr;
+        std::string buffer_out, buffer_in;
+        std::string server = "127.0.0.1";
+        
+        inet_aton(server.c_str(), &addr);
+        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
+
+        if (server_host == NULL) {
+            Logger.write_error("No such host!");
+            exit(-1);
+        }
+        struct sockaddr_in backup_server_addr;
+        
+        backup_server_addr.sin_family = AF_INET;
+        backup_server_addr.sin_port = htons(it->first);
+        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        bzero(&(backup_server_addr.sin_zero), 8);
+
+        if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            Logger.write_error("ERROR: Opening socket");
+            continue;
+        }
+
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0) 
+        {
+            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            continue;
+        }
+        
+        std::cout << "PRIMARY IS SENDING BACKUP LIST TO BACKUP AT PORT " << it->first << std::endl;
+        char *message = new char [MAX_MAIL_SIZE];
+
+        message[0] = MSG_LIST_BACKUP;
+
+        uint8_t totalBackups = backups->size();
+        int i = 0;
+
+        message[1] = totalBackups;
+
+        for (auto it = backups->begin(); it != backups->end(); it++)
+        {
+            uint32_t normalized_port = htonl(it->first);
+            sockaddr_in server = it->second;
+
+            message[2+i*sizeof(sockaddr_in)+0] = normalized_port >> 24; // MSB
+            message[2+i*sizeof(sockaddr_in)+1] = normalized_port >> 16;
+            message[2+i*sizeof(sockaddr_in)+2] = normalized_port >> 8;
+            message[2+i*sizeof(sockaddr_in)+3] = normalized_port;       // LSB
+
+            memcpy(&message[2+i*sizeof(sockaddr_in)+4], &server, sizeof(sockaddr_in));
+
+            i++;
+        }
+        
+        n = write(sockfd, message, MAX_MAIL_SIZE);
+        
+        if (n < 0)
+            Logger.write_error("Failed to write to socket");
+    }
+}
+
 void ReplicManager::notify_close_session(client_session session)
 {
     for (auto it = rm->begin(); it != rm->end(); it++)
@@ -617,9 +685,9 @@ void ReplicManager::init_server_as_backup()
 {
     std::cout << "CONFIGURING SERVER TO BE BACKUP" << std::endl;
 
-    uint16_t port = ask_primary_available_port();
+    uint16_t serverPort = ask_primary_available_port();
 
-    std::cout << "BACKUP(" << getpid() << ") - PRIMARY GIVE ME THE PORT " << port << std::endl;
+    std::cout << "BACKUP(" << getpid() << ") - PRIMARY GIVE ME THE PORT " << serverPort << std::endl;
 
     struct sockaddr_in serv_addr;
     std::string input;
@@ -631,7 +699,7 @@ void ReplicManager::init_server_as_backup()
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port);
+    serv_addr.sin_port = htons(serverPort);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     bzero(&(serv_addr.sin_zero), 8);
@@ -770,15 +838,20 @@ void ReplicManager::init_server_as_backup()
                 uint32_t port;
                 sockaddr_in server;
 
-                memcpy(&port, &buffer_response[1+i*sizeof(sockaddr_in)], 4);
+                memcpy(&port, &buffer_response[2+i*sizeof(sockaddr_in)], 4);
                 port = ntohl(port);
 
-                memcpy(&server, &buffer_response[1+i*sizeof(sockaddr_in)+4], sizeof(sockaddr_in));
+                if (port != serverPort)
+                {
+                    memcpy(&server, &buffer_response[2+i*sizeof(sockaddr_in)+4], sizeof(sockaddr_in));
 
-                rms->insert(std::make_pair(port, server));
+                    rms->insert(std::make_pair(port, server));
+                }
             }
 
             rm = rms;
+
+            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: BACKUP LIST" << std::endl;
         }
     }
 
