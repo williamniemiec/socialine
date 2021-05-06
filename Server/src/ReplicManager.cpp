@@ -14,9 +14,8 @@
 #define MSG_HEARTBEAT                   0
 #define MSG_NEW_SESSION                 1
 #define MSG_NEW_PENDING_NOTIFICATION    2
-#define MSG_SESSIONS                    3
-#define MSG_FOLLOWERS                   4
-#define MSG_FOLLOWED                    5
+#define MSG_CLOSE_SESSION               3
+#define MSG_FOLLOW                      4
 #define MSG_NEW_AVAILABLE_PORT          6
 #define TIMEOUT_SERVER_MS               6000
 #define HEARTBEAT_MS                    3000
@@ -594,6 +593,21 @@ void ReplicManager::init_server_as_backup()
             std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: SESSION" << std::endl;
 
             // TODO: Store session at server communication manager
+        }
+        else if (buffer_response[0] == MSG_NEW_PENDING_NOTIFICATION)
+        {
+            std::string followed;
+            uint32_t timestampNormalized;
+            notification n;
+
+
+            memcpy(&followed, &buffer_response[1], MAX_DATA_SIZE);
+            memcpy(&timestampNormalized, &buffer_response[1+MAX_DATA_SIZE], 4);
+            memcpy(&n._message, &buffer_response[1+2*MAX_DATA_SIZE+4], MAX_DATA_SIZE);
+
+            n.timestamp = ntohl(timestampNormalized);
+
+            // TODO: store new pending notification at server notification manager
         }
     }
 
