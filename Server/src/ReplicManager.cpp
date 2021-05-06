@@ -257,13 +257,13 @@ void ReplicManager::notify_list_backups(std::map<int, sockaddr_in>* backups)
 
         for (auto it = backups->begin(); it != backups->end(); it++)
         {
-            uint32_t normalized_port = htonl(it->first);
+            uint32_t normalizedPort = htonl(it->first);
             sockaddr_in server = it->second;
 
-            message[2+i*sizeof(sockaddr_in)+0] = normalized_port >> 24; // MSB
-            message[2+i*sizeof(sockaddr_in)+1] = normalized_port >> 16;
-            message[2+i*sizeof(sockaddr_in)+2] = normalized_port >> 8;
-            message[2+i*sizeof(sockaddr_in)+3] = normalized_port;       // LSB
+            message[2+i*sizeof(sockaddr_in)+0] = normalizedPort >> 24; // MSB
+            message[2+i*sizeof(sockaddr_in)+1] = normalizedPort >> 16;
+            message[2+i*sizeof(sockaddr_in)+2] = normalizedPort >> 8;
+            message[2+i*sizeof(sockaddr_in)+3] = normalizedPort;       // LSB
 
             memcpy(&message[2+i*sizeof(sockaddr_in)+4], &server, sizeof(sockaddr_in));
 
@@ -548,8 +548,6 @@ void ReplicManager::notify_new_backup()
         message[0] = MSG_NEW_AVAILABLE_PORT;
         message[1] = htons(g_availablePort) >> 8; //MSB
         message[2] = htons(g_availablePort); // LSB
-
-        // TODO: send backup list
         
         n = write(sockfd, message, MAX_MAIL_SIZE);
         
@@ -568,6 +566,10 @@ void ReplicManager::add_new_backup_server(sockaddr_in cli_addr)
     
     std::cout << "SENDING AVAILABLE PORT FOR EACH BACKUP SERVER..." << std::endl;
     notify_new_backup();
+    std::cout << "DONE!" << std::endl;
+
+    std::cout << "SENDING BACKUP LIST FOR EACH BACKUP SERVER..." << std::endl;
+    notify_list_backups(rm);
     std::cout << "DONE!" << std::endl;
 }
 
@@ -717,7 +719,7 @@ void ReplicManager::init_server_as_backup()
     }
     
     listen(server_socket, 1);
-
+    
     while (true) {
         std::cout << "BACKUP(" << getpid() << ") WAITING SERVER CONNECTION" << std::endl;
      
@@ -788,7 +790,14 @@ void ReplicManager::init_server_as_backup()
             notification n;
 
             memcpy(&followed, &buffer_response[1], MAX_DATA_SIZE);
-            memcpy(&timestampNormalized, &buffer_response[1+MAX_DATA_SIZE], 4);
+            
+            timestampNormalized = ntohl(
+                    buffer_response[1+MAX_DATA_SIZE+0] << 24
+                    | buffer_response[1+MAX_DATA_SIZE+1] << 16
+                    | buffer_response[1+MAX_DATA_SIZE+2] << 8
+                    | buffer_response[1+MAX_DATA_SIZE+3]
+                );
+            
             memcpy(&n._message, &buffer_response[1+2*MAX_DATA_SIZE+4], MAX_DATA_SIZE);
 
             n.timestamp = ntohl(timestampNormalized);
@@ -839,7 +848,12 @@ void ReplicManager::init_server_as_backup()
                 sockaddr_in server;
 
                 memcpy(&port, &buffer_response[2+i*sizeof(sockaddr_in)], 4);
-                port = ntohl(port);
+                port = ntohl(
+                    buffer_response[2+i*sizeof(sockaddr_in)+0] << 24
+                    | buffer_response[2+i*sizeof(sockaddr_in)+1] << 16
+                    | buffer_response[2+i*sizeof(sockaddr_in)+2] << 8
+                    | buffer_response[2+i*sizeof(sockaddr_in)+3]
+                );
 
                 if (port != serverPort)
                 {
@@ -852,6 +866,12 @@ void ReplicManager::init_server_as_backup()
             rm = rms;
 
             std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: BACKUP LIST" << std::endl;
+
+            for (auto it = rms->begin(); it != rms->end(); it++)
+            {
+                std::cout << it->first << ": " << (it->second).sin_addr.s_addr << "; " << (it->second).sin_port << std::endl;
+            }
+            std::cout << std::endl;
         }
     }
 
@@ -860,7 +880,7 @@ void ReplicManager::init_server_as_backup()
 
     std::cout << "BACKUP(" << getpid() << ") PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
     std::cout << "BACKUP(" << getpid() << ") I'M THE LEADER!!!" << std::endl;
-    std::cout << "BACKUP(" << getpid() << ") BECOMING PRIMARY" << std::endl;
+    std::cout << "BACKUP(" << getpid() << ") I AM PRIMARY! HAHAHAH" << std::endl;
 
     init_server_as_primary();
 }
