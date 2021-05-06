@@ -18,14 +18,6 @@
 #include "../../Utils/StringUtils.h"
 #include "../../Utils/Logger.h"
 
-typedef struct __client_session {
-    std::string session_id;
-    std::string ip;
-    std::string notification_port;
-
-} client_session;
-
-
 class ServerCommunicationManager {
     static std::unordered_map<std::string, client_session> client_sessions;
 public:
