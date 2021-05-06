@@ -50,6 +50,7 @@ private:
     static void service_new_backup();
     static void notify_pending_notification(std::string followed, notification current_notification);
     static void notify_new_session(client_session client_session);
+    static void notify_follow(std::string follower, std::string followed);
     static void notify_new_backup();
     static uint16_t ask_primary_available_port();
     static void init_server_as_backup();

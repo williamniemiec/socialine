@@ -200,6 +200,57 @@ void ReplicManager::heartbeat_receiver()
     close(server_socket);
 }
 
+void ReplicManager::notify_follow(std::string follower, std::string followed)
+{
+    for (auto it = rm->begin(); it != rm->end(); it++)
+    {
+        int sockfd, n;
+        struct hostent *server_host;
+        struct in_addr addr;
+        std::string buffer_out, buffer_in;
+        std::string server = "127.0.0.1";
+        
+        inet_aton(server.c_str(), &addr);
+        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
+
+        if (server_host == NULL) {
+            Logger.write_error("No such host!");
+            exit(-1);
+        }
+        struct sockaddr_in backup_server_addr;
+        
+        backup_server_addr.sin_family = AF_INET;
+        backup_server_addr.sin_port = htons(it->first);
+        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        bzero(&(backup_server_addr.sin_zero), 8);
+
+        if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            Logger.write_error("ERROR: Opening socket");
+            continue;
+        }
+
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0) 
+        {
+            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            continue;
+        }
+        
+        std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP AT PORT " << it->first << std::endl;
+        char *message = new char [MAX_MAIL_SIZE];
+
+        message[0] = MSG_FOLLOW;
+
+        memcpy(&message[1], follower.c_str(), MAX_DATA_SIZE);
+        memcpy(&message[1+MAX_DATA_SIZE], followed.c_str(), MAX_DATA_SIZE);
+        
+        n = write(sockfd, message, MAX_MAIL_SIZE);
+        
+        if (n < 0)
+            Logger.write_error("Failed to write to socket");
+    }
+}
+
 void ReplicManager::notify_pending_notification(std::string followed, notification current_notification)
 {
     for (auto it = rm->begin(); it != rm->end(); it++)
