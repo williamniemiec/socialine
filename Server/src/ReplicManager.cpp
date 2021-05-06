@@ -1,3 +1,5 @@
+// TODO: refactor class and methods
+
 #include <unistd.h>
 #include <iostream>
 #include <string.h>
@@ -714,6 +716,8 @@ void ReplicManager::init_server_as_backup()
 
             n.timestamp = ntohl(timestampNormalized);
 
+            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: NEW PENDING NOTIFICATION" << std::endl;
+
             // TODO: store new pending notification at server notification manager
         }
         else if (buffer_response[0] == MSG_FOLLOW)
@@ -724,7 +728,28 @@ void ReplicManager::init_server_as_backup()
             memcpy(&follower, &buffer_response[1], MAX_DATA_SIZE);
             memcpy(&followed, &buffer_response[1+MAX_DATA_SIZE], MAX_DATA_SIZE);
 
+            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: FOLLOW" << std::endl;
+
             // TODO: send new follower to profile session manager
+        }
+        else if (buffer_response[0] == MSG_CLOSE_SESSION)
+        {
+            char cookie[COOKIE_LENGTH];
+            char ip[16];
+            char port[6];
+
+            // COOKIE
+            memcpy(&cookie, &buffer_response[1], COOKIE_LENGTH);
+
+            // IP
+            memcpy(&ip, &buffer_response[1+COOKIE_LENGTH], 16);
+
+            // NOTIFICATION PORT
+            memcpy(&port, &buffer_response[1+COOKIE_LENGTH+16], 6);
+
+            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE SESSION" << std::endl;
+
+            // TODO: send session to server communication manager
         }
     }
 
