@@ -41,7 +41,7 @@ int ReplicManager::connection_socket;
 struct sockaddr_in ReplicManager::cli_addr;
 int ReplicManager::readBytesFromSocket;
 char ReplicManager::buffer_response[MAX_MAIL_SIZE];
-uint32_t ReplicManager::primaryIp;
+std::string ReplicManager::primaryIp;
 uint16_t ReplicManager::heartbeatPort;
 
 
@@ -50,6 +50,10 @@ uint16_t ReplicManager::heartbeatPort;
 //-------------------------------------------------------------------------
 void ReplicManager::run()
 {
+    // TEMP
+    heartbeatPort = 4001;
+    primaryIp = "127.0.0.1";
+
     if (is_primary_active()) {
         std::cout << "THERE IS AN ACTIVE PRIMARY!" << std::endl;
         init_server_as_backup();
@@ -62,6 +66,8 @@ void ReplicManager::run()
 
 void ReplicManager::init_server_as_primary()
 {
+    //primaryIp = get_local_ip();
+
     std::thread thread_heartbeat_receiver(heartbeat_receiver);
     thread_heartbeat_receiver.detach();
 
@@ -118,11 +124,9 @@ bool ReplicManager::is_primary_active()
     struct sockaddr_in server_addr;
     struct hostent *server_host;
     struct in_addr addr;
-    std::string buffer_out, buffer_in;
-    std::string server = "127.0.0.1";
 
-    inet_aton(server.c_str(), &addr);
-    server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
+    inet_aton(primaryIp.c_str(), &addr);
+    server_host = gethostbyaddr(&addr, sizeof(primaryIp), AF_INET);
 
     if (server_host == NULL) {
         return false;
@@ -132,7 +136,7 @@ bool ReplicManager::is_primary_active()
         return false;
 
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(4001);
+    server_addr.sin_port = htons(heartbeatPort);
     server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
     bzero(&(server_addr.sin_zero), 8);
 
@@ -156,23 +160,11 @@ void ReplicManager::heartbeat_sender()
             for (auto it = rm->begin(); it != rm->end(); it++)
             {
                 int sockfd, n;
-                struct hostent *server_host;
-                struct in_addr addr;
-                std::string buffer_out, buffer_in;
-                std::string server = "127.0.0.1";
-                
-                inet_aton(server.c_str(), &addr);
-                server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
-
-                if (server_host == NULL) {
-                    Logger.write_error("No such host!");
-                    exit(-1);
-                }
                 struct sockaddr_in backup_server_addr;
                 
                 backup_server_addr.sin_family = AF_INET;
                 backup_server_addr.sin_port = htons(it->first);
-                backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+                backup_server_addr.sin_addr = (it->second).sin_addr;
                 bzero(&(backup_server_addr.sin_zero), 8);
 
                 if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -210,6 +202,8 @@ void ReplicManager::heartbeat_receiver()
     int server_socket;
     socklen_t clilen;
     struct sockaddr_in serv_addr;
+    struct in_addr addr;
+    hostent* server_host;
     std::string input;
 
     if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -217,9 +211,18 @@ void ReplicManager::heartbeat_receiver()
         exit(-1);
     }
 
+  
+    inet_aton(primaryIp.c_str(), &addr);
+    server_host = gethostbyaddr(&addr, sizeof(primaryIp), AF_INET);
+
+    if (server_host == NULL) {
+        Logger.write_error("No such host!");
+        exit(-1);
+    }
+
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(heartbeatPort);
-    serv_addr.sin_addr.s_addr = htonl(primaryIp);
+    serv_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
 
     bzero(&(serv_addr.sin_zero), 8);
 
@@ -257,23 +260,11 @@ void ReplicManager::notify_list_backups(std::map<int, sockaddr_in>* backups)
     for (auto it = backups->begin(); it != backups->end(); it++)
     {
         int sockfd, n;
-        struct hostent *server_host;
-        struct in_addr addr;
-        std::string buffer_out, buffer_in;
-        std::string server = "127.0.0.1";
-        
-        inet_aton(server.c_str(), &addr);
-        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
-
-        if (server_host == NULL) {
-            Logger.write_error("No such host!");
-            exit(-1);
-        }
         struct sockaddr_in backup_server_addr;
         
         backup_server_addr.sin_family = AF_INET;
         backup_server_addr.sin_port = htons(it->first);
-        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        backup_server_addr.sin_addr = (it->second).sin_addr;
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -325,23 +316,11 @@ void ReplicManager::notify_close_session(client_session session)
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
         int sockfd, n;
-        struct hostent *server_host;
-        struct in_addr addr;
-        std::string buffer_out, buffer_in;
-        std::string server = "127.0.0.1";
-        
-        inet_aton(server.c_str(), &addr);
-        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
-
-        if (server_host == NULL) {
-            Logger.write_error("No such host!");
-            exit(-1);
-        }
         struct sockaddr_in backup_server_addr;
         
         backup_server_addr.sin_family = AF_INET;
         backup_server_addr.sin_port = htons(it->first);
-        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        backup_server_addr.sin_addr = (it->second).sin_addr;
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -382,23 +361,11 @@ void ReplicManager::notify_follow(std::string follower, std::string followed)
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
         int sockfd, n;
-        struct hostent *server_host;
-        struct in_addr addr;
-        std::string buffer_out, buffer_in;
-        std::string server = "127.0.0.1";
-        
-        inet_aton(server.c_str(), &addr);
-        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
-
-        if (server_host == NULL) {
-            Logger.write_error("No such host!");
-            exit(-1);
-        }
         struct sockaddr_in backup_server_addr;
         
         backup_server_addr.sin_family = AF_INET;
         backup_server_addr.sin_port = htons(it->first);
-        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        backup_server_addr.sin_addr = (it->second).sin_addr;
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -433,23 +400,11 @@ void ReplicManager::notify_pending_notification(std::string followed, notificati
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
         int sockfd, n;
-        struct hostent *server_host;
-        struct in_addr addr;
-        std::string buffer_out, buffer_in;
-        std::string server = "127.0.0.1";
-        
-        inet_aton(server.c_str(), &addr);
-        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
-
-        if (server_host == NULL) {
-            Logger.write_error("No such host!");
-            exit(-1);
-        }
         struct sockaddr_in backup_server_addr;
         
         backup_server_addr.sin_family = AF_INET;
         backup_server_addr.sin_port = htons(it->first);
-        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        backup_server_addr.sin_addr = (it->second).sin_addr;
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -497,23 +452,11 @@ void ReplicManager::notify_new_session(client_session session)
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
         int sockfd, n;
-        struct hostent *server_host;
-        struct in_addr addr;
-        std::string buffer_out, buffer_in;
-        std::string server = "127.0.0.1";
-        
-        inet_aton(server.c_str(), &addr);
-        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
-
-        if (server_host == NULL) {
-            Logger.write_error("No such host!");
-            exit(-1);
-        }
         struct sockaddr_in backup_server_addr;
         
         backup_server_addr.sin_family = AF_INET;
         backup_server_addr.sin_port = htons(it->first);
-        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        backup_server_addr.sin_addr = (it->second).sin_addr;
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -554,23 +497,11 @@ void ReplicManager::notify_new_backup()
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
         int sockfd, n;
-        struct hostent *server_host;
-        struct in_addr addr;
-        std::string buffer_out, buffer_in;
-        std::string server = "127.0.0.1";
-        
-        inet_aton(server.c_str(), &addr);
-        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
-
-        if (server_host == NULL) {
-            Logger.write_error("No such host!");
-            exit(-1);
-        }
         struct sockaddr_in backup_server_addr;
         
         backup_server_addr.sin_family = AF_INET;
         backup_server_addr.sin_port = htons(it->first);
-        backup_server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+        backup_server_addr.sin_addr = (it->second).sin_addr;
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -688,11 +619,9 @@ uint16_t ReplicManager::ask_primary_available_port()
     struct sockaddr_in server_addr;
     struct hostent *server_host;
     struct in_addr addr;
-    std::string buffer_out, buffer_in;
-    std::string server = "127.0.0.1";
-    
-    inet_aton(server.c_str(), &addr);
-    server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
+   
+    inet_aton(primaryIp.c_str(), &addr);
+    server_host = gethostbyaddr(&addr, sizeof(primaryIp), AF_INET);
 
     if (server_host == NULL) {
         Logger.write_error("No such host!");
@@ -729,21 +658,21 @@ uint16_t ReplicManager::ask_primary_available_port()
 /// Send primary ip and port to all backups
 void ReplicManager::notify_primary_addr()
 {
+    struct hostent *server_host;
+    struct in_addr addr;
+
+    inet_aton(primaryIp.c_str(), &addr);
+    server_host = gethostbyaddr(&addr, sizeof(primaryIp), AF_INET);
+
+    if (server_host == NULL) {
+        Logger.write_error("No such host!");
+        exit(-1);
+    }
+    
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
         int sockfd, n;
-        struct hostent *server_host;
-        struct in_addr addr;
-        std::string buffer_out, buffer_in;
-        std::string server = "127.0.0.1";
-
-        inet_aton(server.c_str(), &addr);
-        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
-
-        if (server_host == NULL) {
-            Logger.write_error("No such host!");
-            exit(-1);
-        }
+        
         struct sockaddr_in backup_server_addr;
         
         backup_server_addr.sin_family = AF_INET;
@@ -767,7 +696,7 @@ void ReplicManager::notify_primary_addr()
         char *message = new char [MAX_MAIL_SIZE];
 
         uint32_t normalizedPrimaryIp = htonl(addr.s_addr);
-        uint16_t normalizedPrimaryHeartbeatPort = htons(4001);
+        uint16_t normalizedPrimaryHeartbeatPort = htons(heartbeatPort);
 
         message[0] = MSG_PRIMARY_ADDR;
 

@@ -22,7 +22,7 @@ public:
     static struct sockaddr_in cli_addr;
     static int readBytesFromSocket;
     static char buffer_response[MAX_MAIL_SIZE];
-    static uint32_t primaryIp;
+    static std::string primaryIp;
     static uint16_t heartbeatPort;
 
 
