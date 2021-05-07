@@ -20,6 +20,7 @@
 #define MSG_FOLLOW                      4
 #define MSG_NEW_AVAILABLE_PORT          6
 #define MSG_LIST_BACKUP                 7
+#define MSG_PRIMARY_ADDR                8
 #define TIMEOUT_SERVER_MS               6000
 #define HEARTBEAT_MS                    3000
 #define MAX_WAITING_BACKUPS             5
@@ -683,6 +684,68 @@ uint16_t ReplicManager::ask_primary_available_port()
     return port;
 }
 
+/// Send primary ip and port to all backups
+void ReplicManager::notify_primary_addr()
+{
+    for (auto it = rm->begin(); it != rm->end(); it++)
+    {
+        int sockfd, n;
+        struct hostent *server_host;
+        struct in_addr addr;
+        std::string buffer_out, buffer_in;
+        std::string server = "127.0.0.1";
+
+        inet_aton(server.c_str(), &addr);
+        server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
+
+        if (server_host == NULL) {
+            Logger.write_error("No such host!");
+            exit(-1);
+        }
+        struct sockaddr_in backup_server_addr;
+        
+        backup_server_addr.sin_family = AF_INET;
+        backup_server_addr.sin_port = htons(it->first);
+        backup_server_addr.sin_addr = (it->second).sin_addr;
+        bzero(&(backup_server_addr.sin_zero), 8);
+
+        if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            Logger.write_error("ERROR: Opening socket");
+            continue;
+        }
+
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0) 
+        {
+            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            continue;
+        }
+        
+        std::cout << "PRIMARY IS SENDING ITS ADDRESS TO BACKUP AT PORT " << it->first << std::endl;
+        char *message = new char [MAX_MAIL_SIZE];
+
+        uint32_t normalizedPrimaryIp = htonl(addr.s_addr);
+        uint16_t normalizedPrimaryHeartbeatPort = htons(4001);
+
+        message[0] = MSG_PRIMARY_ADDR;
+
+        // IP
+        message[1] = normalizedPrimaryIp >> 24; //MSB
+        message[2] = normalizedPrimaryIp >> 16;
+        message[3] = normalizedPrimaryIp >> 8;
+        message[4] = normalizedPrimaryIp; // LSB
+        
+        // PORT
+        message[5] = normalizedPrimaryHeartbeatPort >> 8;   // MSB
+        message[6] = normalizedPrimaryHeartbeatPort;        // LSB
+
+        n = write(sockfd, message, MAX_MAIL_SIZE);
+        
+        if (n < 0)
+            Logger.write_error("Failed to write to socket");
+    }
+}
+
 void ReplicManager::init_server_as_backup()
 {
     std::cout << "CONFIGURING SERVER TO BE BACKUP" << std::endl;
@@ -881,6 +944,8 @@ void ReplicManager::init_server_as_backup()
     std::cout << "BACKUP(" << getpid() << ") PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
     std::cout << "BACKUP(" << getpid() << ") I'M THE LEADER!!!" << std::endl;
     std::cout << "BACKUP(" << getpid() << ") I AM PRIMARY! HAHAHAH" << std::endl;
+
+    notify_primary_addr();
 
     init_server_as_primary();
 }
