@@ -45,6 +45,7 @@ public:
 private:
     static bool is_primary_active();
     static void init_server_as_primary();
+    static std::string get_local_ip();
     static void heartbeat_sender();
     static void heartbeat_receiver();
     static void add_new_backup_server(sockaddr_in cli_addr);
