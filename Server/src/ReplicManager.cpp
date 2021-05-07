@@ -1,3 +1,9 @@
+/*
+    ESSA CLASSE SERÁ REFATORADA MAIS TARDE! 
+    
+    FAVOR NÃO REPARAR NA BAGUNÇA :D
+*/
+
 // TODO: refactor class and methods
 
 #include <unistd.h>
@@ -668,7 +674,7 @@ void ReplicManager::notify_primary_addr()
         Logger.write_error("No such host!");
         exit(-1);
     }
-    
+
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
         int sockfd, n;
