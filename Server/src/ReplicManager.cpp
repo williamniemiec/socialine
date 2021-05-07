@@ -41,6 +41,8 @@ int ReplicManager::connection_socket;
 struct sockaddr_in ReplicManager::cli_addr;
 int ReplicManager::readBytesFromSocket;
 char ReplicManager::buffer_response[MAX_MAIL_SIZE];
+uint32_t ReplicManager::primaryIp;
+uint16_t ReplicManager::heartbeatPort;
 
 
 //-------------------------------------------------------------------------
@@ -176,8 +178,8 @@ void ReplicManager::heartbeat_receiver()
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(4001);
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(heartbeatPort);
+    serv_addr.sin_addr.s_addr = htonl(primaryIp);
 
     bzero(&(serv_addr.sin_zero), 8);
 
@@ -746,6 +748,52 @@ void ReplicManager::notify_primary_addr()
     }
 }
 
+void ReplicManager::receive_primary_addr()
+{
+    std::cout << "BACKUP(" << getpid() << ") WAITING SERVER CONNECTION" << std::endl;
+     
+ 
+    connection_socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen);
+
+    if (connection_socket == -1)
+    {
+        std::cout << "BACKUP(" << getpid() << ") Connection failed" << std::endl;
+        exit(-1);
+    }
+
+    std::cout << "BACKUP(" << getpid() << ") CONNECTION OK" << std::endl;
+    std::cout << "BACKUP(" << getpid() << ") WAITING SERVER SEND A MESSAGE" << std::endl;
+
+    readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
+  
+
+    if (readBytesFromSocket < 0) {
+        fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+        Logger.write_error("ERROR: Reading from socket");
+        close(connection_socket);
+        exit(-1);
+    }
+
+    if (buffer_response[0] == MSG_PRIMARY_ADDR)
+    {
+        primaryIp = ntohl(
+            buffer_response[1] << 24
+            | buffer_response[2] << 16
+            | buffer_response[3] << 8
+            | buffer_response[4]
+        );
+
+        heartbeatPort = ntohl(
+            buffer_response[5] << 8
+            | buffer_response[6]
+        );
+    }
+    else
+    {
+        std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: UNKNOWN MESSAGE" << std::endl;
+    }
+}
+
 void ReplicManager::init_server_as_backup()
 {
     std::cout << "CONFIGURING SERVER TO BE BACKUP" << std::endl;
@@ -936,16 +984,34 @@ void ReplicManager::init_server_as_backup()
             }
             std::cout << std::endl;
         }
+        else
+        {
+            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: UNKNOWN MESSAGE" << std::endl;
+        }
     }
 
     close(connection_socket);
     close(server_socket);
 
     std::cout << "BACKUP(" << getpid() << ") PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
-    std::cout << "BACKUP(" << getpid() << ") I'M THE LEADER!!!" << std::endl;
-    std::cout << "BACKUP(" << getpid() << ") I AM PRIMARY! HAHAHAH" << std::endl;
 
-    notify_primary_addr();
+    if (true)
+    {
+        std::cout << "BACKUP(" << getpid() << ") I'M THE LEADER!!!" << std::endl;
+        std::cout << "BACKUP(" << getpid() << ") I AM PRIMARY :D ! HAHAHAH" << std::endl;
+        std::cout << "BACKUP(" << getpid() << ") I'LL SEND MY ADDRESS TO BACKUPS" << std::endl;
 
-    init_server_as_primary();
+        notify_primary_addr();
+
+        init_server_as_primary();
+    }
+    else
+    {
+        std::cout << "BACKUP(" << getpid() << ") I'M BACKUP AGAIN ;(" << std::endl;
+        std::cout << "BACKUP(" << getpid() << ") I'LL WAIT PRIMARY ADDRESS" << std::endl;
+
+        receive_primary_addr();
+
+        init_server_as_backup();
+    }
 }

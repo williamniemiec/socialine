@@ -22,6 +22,8 @@ public:
     static struct sockaddr_in cli_addr;
     static int readBytesFromSocket;
     static char buffer_response[MAX_MAIL_SIZE];
+    static uint32_t primaryIp;
+    static uint16_t heartbeatPort;
 
 
 //-------------------------------------------------------------------------
@@ -55,6 +57,7 @@ private:
     static void notify_list_backups(std::map<int, sockaddr_in>* backups);
     static void notify_primary_addr();
     static void notify_new_backup();
+    static void receive_primary_addr();
     static uint16_t ask_primary_available_port();
     static void init_server_as_backup();
 };
