@@ -72,53 +72,10 @@ void ReplicManager::run()
     }
 }
 
-void ReplicManager::multicast_signal()
-{
-    struct in_addr localInterface;
-    struct sockaddr_in groupSock;
 
-    strcpy(buffer_response, get_local_ip().c_str());
-
-
-    connection_socket = socket(AF_INET, SOCK_DGRAM, 0);
-
-    if (connection_socket < 0)
-    {
-        perror("Opening datagram socket error");
-        exit(1);
-    }
-    else
-        printf("Opening the datagram socket...OK.\n");
-
-    /* Initialize the group sockaddr structure with a */
-    /* group address of 225.1.1.1 and port 5555. */
-    memset((char *)&groupSock, 0, sizeof(groupSock));
-    groupSock.sin_family = AF_INET;
-    groupSock.sin_addr.s_addr = inet_addr(multicastIp.c_str());
-    groupSock.sin_port = htons(PORT_HEARTBEAT);
-
-    /* Set local interface for outbound multicast datagrams. */
-    /* The IP address specified must be associated with a local, */
-    /* multicast capable interface. */
-    localInterface.s_addr = inet_addr(get_local_ip().c_str());
-    if (setsockopt(connection_socket, IPPROTO_IP, IP_MULTICAST_IF, (char *)&localInterface, sizeof(localInterface)) < 0)
-    {
-        perror("Setting local interface error");
-        fprintf(stderr, "ERROR: %s\n", strerror(errno));
-        exit(1);
-    }
-    else
-        printf("Setting the local interface...OK\n");
-    
-    /* Send a message to the multicast group specified by the*/
-    /* groupSock sockaddr structure. */
-    if (sendto(connection_socket, buffer_response, MAX_MAIL_SIZE, 0, (struct sockaddr *)&groupSock, sizeof(groupSock)) < 0)
-    {
-        perror("Sending datagram message error");
-    }
-    else
-        printf("Sending datagram message...OK\n");
-}
+//
+//      PRIMARY OR BACKUP SERVER
+//
 
 bool ReplicManager::try_receive_multicast_signal()
 {
@@ -203,28 +160,6 @@ bool ReplicManager::try_receive_multicast_signal()
     return true;
 }
 
-void ReplicManager::init_server_as_primary()
-{
-    std::cout << "BECOMING PRIMARY..." << std::endl;
-    primaryIp = get_local_ip();
-
-    std::thread thread_heartbeat_receiver(heartbeat_receiver);
-    thread_heartbeat_receiver.detach();
-
-    std::thread thread_new_backup(service_new_backup);
-    thread_new_backup.detach();
-
-    Scheduler::set_interval([]() 
-    {
-        multicast_signal();
-    }, 3000);
-
-    std::cout << "DONE" << std::endl;
-
-    std::thread thread_heartbeat_sender(heartbeat_sender);
-    thread_heartbeat_sender.join();
-}
-
 std::string ReplicManager::get_local_ip()
 {
     int sock = socket(PF_INET, SOCK_DGRAM, 0);
@@ -298,6 +233,82 @@ bool ReplicManager::is_primary_active()
     close(sockfd);
 
     return true;
+}
+
+
+
+//
+//      PRIMARY SERVER
+//
+
+void ReplicManager::init_server_as_primary()
+{
+    std::cout << "BECOMING PRIMARY..." << std::endl;
+    primaryIp = get_local_ip();
+
+    std::thread thread_heartbeat_receiver(heartbeat_receiver);
+    thread_heartbeat_receiver.detach();
+
+    std::thread thread_new_backup(service_new_backup);
+    thread_new_backup.detach();
+
+    Scheduler::set_interval([]() 
+    {
+        multicast_signal();
+    }, 3000);
+
+    std::cout << "DONE" << std::endl;
+
+    std::thread thread_heartbeat_sender(heartbeat_sender);
+    thread_heartbeat_sender.join();
+}
+
+void ReplicManager::multicast_signal()
+{
+    struct in_addr localInterface;
+    struct sockaddr_in groupSock;
+
+    strcpy(buffer_response, get_local_ip().c_str());
+
+
+    connection_socket = socket(AF_INET, SOCK_DGRAM, 0);
+
+    if (connection_socket < 0)
+    {
+        perror("Opening datagram socket error");
+        exit(1);
+    }
+    else
+        printf("Opening the datagram socket...OK.\n");
+
+    /* Initialize the group sockaddr structure with a */
+    /* group address of 225.1.1.1 and port 5555. */
+    memset((char *)&groupSock, 0, sizeof(groupSock));
+    groupSock.sin_family = AF_INET;
+    groupSock.sin_addr.s_addr = inet_addr(multicastIp.c_str());
+    groupSock.sin_port = htons(PORT_HEARTBEAT);
+
+    /* Set local interface for outbound multicast datagrams. */
+    /* The IP address specified must be associated with a local, */
+    /* multicast capable interface. */
+    localInterface.s_addr = inet_addr(get_local_ip().c_str());
+    if (setsockopt(connection_socket, IPPROTO_IP, IP_MULTICAST_IF, (char *)&localInterface, sizeof(localInterface)) < 0)
+    {
+        perror("Setting local interface error");
+        fprintf(stderr, "ERROR: %s\n", strerror(errno));
+        exit(1);
+    }
+    else
+        printf("Setting the local interface...OK\n");
+    
+    /* Send a message to the multicast group specified by the*/
+    /* groupSock sockaddr structure. */
+    if (sendto(connection_socket, buffer_response, MAX_MAIL_SIZE, 0, (struct sockaddr *)&groupSock, sizeof(groupSock)) < 0)
+    {
+        perror("Sending datagram message error");
+    }
+    else
+        printf("Sending datagram message...OK\n");
 }
 
 void ReplicManager::heartbeat_sender()
@@ -767,47 +778,6 @@ void ReplicManager::service_new_backup()
     close(server_socket);
 }
 
-uint16_t ReplicManager::ask_primary_available_port()
-{
-    int sockfd, n;
-    struct sockaddr_in server_addr;
-    struct hostent *server_host;
-    struct in_addr addr;
-
-    inet_aton(primaryIp.c_str(), &addr);
-    server_host = gethostbyaddr(&addr, sizeof(primaryIp), AF_INET);
-
-    if (server_host == NULL)
-    {
-        Logger.write_error("No such host!");
-        exit(0);
-    }
-
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        Logger.write_error("Opening socket");
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(5000);
-    server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
-    bzero(&(server_addr.sin_zero), 8);
-
-    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-        Logger.write_error("Erro - Connecting - available port");
-
-    char buffer_response[MAX_MAIL_SIZE];
-    bzero(buffer_response, MAX_MAIL_SIZE);
-
-    n = read(sockfd, buffer_response, MAX_MAIL_SIZE);
-    if (n < 0)
-        Logger.write_error("Reading from socket");
-
-    uint16_t port = ntohs(buffer_response[0] << 8 | buffer_response[1]);
-
-    close(sockfd);
-
-    return port;
-}
-
 /// Send primary ip and port to all backups
 void ReplicManager::notify_primary_addr()
 {
@@ -869,6 +839,53 @@ void ReplicManager::notify_primary_addr()
         if (n < 0)
             Logger.write_error("Failed to write to socket");
     }
+}
+
+
+
+//
+//      BACKUP SERVER
+//
+
+uint16_t ReplicManager::ask_primary_available_port()
+{
+    int sockfd, n;
+    struct sockaddr_in server_addr;
+    struct hostent *server_host;
+    struct in_addr addr;
+
+    inet_aton(primaryIp.c_str(), &addr);
+    server_host = gethostbyaddr(&addr, sizeof(primaryIp), AF_INET);
+
+    if (server_host == NULL)
+    {
+        Logger.write_error("No such host!");
+        exit(0);
+    }
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        Logger.write_error("Opening socket");
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(5000);
+    server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+    bzero(&(server_addr.sin_zero), 8);
+
+    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+        Logger.write_error("Erro - Connecting - available port");
+
+    char buffer_response[MAX_MAIL_SIZE];
+    bzero(buffer_response, MAX_MAIL_SIZE);
+
+    n = read(sockfd, buffer_response, MAX_MAIL_SIZE);
+    if (n < 0)
+        Logger.write_error("Reading from socket");
+
+    uint16_t port = ntohs(buffer_response[0] << 8 | buffer_response[1]);
+
+    close(sockfd);
+
+    return port;
 }
 
 void ReplicManager::receive_primary_addr()
