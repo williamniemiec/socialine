@@ -39,10 +39,13 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     std::string buffer_out, buffer_in;
 
     inet_aton(Frontend::primaryServerIP.c_str(), &addr);
-    server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
+//    inet_pton(AF_INET, Frontend::primaryServerIP.c_str(), &addr);
+    server_host = gethostbyaddr(&addr, sizeof(Frontend::primaryServerIP), AF_INET);
 
     if (server_host == NULL) {
-        Logger.write_error("No such host!");
+        std::cout << "No such host: " << h_errno << std::endl;
+        fprintf(stderr, "ERROR: %s\n", strerror(errno));
+        fprintf(stderr, "ERROR: %s\n", strerror(h_errno));
         exit(0);
     }
 

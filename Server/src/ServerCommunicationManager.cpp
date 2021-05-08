@@ -34,9 +34,13 @@ int SERVER_BROADCAST_PORTS[] = { 4010, 4011, 4012, 4013, 4014, 4015, 4016, 4017,
 using namespace socialine::utils;
 
 std::unordered_map<std::string, client_session> ServerCommunicationManager::client_sessions;
+bool ServerCommunicationManager::isPrimaryServer;
 
 void ServerCommunicationManager::start( )
 {
+
+    // TODO: Remover mocked isPrimaryServer (precisa ser definido de acordo com o algoritmo de eleição)
+    isPrimaryServer = true;
 
     signal(SIGPIPE, SIG_IGN);
 
@@ -285,6 +289,52 @@ void ServerCommunicationManager::listenForBroadcast() {
     return;
 }
 
+
+std::string get_local_ip()
+{
+    int sock = socket(PF_INET, SOCK_DGRAM, 0);
+    sockaddr_in loopback;
+
+    if (sock == -1)
+    {
+        std::cerr << "Could not socket\n";
+        exit(-1);
+    }
+
+    std::memset(&loopback, 0, sizeof(loopback));
+    loopback.sin_family = AF_INET;
+    loopback.sin_addr.s_addr = 1337; // can be any IP address
+    loopback.sin_port = htons(9);    // using debug port
+
+    if (connect(sock, reinterpret_cast<sockaddr *>(&loopback), sizeof(loopback)) == -1)
+    {
+        close(sock);
+        std::cerr << "Could not connect\n";
+        exit(-1);
+    }
+
+    socklen_t addrlen = sizeof(loopback);
+    if (getsockname(sock, reinterpret_cast<sockaddr *>(&loopback), &addrlen) == -1)
+    {
+        close(sock);
+        std::cerr << "Could not getsockname\n";
+        exit(-1);
+    }
+
+    close(sock);
+
+    char buf[INET_ADDRSTRLEN];
+    if (inet_ntop(AF_INET, &loopback.sin_addr, buf, INET_ADDRSTRLEN) == 0x0)
+    {
+        std::cerr << "Could not inet_ntop\n";
+        //return 1;
+        exit(-1);
+    }
+
+    return std::string(buf);
+}
+
+
 void* ServerCommunicationManager::threadListenForBroadcast(void* arg)
 {
     int server_socket;
@@ -316,14 +366,33 @@ void* ServerCommunicationManager::threadListenForBroadcast(void* arg)
     listen(server_socket, 5);
 
     while (true) {
+        // precisa ficar nesse while(true), mesmo sem ser o primário, porque a qualquer momento pode se tornar o servidor primário, e aí vai precisar rodar o while
+        // (se extrairmos isso pra uma função separada, não precisa ficar gastando recurso. Mas fica como ponto de melhoria).
+        if (!isPrimaryServer) continue;
 
         struct sockaddr_in cli_addr;
-        char recvbuff[50];
-        int recvbufflen = 50;
+        char recvbuff[BROADCAST_MSG_LEN];
+        int recvbufflen = BROADCAST_MSG_LEN;
         socklen_t len = sizeof(struct sockaddr_in);
         recvfrom(server_socket,recvbuff,recvbufflen,0,(sockaddr *)&cli_addr,&len);
 
-        std::cout << "Broadcast received message: " << recvbuff << std::endl;
+        int received_broadcast_msg = recvbuff[0];
+
+        if(received_broadcast_msg != PRIMARY_BROADCAST_REQUEST) {
+            std::cout << "Received unknown broadcast message. Ignored it" << std::endl;
+            continue;
+        }
+
+        std::cout << "Broadcast received request from client " << std::endl;
+        std::cout << "Cli IP and PORT: " << inet_ntoa(cli_addr.sin_addr) << ":" << cli_addr.sin_port << std::endl;
+
+        std::string send_buffer = std::to_string(PRIMARY_BROADCAST_IAMPRIMARY_RESPONSE) + "\n" + get_local_ip() + "\n" + std::to_string(PORT) + "\n";
+        int send_buff_len = BROADCAST_MSG_LEN;
+
+        socklen_t socklen_cli_addr = sizeof(cli_addr);
+        if(sendto(server_socket, send_buffer.c_str(), BROADCAST_MSG_LEN+1, 0, (sockaddr *)&cli_addr, socklen_cli_addr) < 0) {
+            std::cout << "Error responding to broadcast" << errno << std::endl;
+        }
     }
 
     close(server_socket);

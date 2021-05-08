@@ -46,6 +46,10 @@
 #define PORT_LENGTH 10
 #define NO_COOKIE std::string(COOKIE_LENGTH, '0')
 
+#define BROADCAST_MSG_LEN 100
+#define PRIMARY_BROADCAST_REQUEST 1
+#define PRIMARY_BROADCAST_IAMPRIMARY_RESPONSE 2
+
 typedef struct __command{
     int type;
     std::vector<std::string> arguments;

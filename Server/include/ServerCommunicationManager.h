@@ -21,6 +21,7 @@
 class ServerCommunicationManager {
     static std::unordered_map<std::string, client_session> client_sessions;
 public:
+    static bool isPrimaryServer;
     static void start( );
     static void sendNotification(std::string session_id, notification current_notification);
     static void listenForBroadcast();
@@ -34,6 +35,7 @@ private:
     static uint16_t getTimestamp();
     static std::string random_string(size_t length);
     static void* threadListenForBroadcast(void* arg);
+    static std::string getIP();
 
 };
 

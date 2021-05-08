@@ -4,6 +4,8 @@
 std::string Frontend::primaryServerIP;
 uint16_t Frontend::primaryServerPort;
 
+using namespace socialine::utils;
+
 int SERVER_BROADCAST_PORTS[] = { 4010, 4011, 4012, 4013, 4014, 4015, 4016, 4017, 4018, 4019, 4020 };
 
 void Frontend::discoverPrimaryServer() {
@@ -15,6 +17,8 @@ void Frontend::discoverPrimaryServer() {
     // primary server.
 
     int n;
+
+
 
     int sock;
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -32,10 +36,11 @@ void Frontend::discoverPrimaryServer() {
 
     int len = sizeof(struct sockaddr_in);
 
-    char sendMSG[] = "Broadcast message from Client";
+    char sendMSG[] = "";
+    sendMSG[0] = PRIMARY_BROADCAST_REQUEST;
 
-    char recvbuff[50] = "";
-    char recvbufflen = 50;
+    char recvbuff[BROADCAST_MSG_LEN] = "";
+    char recvbufflen = BROADCAST_MSG_LEN;
 
     recv_addr.sin_family = AF_INET;
     recv_addr.sin_port = htons(SERVER_BROADCAST_PORTS[0]);
@@ -47,6 +52,13 @@ void Frontend::discoverPrimaryServer() {
     socklen_t socklen_len = len;
     recvfrom(sock,recvbuff,recvbufflen,0,(sockaddr *)&recv_addr,&socklen_len);
     std::cout << "\n\n Received answer to broadcast sent: " << recvbuff << std::endl;
+
+    std::vector<std::string> message = StringUtils::split(recvbuff,"\n");
+
+    primaryServerIP = inet_ntoa(recv_addr.sin_addr);
+    primaryServerPort = stoi(message[2]); //htons(recv_addr.sin_port);
+
+    std::cout << "Primary Server IP and PORT: " << primaryServerIP << ":" << primaryServerPort << std::endl;
 
     close(sock);
 
