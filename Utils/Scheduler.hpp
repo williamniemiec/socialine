@@ -31,7 +31,29 @@ namespace socialine::util::task
     //		Methods
     //-------------------------------------------------------------------------
     public:
+        /// <summary>
+        ///     Repeatedly calls a routine with a fixed time delay between each
+        ///     call.
+        /// </summary>
+        ///
+        /// <param name="routine">Routine to be performed</param>
+        /// <param name="interval">
+        ///     Interval that the routine will be invoked (in milliseconds)
+        /// </param>
+        ///
+        /// <returns>
+        ///     Routine id, being useful for future cancellation
+        /// </returns>
+        ///
+        /// <seealso cref="Scheduler::clear_interval"/>
         static long set_interval(void (*routine)(), long interval);
+
+        /// <summary>
+        ///     Cancels a timed, repeating action, which was previously established by a
+        ///     call to <see cref="Scheduler::set_interval"/>.
+        /// </summary>
+        ///
+        /// <param name="id">Routine id</param>
         static void clear_interval(long id);
 
         /// <summary>
