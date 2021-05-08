@@ -1,6 +1,7 @@
 #include <map>
 #include <ctime>
 #include <unistd.h>
+#include <thread>
 #include "Scheduler.hpp"
 
 using namespace socialine::util::task;
@@ -8,6 +9,7 @@ using namespace socialine::util::task;
 //-------------------------------------------------------------------------
 //		Attributes
 //-------------------------------------------------------------------------
+std::map<long, bool> Scheduler::intervalRoutines = std::map<long, bool>();
 std::map<time_t, bool> Scheduler::timeoutRoutine = std::map<time_t, bool>();
 void (*Scheduler::currentRoutine)();
 time_t Scheduler::currentRoutineId;
@@ -17,6 +19,30 @@ pthread_t Scheduler::controlThread;
 //-------------------------------------------------------------------------
 //		Methods
 //-------------------------------------------------------------------------
+long Scheduler::set_interval(void (*routine)(), long interval)
+{
+    long id = get_current_time();
+    intervalRoutines[id] = true;
+    
+    std::thread thread([&]() 
+    {
+        while (intervalRoutines[id])
+        {
+            routine();
+            usleep(interval * 1000);
+        }
+    });
+
+    thread.detach();
+
+    return id;
+}
+
+void Scheduler::clear_interval(long id)
+{
+    intervalRoutines[id] = false;
+}
+
 bool Scheduler::set_timeout_to_routine(void (*routine)(), long timeout)
 {
     run_routine(routine);
@@ -79,3 +105,4 @@ void Scheduler::finish_routine()
 {
     pthread_cancel(controlThread);
 }
+

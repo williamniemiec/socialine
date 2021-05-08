@@ -13,6 +13,7 @@ namespace socialine::util::task
     //		Attributes
     //-------------------------------------------------------------------------
     private:
+        static std::map<long, bool> intervalRoutines;
         static std::map<time_t, bool> timeoutRoutine;
         static time_t currentRoutineId;
         static void (*currentRoutine)();
@@ -30,6 +31,9 @@ namespace socialine::util::task
     //		Methods
     //-------------------------------------------------------------------------
     public:
+        static long set_interval(void (*routine)(), long interval);
+        static void clear_interval(long id);
+
         /// <summary>
         ///     Runs a routine within a timeout.
         /// </summary>
