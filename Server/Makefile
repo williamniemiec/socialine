@@ -5,7 +5,9 @@ OBJS	= ServerApp.o\
 		TaskManager.o\
 		ServerCommunicationManager.o\
 		StringUtils.o\
-		Logger.o
+		Logger.o\
+		Scheduler.o\
+		ReplicManager.o
 SOURCE	= ServerApp.cpp\
 		../Utils/StringUtils.cpp\
 		../Utils/Logger.cpp\
@@ -13,7 +15,9 @@ SOURCE	= ServerApp.cpp\
 		src/ServerNotificationManager.cpp\
 		src/ProfileSessionManager.cpp\
 		src/TaskManager.cpp\
-		src/ServerCommunicationManager.cpp
+		src/ServerCommunicationManager.cpp\
+		../Utils/Scheduler.cpp\
+		src/ReplicManager.cpp
 HEADER	= ../Utils/Types.h\
 		../Utils/StringUtils.h\
 		../Utils/Logger.h\
@@ -54,6 +58,11 @@ TaskManager.o: src/TaskManager.cpp
 ServerCommunicationManager.o: src/ServerCommunicationManager.cpp
 	$(CC) $(FLAGS) src/ServerCommunicationManager.cpp -std=c++17
 
+Scheduler.o: ../Utils/Scheduler.cpp
+	$(CC) $(FLAGS) ../Utils/Scheduler.cpp -std=c++17
+
+ReplicManager.o: src/ReplicManager.cpp
+	$(CC) $(FLAGS) src/ReplicManager.cpp -std=c++17
 
 clean:
 	rm -f $(OBJS) $(OUT)

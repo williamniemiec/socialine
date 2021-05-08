@@ -126,5 +126,11 @@ typedef struct __notification{
     std::string _message;     //Message data
 } notification;
 
+typedef struct __client_session {
+    std::string session_id; // LENGTH = COOKIE_LENGTH
+    std::string ip; // LENGTH = 18
+    std::string notification_port; // LENGTH = 5
+
+} client_session;
 
 #endif //CLIENT_APP_TYPES_H
