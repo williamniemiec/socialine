@@ -208,13 +208,6 @@ void ReplicManager::init_server_as_primary()
     std::cout << "BECOMING PRIMARY..." << std::endl;
     primaryIp = get_local_ip();
 
-    Scheduler::set_interval([]() 
-    {
-        multicast_signal();
-    }, 3000);
-
-    while(true);
-/*  PROBLEMA - ALGUMA COISA ESTÁ SENDO BLOQUEANTE
     std::thread thread_heartbeat_receiver(heartbeat_receiver);
     thread_heartbeat_receiver.detach();
 
@@ -229,7 +222,7 @@ void ReplicManager::init_server_as_primary()
     std::cout << "DONE" << std::endl;
 
     std::thread thread_heartbeat_sender(heartbeat_sender);
-    thread_heartbeat_sender.join();*/
+    thread_heartbeat_sender.join();
 }
 
 std::string ReplicManager::get_local_ip()
@@ -362,7 +355,7 @@ void ReplicManager::heartbeat_receiver()
     struct in_addr addr;
     hostent *server_host;
     std::string input;
-
+    
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         std::cout << "erro socket";

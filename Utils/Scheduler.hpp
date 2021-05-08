@@ -14,8 +14,8 @@ namespace socialine::util::task
     //-------------------------------------------------------------------------
     private:
         static std::map<long, bool> intervalRoutines;
-        static std::map<time_t, bool> timeoutRoutine;
-        static time_t currentRoutineId;
+        static std::map<long, bool> timeoutRoutine;
+        static long currentRoutineId;
         static void (*currentRoutine)();
         static pthread_t controlThread;
 
@@ -50,6 +50,7 @@ namespace socialine::util::task
         static void run_routine(void (*routine)());
         static void initialize_routine_id();
         static time_t get_current_time();
+        static void* interval_control_routine(void* args);
         static void* control_routine(void* args);
         static void wait_routine_for(long time);
         static double time_elapsed_in_milliseconds(time_t start);
