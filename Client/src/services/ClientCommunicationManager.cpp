@@ -39,7 +39,6 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     std::string buffer_out, buffer_in;
 
     inet_aton(Frontend::primaryServerIP.c_str(), &addr);
-//    inet_pton(AF_INET, Frontend::primaryServerIP.c_str(), &addr);
     server_host = gethostbyaddr(&addr, sizeof(Frontend::primaryServerIP), AF_INET);
 
     if (server_host == NULL) {
