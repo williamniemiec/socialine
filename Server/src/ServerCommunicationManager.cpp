@@ -18,8 +18,11 @@
 #include <thread>
 #include <netdb.h>
 #include <ctime>
+#include <pthread.h>
 
 #define PORT 4000
+
+int SERVER_BROADCAST_PORTS[] = { 4010, 4011, 4012, 4013, 4014, 4015, 4016, 4017, 4018, 4019, 4020 };
 
 /**
  * Inicializa o connectionSocket, que fica aberto ouvindo mensagens de clientes enviadas na porta 4000.
@@ -34,6 +37,7 @@ std::unordered_map<std::string, client_session> ServerCommunicationManager::clie
 
 void ServerCommunicationManager::start( )
 {
+
     signal(SIGPIPE, SIG_IGN);
 
     int server_socket;
@@ -272,4 +276,132 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
         Logger.write_debug("[Send Notification] Writing to socket");
 
     close(sockfd);
+}
+
+void ServerCommunicationManager::listenForBroadcast() {
+    pthread_t ptid;
+    pthread_create(&ptid, NULL, &threadListenForBroadcast, NULL);
+
+    return;
+}
+
+void* ServerCommunicationManager::threadListenForBroadcast(void* arg)
+{
+    int server_socket;
+    socklen_t clilen;
+    struct sockaddr_in serv_addr;
+    std::string input;
+
+    if((server_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+        Logger.write_error("ERROR opening socket");
+
+    int broadcast = 1;
+    socklen_t sizeof_broadcast = sizeof(broadcast);
+    if (setsockopt(server_socket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof_broadcast) < 0) {
+        std::cout << "Error in setting Broadcast option: " << errno << std::endl;
+        close(server_socket);
+        return 0;
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(SERVER_BROADCAST_PORTS[0]);
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bzero(&(serv_addr.sin_zero), 8);
+
+    if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+        Logger.write_error("ERROR on binding");
+
+    Logger.write_info("Server will start listening for broadcast");
+    listen(server_socket, 5);
+
+    while (true) {
+
+        struct sockaddr_in cli_addr;
+        char recvbuff[50];
+        int recvbufflen = 50;
+        socklen_t len = sizeof(struct sockaddr_in);
+        recvfrom(server_socket,recvbuff,recvbufflen,0,(sockaddr *)&cli_addr,&len);
+
+        std::cout << "Broadcast received message: " << recvbuff << std::endl;
+    }
+
+    close(server_socket);
+
+
+
+
+
+
+
+//    while(true) {
+//        sleep(2);
+//        std::cout << "Listening for broadcast" << std::endl;
+//
+//    }
+
+//    int MYPORT = 4010;
+//
+//    int sock;
+//    sock = socket(AF_INET, SOCK_DGRAM, 0);
+//    int broadcast = 1;
+//    socklen_t sizeof_broadcast = sizeof(broadcast);
+//
+//    if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof_broadcast) < 0) {
+//        std::cout << "Error in setting Broadcast option: " << errno << std::endl;
+//        close(sock);
+//        return 0;
+//    }
+//
+//    struct sockaddr_in recv_addr;
+//    struct sockaddr_in sender_addr;
+//
+//    int len = sizeof(struct sockaddr_in);
+//
+//    char recvbuff[50];
+//    int recvbufflen = 50;
+//    char sendMSG[] = "Broadcast message from SERVER";
+//
+//    recv_addr.sin_family = AF_INET;
+//    recv_addr.sin_port = htons(MYPORT);
+//    recv_addr.sin_addr.s_addr = INADDR_ANY;
+//
+//    if (bind(sock,(sockaddr*)&recv_addr, sizeof(recv_addr)) < 0) {
+//        std::cout << "Error in BINDING: " << errno << std::endl;
+//        close(sock);
+//        return 0;
+//    }
+//    std::cout << "Listening for broadcast" << std::endl;
+//
+//    socklen_t clilen;
+//    clilen = sizeof(struct sockaddr_in);
+//    int connection_socket;
+//    struct sockaddr_in cli_addr;
+//
+//    listen(sock, 5);
+//
+//    if ((connection_socket = accept(sock, (struct sockaddr *) &cli_addr, &clilen)) == -1) {
+//        std::cout << "Error accepting broadcast request: " << errno << std::endl;
+//        return 0;
+//    }
+//
+////    std::thread child_thread(start_client_thread, connection_socket, &cli_addr);
+////    child_thread.detach();
+//
+//    int n;
+//    char buffer[50];
+//    bzero(buffer, 50);
+//
+//    n = read(connection_socket, buffer, 50);
+//    if (n < 0)
+//        Logger.write_debug("Error reading data from socket Broadcast");
+//
+//    std::cout << "Broadcast received message: " << buffer << std::endl;
+//
+//    return 0;
+
+//    recvfrom(sock, recvbuff, recvbufflen, 0, (sockaddr*)&sender_addr, &len);
+//
+//    std::cout << "\n\n Received Broadcast Message is: " << recvbuff << std::endl;
+
 }

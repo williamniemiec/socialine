@@ -188,57 +188,10 @@ void ClientCommunicationManager::listen_notifications(std::string *listen_notifi
 
     Logger.write_debug("[Notification Service] Ready to receive");
 
-
     notificationManager = models::manager::ClientNotificationManager::get_instance();
 
-    //std::thread child_thread(thread_listen_notif, notificationManager, clilen);
-    //child_thread.detach();
-    
     pthread_t ptid;
     pthread_create(&ptid, NULL, &thread_listen_notif, NULL);
-    // cria um novo processo filho p/ ouvir notificações
-    /*pid_t pid = fork();
-    if (pid == 0) { // processo filho
-        printf("started notification listening service\n");
-
-        int n;
-
-        //Todo: change loop to detect the end of execution, so it can return to the app;
-        while (true) {
-
-            int connection_socket;
-            struct sockaddr_in cli_addr;
-
-            if ((connection_socket = accept(notification_socket, (struct sockaddr *) &cli_addr, &clilen)) == -1) {
-                printf("ERROR on accept");
-                continue;
-            }
-
-            char buffer[MAX_MAIL_SIZE];
-            bzero(buffer, MAX_MAIL_SIZE);
-            n = read(connection_socket, buffer, MAX_MAIL_SIZE);
-            if (n < 0)
-                printf("[Notification Service] ERROR reading from socket");
-
-            char received_packet_buffer[MAX_DATA_SIZE];
-            struct __packet received_packet = {0, 0, 0, 0, received_packet_buffer };
-            received_packet.Deserialize(buffer);
-            received_packet.print("[Notification Service] RECEIVED");
-
-            std::vector<std::string> fields = utils::StringUtils::split(received_packet._payload, "\n");
-
-            
-            notificationManager->receive_notification(
-                fields[0], 
-                static_cast<uint32_t>(std::stoul(fields[1])), 
-                fields[2]
-            );
-            
-        }
-
-        close(notification_socket);
-        exit(0);
-    }*/
 
     return;
 }
