@@ -20,6 +20,7 @@
 #include "../../Utils/Logger.h"
 #include "../../Utils/StringUtils.h"
 
+
 #define MSG_HEARTBEAT 0
 #define MSG_NEW_SESSION 1
 #define MSG_NEW_PENDING_NOTIFICATION 2
@@ -44,7 +45,7 @@ using namespace socialine::utils;
 //-------------------------------------------------------------------------
 //int ReplicManager::g_availablePort = 6001;
 int ReplicManager::g_process_id = 0;
-std::map<std::string, uint16_t> *ReplicManager::rm = new std::map<std::string, uint16_t>();
+std::list<Server> *ReplicManager::rm = new std::list<Server>();
 socklen_t ReplicManager::clilen = sizeof(struct sockaddr_in);
 bool ReplicManager::g_primary_server_online = true;
 int ReplicManager::server_socket;
@@ -329,8 +330,8 @@ void ReplicManager::heartbeat_sender()
                 struct sockaddr_in backup_server_addr;
 
                 backup_server_addr.sin_family = AF_INET;
-                backup_server_addr.sin_port = htons(it->second);
-                backup_server_addr.sin_addr = get_ip_by_address(it->first);
+                backup_server_addr.sin_port = htons(it->get_port());
+                backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
                 bzero(&(backup_server_addr.sin_zero), 8);
 
                 if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -343,11 +344,11 @@ void ReplicManager::heartbeat_sender()
                 {
                     //fprintf(stderr, "socket() failed: %s\n", strerror(errno));
                     std::cout << "BACKUP SERVER OFFLINE - REMOVED FROM BACKUP LIST" << std::endl;
-                    rm->erase(it->first);
+                    rm->remove(*it);
                     break; // Avoids segmentation fault
                 }
 
-                std::cout << "PRIMARY IS SENDING HEARTBEAT TO BACKUP AT PORT " << it->first << std::endl;
+                std::cout << "PRIMARY IS SENDING HEARTBEAT TO BACKUP " << it->get_signature() << std::endl;
                 char *message = new char[MAX_MAIL_SIZE];
 
                 message[0] = MSG_HEARTBEAT;
@@ -432,7 +433,7 @@ void ReplicManager::heartbeat_receiver()
     close(server_socket);
 }
 
-void ReplicManager::notify_list_backups(std::map<std::string, uint16_t> *backups)
+void ReplicManager::notify_list_backups(std::list<Server>* backups)
 {
     for (auto it = backups->begin(); it != backups->end(); it++)
     {
@@ -440,8 +441,8 @@ void ReplicManager::notify_list_backups(std::map<std::string, uint16_t> *backups
         struct sockaddr_in backup_server_addr;
 
         backup_server_addr.sin_family = AF_INET;
-        backup_server_addr.sin_port = htons(it->second);
-        backup_server_addr.sin_addr = get_ip_by_address(it->first);
+        backup_server_addr.sin_port = htons(it->get_port());
+        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -456,7 +457,7 @@ void ReplicManager::notify_list_backups(std::map<std::string, uint16_t> *backups
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING BACKUP LIST TO BACKUP AT PORT " << it->first << std::endl;
+        std::cout << "PRIMARY IS SENDING BACKUP LIST TO BACKUP " << it->get_signature() << std::endl;
         char *message = new char[MAX_MAIL_SIZE];
 
         message[0] = MSG_LIST_BACKUP;
@@ -468,8 +469,8 @@ void ReplicManager::notify_list_backups(std::map<std::string, uint16_t> *backups
 
         for (auto it = backups->begin(); it != backups->end(); it++)
         {
-            uint16_t normalizedPort = htons(it->second);
-            std::string serverIp = it->first;
+            uint16_t normalizedPort = htons(it->get_port());
+            std::string serverIp = it->get_ip();
 
             message[2 + i * 18 + 0] = normalizedPort >> 8; // MSB
             message[2 + i * 18 + 1] = normalizedPort; // LSB
@@ -494,8 +495,8 @@ void ReplicManager::notify_close_session(client_session session)
         struct sockaddr_in backup_server_addr;
 
         backup_server_addr.sin_family = AF_INET;
-        backup_server_addr.sin_port = htons(it->second);
-        backup_server_addr.sin_addr = get_ip_by_address(it->first);
+        backup_server_addr.sin_port = htons(it->get_port());
+        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -510,7 +511,7 @@ void ReplicManager::notify_close_session(client_session session)
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING CLOSE SESSION TO BACKUP AT PORT " << it->first << std::endl;
+        std::cout << "PRIMARY IS SENDING CLOSE SESSION TO BACKUP " << it->get_signature() << std::endl;
         char *message = new char[MAX_MAIL_SIZE];
 
         message[0] = MSG_CLOSE_SESSION;
@@ -539,8 +540,8 @@ void ReplicManager::notify_follow(std::string follower, std::string followed)
         struct sockaddr_in backup_server_addr;
 
         backup_server_addr.sin_family = AF_INET;
-        backup_server_addr.sin_port = htons(it->second);
-        backup_server_addr.sin_addr = get_ip_by_address(it->first);
+        backup_server_addr.sin_port = htons(it->get_port());
+        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -555,7 +556,7 @@ void ReplicManager::notify_follow(std::string follower, std::string followed)
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP AT PORT " << it->first << std::endl;
+        std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP " << it->get_signature() << std::endl;
         char *message = new char[MAX_MAIL_SIZE];
 
         message[0] = MSG_FOLLOW;
@@ -578,8 +579,8 @@ void ReplicManager::notify_pending_notification(std::string followed, notificati
         struct sockaddr_in backup_server_addr;
 
         backup_server_addr.sin_family = AF_INET;
-        backup_server_addr.sin_port = htons(it->second);
-        backup_server_addr.sin_addr = get_ip_by_address(it->first);
+        backup_server_addr.sin_port = htons(it->get_port());
+        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -594,7 +595,7 @@ void ReplicManager::notify_pending_notification(std::string followed, notificati
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING NEW PENDING NOTIFICATION TO BACKUP AT PORT " << it->first << std::endl;
+        std::cout << "PRIMARY IS SENDING NEW PENDING NOTIFICATION TO BACKUP " << it->get_signature() << std::endl;
         char *message = new char[MAX_MAIL_SIZE];
 
         message[0] = MSG_NEW_PENDING_NOTIFICATION;
@@ -630,8 +631,8 @@ void ReplicManager::notify_new_session(client_session session)
         struct sockaddr_in backup_server_addr;
 
         backup_server_addr.sin_family = AF_INET;
-        backup_server_addr.sin_port = htons(it->second);
-        backup_server_addr.sin_addr = get_ip_by_address(it->first);
+        backup_server_addr.sin_port = htons(it->get_port());
+        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -646,7 +647,7 @@ void ReplicManager::notify_new_session(client_session session)
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING COOKIES TO BACKUP AT PORT " << it->first << std::endl;
+        std::cout << "PRIMARY IS SENDING COOKIES TO BACKUP " << it->get_signature() << std::endl;
         char *message = new char[MAX_MAIL_SIZE];
 
         message[0] = MSG_NEW_SESSION;
@@ -669,7 +670,7 @@ void ReplicManager::notify_new_session(client_session session)
 
 void ReplicManager::add_new_backup_server(std::string ip, uint16_t port)
 {
-    rm->insert(std::make_pair(ip, port));
+    rm->push_back(Server(ip, port));
     std::cout << "NEW BACKUP SERVER ADDED: " << ip << ":" << port << std::endl;
 
     std::cout << "SENDING BACKUP LIST FOR EACH BACKUP SERVER..." << std::endl;
@@ -761,8 +762,8 @@ void ReplicManager::notify_primary_addr()
         struct sockaddr_in backup_server_addr;
 
         backup_server_addr.sin_family = AF_INET;
-        backup_server_addr.sin_port = htons(it->second);
-        backup_server_addr.sin_addr = get_ip_by_address(it->first);
+        backup_server_addr.sin_port = htons(it->get_port());
+        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
         bzero(&(backup_server_addr.sin_zero), 8);
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -777,7 +778,7 @@ void ReplicManager::notify_primary_addr()
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING ITS ADDRESS TO BACKUP AT PORT " << it->first << std::endl;
+        std::cout << "PRIMARY IS SENDING ITS ADDRESS TO BACKUP " << it->get_signature() << std::endl;
         char *message = new char[MAX_MAIL_SIZE];
 
         uint32_t normalizedPrimaryIp = htonl(addr.s_addr);
@@ -1077,36 +1078,34 @@ void ReplicManager::init_server_as_backup()
             // TODO: send session to server communication manager
         }
         else if (buffer_response[0] == MSG_LIST_BACKUP)
-        {
+        {std::cout << "1\n";
             uint8_t totalBackups = buffer_response[1];
-            std::map<std::string, uint16_t> *rms = new std::map<std::string, uint16_t>();
+            std::list<Server> *rms = new std::list<Server>();
 
             for (int i = 0; i < totalBackups; i++)
-            {
+            {std::cout << "2\n";
                 uint16_t backupPort;
                 backupPort = ntohs(
                     buffer_response[2 + i * 18 + 0] << 8 
                     | buffer_response[2 + i * 18 + 1]
                 );
-                
+
                 if (backupPort != serverPort)
-                {
-                    std::string server;
+                {std::cout << "3\n";
+                    char server[16];
                     memcpy(&server, &buffer_response[2 + i * 18 + 2], 16);
 
-                    rms->insert(std::make_pair(server, backupPort));
+                    rms->push_back(Server(server, backupPort));
                 }
             }
 
             rm = rms;
 
             std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: BACKUP LIST" << std::endl;
-
-            for (auto it = rms->begin(); it != rms->end(); it++)
-            {
-                std::cout << it->first << ": " << it->second << std::endl;
+std::cout << "5\n";
+            for (Server & replic : *rms) {
+                std::cout << replic.get_signature() << std::endl;
             }
-            std::cout << std::endl;
         }
         else
         {

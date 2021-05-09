@@ -1,7 +1,8 @@
-#include <map>
+#include <list>
 #include <netinet/in.h>
 #include <unordered_map>
 #include "../../Utils/Types.h"
+#include "Server.hpp"
 
 /// <summary>
 ///     Responsible for managing primary server and backup servers.
@@ -14,7 +15,7 @@ class ReplicManager
 public:
     //static int g_availablePort;
     static int g_process_id;
-    static std::map<std::string, uint16_t>* rm; // Replic managers
+    static std::list<Server>* rm; // Replic managers
     static bool g_primary_server_online;
     static socklen_t clilen;
     static int server_socket;
@@ -57,7 +58,7 @@ private:
     static void notify_new_session(client_session client_session);
     static void notify_close_session(client_session client_session);
     static void notify_follow(std::string follower, std::string followed);
-    static void notify_list_backups(std::map<std::string, uint16_t> *backups);
+    static void notify_list_backups(std::list<Server>* backups);
     static void notify_primary_addr();
     static void receive_primary_addr();
     static in_addr get_ip_by_address(std::string address);
