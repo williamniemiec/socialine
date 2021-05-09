@@ -20,7 +20,9 @@
 #include <ctime>
 #include <pthread.h>
 
-#define PORT 4000
+int SELECTED_SERVER_PORT = 0;
+
+int SERVER_PORTS[] = { 4021, 4022, 4023, 4024, 4025, 4026, 4027, 4028, 4029 };
 
 int SERVER_BROADCAST_PORTS[] = { 4010, 4011, 4012, 4013, 4014, 4015, 4016, 4017, 4018, 4019, 4020 };
 
@@ -53,13 +55,22 @@ void ServerCommunicationManager::start( )
         Logger.write_error("ERROR opening socket");
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(PORT);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     bzero(&(serv_addr.sin_zero), 8);
 
-    if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-        Logger.write_error("ERROR on binding\n");
+
+    int i;
+    int server_ports_length = sizeof(SERVER_PORTS)/sizeof(SERVER_PORTS[0]);
+    for (i = 0; i < server_ports_length; i++) {
+        serv_addr.sin_port = htons(SERVER_PORTS[i]);
+        if(bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) >= 0) {
+            Logger.write_error("Successfully bound to PORT "+std::to_string(SERVER_PORTS[i])+"\n");
+            SELECTED_SERVER_PORT = SERVER_PORTS[i];
+            break;
+        }
+        Logger.write_error("Failed binding to PORT "+std::to_string(SERVER_PORTS[i])+". Will try next port..."+"\n");
+    }
 
     Logger.write_info("Server will start listening\n");
     listen(server_socket, 5);
@@ -376,15 +387,18 @@ void* ServerCommunicationManager::threadListenForBroadcast(void* arg)
     listen(server_socket, 5);
 
     while (true) {
-        // precisa ficar nesse while(true), mesmo sem ser o primário, porque a qualquer momento pode se tornar o servidor primário, e aí vai precisar rodar o while
-        // (se extrairmos isso pra uma função separada, não precisa ficar gastando recurso. Mas fica como ponto de melhoria).
-        if (!isPrimaryServer) continue;
 
         struct sockaddr_in cli_addr;
         char recvbuff[BROADCAST_MSG_LEN];
         int recvbufflen = BROADCAST_MSG_LEN;
         socklen_t len = sizeof(struct sockaddr_in);
         recvfrom(server_socket,recvbuff,recvbufflen,0,(sockaddr *)&cli_addr,&len);
+
+        std::cout << "Received broadcast message" << std::endl;
+
+        // precisa ficar nesse while(true), mesmo sem ser o primário, porque a qualquer momento pode se tornar o servidor primário, e aí vai precisar rodar o while
+        // (se extrairmos isso pra uma função separada, não precisa ficar gastando recurso. Mas fica como ponto de melhoria).
+        if (!isPrimaryServer) continue;
 
         int received_broadcast_msg = recvbuff[0];
 
@@ -396,7 +410,7 @@ void* ServerCommunicationManager::threadListenForBroadcast(void* arg)
         std::cout << "Broadcast received request from client " << std::endl;
         std::cout << "Cli IP and PORT: " << inet_ntoa(cli_addr.sin_addr) << ":" << cli_addr.sin_port << std::endl;
 
-        std::string send_buffer = std::to_string(PRIMARY_BROADCAST_IAMPRIMARY_RESPONSE) + "\n" + get_local_ip() + "\n" + std::to_string(PORT) + "\n";
+        std::string send_buffer = std::to_string(PRIMARY_BROADCAST_IAMPRIMARY_RESPONSE) + "\n" + get_local_ip() + "\n" + std::to_string(SELECTED_SERVER_PORT) + "\n";
         int send_buff_len = BROADCAST_MSG_LEN;
 
         socklen_t socklen_cli_addr = sizeof(cli_addr);
