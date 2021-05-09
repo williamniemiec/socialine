@@ -1,4 +1,5 @@
 #include <list>
+#include <map>
 #include <netinet/in.h>
 #include <unordered_map>
 #include "../../Utils/Types.h"
@@ -25,7 +26,7 @@ public:
     static char buffer_response[MAX_MAIL_SIZE];
     static std::string primaryIp;
     static std::string multicastIp;
-    static pid_t myPid;
+    static int myPid;
 
 
 //-------------------------------------------------------------------------
@@ -75,4 +76,7 @@ private:
     static void send_all_followers(Server target);
     static void send_all_pending_notifications(Server target);
     static bool start_election_leader(Server starter);
+    static std::map<int, std::list<Server>> get_servers_ordered_by_pid_ascending();
+    static Server get_server_with_pid(int pid);
+    static int receive_election_leader(Server receiver);
 };

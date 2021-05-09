@@ -27,9 +27,12 @@
 #define MSG_NEW_PENDING_NOTIFICATION 2
 #define MSG_CLOSE_SESSION 3
 #define MSG_FOLLOW 4
+#define MSG_ELECTION 5
+#define MSG_ELECTED 6
 #define MSG_LIST_BACKUP 7
 #define MSG_PRIMARY_ADDR 8
 #define TIMEOUT_SERVER_MS 6000
+#define TIMEOUT_RECEIVE_ELECTION_MS 3500
 #define HEARTBEAT_MS 3000
 #define MAX_WAITING_BACKUPS 5
 #define PORT_MULTICAST 4001
@@ -55,7 +58,7 @@ int ReplicManager::readBytesFromSocket;
 char ReplicManager::buffer_response[MAX_MAIL_SIZE];
 std::string ReplicManager::primaryIp;
 std::string ReplicManager::multicastIp = "226.1.1.1";
-pid_t ReplicManager::myPid = getpid();
+int ReplicManager::myPid = getpid();
 
 
 //-------------------------------------------------------------------------
@@ -473,14 +476,14 @@ void ReplicManager::notify_list_backups(std::list<Server>* backups)
             uint16_t normalizedPort = htons(it->get_port());
             std::string serverIp = it->get_ip();
 
-            message[2 + i * (18+sizeof(pid_t)) + 0] = normalizedPort >> 8; // MSB
-            message[2 + i * (18+sizeof(pid_t)) + 1] = normalizedPort; // LSB
+            message[2 + i * (18+sizeof(int)) + 0] = normalizedPort >> 8; // MSB
+            message[2 + i * (18+sizeof(int)) + 1] = normalizedPort; // LSB
 
-            memcpy(&message[2 + i * (18+sizeof(pid_t)) + 2], serverIp.c_str(), 16);
+            memcpy(&message[2 + i * (18+sizeof(int)) + 2], serverIp.c_str(), 16);
 
-            pid_t serverPid = it->get_pid();
+            int serverPid = it->get_pid();
 
-            memcpy(&message[2 + i * (18+sizeof(pid_t)) + 16], &serverPid, sizeof(pid_t));
+            memcpy(&message[2 + i * (18+sizeof(int)) + 16], &serverPid, sizeof(int));
 
 
             i++;
@@ -689,7 +692,7 @@ void ReplicManager::send_session(Server server, std::string sessionId, client_se
         Logger.write_error("Failed to write to socket");
 }
 
-void ReplicManager::add_new_backup_server(std::string ip, uint16_t port, pid_t pid)
+void ReplicManager::add_new_backup_server(std::string ip, uint16_t port, int pid)
 {
     rm->push_back(Server(ip, port, pid));
     std::cout << "NEW BACKUP (" << pid << ") SERVER ADDED: " << ip << ":" << port << std::endl;
@@ -1163,17 +1166,17 @@ void ReplicManager::init_server_as_backup()
                 {
                     uint16_t backupPort;
                     backupPort = ntohs(
-                        buffer_response[2 + i * (18+sizeof(pid_t)) + 0] << 8 
-                        | buffer_response[2 + i * (18+sizeof(pid_t)) + 1]
+                        buffer_response[2 + i * (18+sizeof(int)) + 0] << 8 
+                        | buffer_response[2 + i * (18+sizeof(int)) + 1]
                     );
 
                     if (backupPort != serverPort)
                     {
                         char server[16];
-                        memcpy(&server, &buffer_response[2 + i * (18+sizeof(pid_t)) + 2], 16);
+                        memcpy(&server, &buffer_response[2 + i * (18+sizeof(int)) + 2], 16);
 
-                        pid_t serverPid;
-                        memcpy(&serverPid, &buffer_response[2 + i * (18+sizeof(pid_t)) + 16], sizeof(pid_t));
+                        int serverPid;
+                        memcpy(&serverPid, &buffer_response[2 + i * (18+sizeof(int)) + 16], sizeof(int));
 
                         rms->push_back(Server(server, backupPort, serverPid));
                     }
@@ -1220,11 +1223,139 @@ void ReplicManager::init_server_as_backup()
     }
 }
 
+Server ReplicManager::get_server_with_pid(int pid)
+{
+    for (Server s : *rm) 
+    {
+        if (s.get_pid() == pid)
+            return s;
+    }
+
+    return Server("", 0, 0);
+}
+
+std::map<int, std::list<Server>> ReplicManager::get_servers_ordered_by_pid_ascending()
+{
+    std::map<int, std::list<Server>> servers;
+
+    for (Server server : *rm)
+    {
+        if (servers.find(server.get_pid()) == servers.end())
+        {
+            std::list<Server> servers_with_same_pid;
+            servers_with_same_pid.push_back(server);
+
+            servers.insert(std::make_pair(server.get_pid(), servers_with_same_pid));
+        }
+        else
+        {
+            servers[server.get_pid()].push_back(server);
+        }
+    }
+
+    return servers;
+}
+
 bool ReplicManager::start_election_leader(Server starter)
 {
     bool is_leader = false;
+    std::map<int, std::list<Server>> servers_mapped_by_pid = get_servers_ordered_by_pid_ascending();
+    int leader_pid = -1;
+    bool participant = false;
 
-    
+    // First round
+
+
+    // Second round    
+
 
     return is_leader;
 }
+
+int ReplicManager::receive_election_leader(Server receiver)
+{
+    int pid = -1;
+    char* buffer[MAX_MAIL_SIZE];
+    struct sockaddr_in serv_addr;
+    struct in_addr addr;
+    hostent *server_host;
+    
+    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        std::cout << "erro socket";
+        exit(-1);
+    }
+
+    inet_aton(receiver.get_ip().c_str(), &addr);
+    server_host = gethostbyaddr(&addr, sizeof(receiver.get_ip()), AF_INET);
+
+    if (server_host == NULL)
+    {
+        Logger.write_error("No such host!");
+        exit(-1);
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(receiver.get_port());
+    serv_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
+
+    bzero(&(serv_addr.sin_zero), 8);
+
+    if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        int option = 1;
+        if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0)
+        {
+            std::cout << "erro bind - backup server";
+            fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+            exit(-1);
+        }
+    }
+
+    listen(server_socket, 3);
+
+    clilen = sizeof(struct sockaddr_in);
+
+    bool timeout = Scheduler::set_timeout_to_routine([]() 
+    {
+        connection_socket = accept(server_socket, (struct sockaddr *)&cli_addr, &clilen);
+    }, TIMEOUT_RECEIVE_ELECTION_MS);
+
+    if (timeout)
+        exit(-1);
+
+    if (connection_socket == -1)
+        exit(-1);
+
+    timeout = Scheduler::set_timeout_to_routine([]() {
+        readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
+    }, TIMEOUT_SERVER_MS);
+
+    if (timeout)
+        exit(-1);
+
+    if (readBytesFromSocket < 0)
+    {
+        fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+        Logger.write_error("ERROR: Reading from socket");
+        close(connection_socket);
+        exit(-1);
+    }
+
+    if (buffer_response[0] == MSG_ELECTION)
+    {
+        pid = ntohl(
+            buffer_response[1] << 24
+            | buffer_response[2] << 16
+            | buffer_response[3] << 8
+            | buffer_response[4]
+        );
+    }
+
+    close(connection_socket);
+    close(server_socket);
+
+    return pid;
+}
+
+
