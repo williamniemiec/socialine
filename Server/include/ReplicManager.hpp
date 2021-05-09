@@ -43,6 +43,13 @@ public:
     ///     or as a backup if one exists.
     /// </summary>
     static void run();
+
+    static void notify_pending_notification(std::string followed, notification current_notification);
+    static void notify_new_session(std::string sessionId, client_session client_session);
+    static void notify_close_session(client_session client_session);
+    static void notify_follow(std::string follower, std::string followed);
+    static void notify_list_backups(std::list<Server>* backups);
+    static void notify_primary_addr();
 private:
     static void multicast_signal();
     static bool try_receive_multicast_signal();
@@ -53,17 +60,17 @@ private:
     static void heartbeat_receiver();
     static void add_new_backup_server(std::string ip, uint16_t port);
     static void config_new_backup_server(int connection_socket, sockaddr_in cli_addr);
-    static void service_new_backup();
-    static void notify_pending_notification(std::string followed, notification current_notification);
-    static void notify_new_session(client_session client_session);
-    static void notify_close_session(client_session client_session);
-    static void notify_follow(std::string follower, std::string followed);
-    static void notify_list_backups(std::list<Server>* backups);
-    static void notify_primary_addr();
+    static void new_backup_service();
     static void receive_primary_addr();
     static in_addr get_ip_by_address(std::string address);
     static uint16_t get_available_port_in_range(uint16_t start, uint16_t end);
     static bool is_port_available(uint16_t port);
     static void connect_with_primary_server(std::string backupIp, uint16_t backupPort);
     static void init_server_as_backup();
+    static void send_follow(Server server, std::string follower, std::string followed);
+    static void send_session(Server server, std::string sessionId, client_session client_session);
+    static void send_pending_notification(Server server, std::string followed, notification current_notification);
+    static void send_all_sessions(Server target);
+    static void send_all_followers(Server target);
+    static void send_all_pending_notifications(Server target);
 };

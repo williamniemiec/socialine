@@ -19,6 +19,7 @@
 #include "../../Utils/Scheduler.hpp"
 #include "../../Utils/Logger.h"
 #include "../../Utils/StringUtils.h"
+#include "../include/DataManager.hpp"
 
 
 #define MSG_HEARTBEAT 0
@@ -43,7 +44,6 @@ using namespace socialine::utils;
 //-------------------------------------------------------------------------
 //		Attributes
 //-------------------------------------------------------------------------
-//int ReplicManager::g_availablePort = 6001;
 int ReplicManager::g_process_id = 0;
 std::list<Server> *ReplicManager::rm = new std::list<Server>();
 socklen_t ReplicManager::clilen = sizeof(struct sockaddr_in);
@@ -253,7 +253,7 @@ void ReplicManager::init_server_as_primary()
     std::thread thread_heartbeat_receiver(heartbeat_receiver);
     thread_heartbeat_receiver.detach();
 
-    std::thread thread_new_backup(service_new_backup);
+    std::thread thread_new_backup(new_backup_service);
     thread_new_backup.detach();
 
     Scheduler::set_interval([]() 
@@ -536,136 +536,151 @@ void ReplicManager::notify_follow(std::string follower, std::string followed)
 {
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
-        int sockfd, n;
-        struct sockaddr_in backup_server_addr;
-
-        backup_server_addr.sin_family = AF_INET;
-        backup_server_addr.sin_port = htons(it->get_port());
-        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
-        bzero(&(backup_server_addr.sin_zero), 8);
-
-        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        {
-            Logger.write_error("ERROR: Opening socket");
-            continue;
-        }
-
-        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
-        {
-            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
-            continue;
-        }
-
-        std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP " << it->get_signature() << std::endl;
-        char *message = new char[MAX_MAIL_SIZE];
-
-        message[0] = MSG_FOLLOW;
-
-        memcpy(&message[1], follower.c_str(), MAX_DATA_SIZE);
-        memcpy(&message[1 + MAX_DATA_SIZE], followed.c_str(), MAX_DATA_SIZE);
-
-        n = write(sockfd, message, MAX_MAIL_SIZE);
-
-        if (n < 0)
-            Logger.write_error("Failed to write to socket");
+        send_follow(*it, follower, followed);
     }
+}
+
+void ReplicManager::send_follow(Server server, std::string follower, std::string followed)
+{
+    int sockfd, n;
+    struct sockaddr_in backup_server_addr;
+
+    backup_server_addr.sin_family = AF_INET;
+    backup_server_addr.sin_port = htons(server.get_port());
+    backup_server_addr.sin_addr = get_ip_by_address(server.get_ip());
+    bzero(&(backup_server_addr.sin_zero), 8);
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        Logger.write_error("ERROR: Opening socket");
+        return;
+    }
+
+    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    {
+        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        return;
+    }
+
+    std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP " << server.get_signature() << std::endl;
+    char *message = new char[MAX_MAIL_SIZE];
+
+    message[0] = MSG_FOLLOW;
+
+    memcpy(&message[1], follower.c_str(), MAX_DATA_SIZE);
+    memcpy(&message[1 + MAX_DATA_SIZE], followed.c_str(), MAX_DATA_SIZE);
+
+    n = write(sockfd, message, MAX_MAIL_SIZE);
+
+    if (n < 0)
+        Logger.write_error("Failed to write to socket");
 }
 
 void ReplicManager::notify_pending_notification(std::string followed, notification current_notification)
 {
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
-        int sockfd, n;
-        struct sockaddr_in backup_server_addr;
-
-        backup_server_addr.sin_family = AF_INET;
-        backup_server_addr.sin_port = htons(it->get_port());
-        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
-        bzero(&(backup_server_addr.sin_zero), 8);
-
-        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        {
-            Logger.write_error("ERROR: Opening socket");
-            continue;
-        }
-
-        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
-        {
-            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
-            continue;
-        }
-
-        std::cout << "PRIMARY IS SENDING NEW PENDING NOTIFICATION TO BACKUP " << it->get_signature() << std::endl;
-        char *message = new char[MAX_MAIL_SIZE];
-
-        message[0] = MSG_NEW_PENDING_NOTIFICATION;
-
-        memcpy(&message[1], followed.c_str(), MAX_DATA_SIZE);
-
-        // Notification - owner
-        memcpy(&message[1 + MAX_DATA_SIZE], current_notification.owner.c_str(), MAX_DATA_SIZE);
-
-        // Notification - timestamp (uint32_t)
-        uint32_t timestampNormalized = htonl(current_notification.timestamp);
-
-        message[1 + 2 * MAX_DATA_SIZE + 0] = timestampNormalized >> 24; // MSB
-        message[1 + 2 * MAX_DATA_SIZE + 1] = timestampNormalized >> 16;
-        message[1 + 2 * MAX_DATA_SIZE + 2] = timestampNormalized >> 8;
-        message[1 + 2 * MAX_DATA_SIZE + 3] = timestampNormalized;
-
-        // Notification - _message
-        memcpy(&message[1 + 2 * MAX_DATA_SIZE + 4], current_notification._message.c_str(), MAX_DATA_SIZE);
-
-        n = write(sockfd, message, MAX_MAIL_SIZE);
-
-        if (n < 0)
-            Logger.write_error("Failed to write to socket");
+        send_pending_notification(*it, followed, current_notification);
     }
 }
 
-void ReplicManager::notify_new_session(client_session session)
+void ReplicManager::send_pending_notification(Server server, std::string followed, notification current_notification)
+{
+    int sockfd, n;
+    struct sockaddr_in backup_server_addr;
+
+    backup_server_addr.sin_family = AF_INET;
+    backup_server_addr.sin_port = htons(server.get_port());
+    backup_server_addr.sin_addr = get_ip_by_address(server.get_ip());
+    bzero(&(backup_server_addr.sin_zero), 8);
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        Logger.write_error("ERROR: Opening socket");
+        return;
+    }
+
+    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    {
+        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        return;
+    }
+
+    std::cout << "PRIMARY IS SENDING NEW PENDING NOTIFICATION TO BACKUP " << server.get_signature() << std::endl;
+    char *message = new char[MAX_MAIL_SIZE];
+
+    message[0] = MSG_NEW_PENDING_NOTIFICATION;
+
+    memcpy(&message[1], followed.c_str(), MAX_DATA_SIZE);
+
+    // Notification - owner
+    memcpy(&message[1 + MAX_DATA_SIZE], current_notification.owner.c_str(), MAX_DATA_SIZE);
+
+    // Notification - timestamp (uint32_t)
+    uint32_t timestampNormalized = htonl(current_notification.timestamp);
+
+    message[1 + 2 * MAX_DATA_SIZE + 0] = timestampNormalized >> 24; // MSB
+    message[1 + 2 * MAX_DATA_SIZE + 1] = timestampNormalized >> 16;
+    message[1 + 2 * MAX_DATA_SIZE + 2] = timestampNormalized >> 8;
+    message[1 + 2 * MAX_DATA_SIZE + 3] = timestampNormalized;
+
+    // Notification - _message
+    memcpy(&message[1 + 2 * MAX_DATA_SIZE + 4], current_notification._message.c_str(), MAX_DATA_SIZE);
+
+    n = write(sockfd, message, MAX_MAIL_SIZE);
+
+    if (n < 0)
+        Logger.write_error("Failed to write to socket");
+}
+
+void ReplicManager::notify_new_session(std::string sessionId, client_session session)
 {
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
-        int sockfd, n;
-        struct sockaddr_in backup_server_addr;
-
-        backup_server_addr.sin_family = AF_INET;
-        backup_server_addr.sin_port = htons(it->get_port());
-        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
-        bzero(&(backup_server_addr.sin_zero), 8);
-
-        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        {
-            Logger.write_error("ERROR: Opening socket");
-            continue;
-        }
-
-        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
-        {
-            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
-            continue;
-        }
-
-        std::cout << "PRIMARY IS SENDING COOKIES TO BACKUP " << it->get_signature() << std::endl;
-        char *message = new char[MAX_MAIL_SIZE];
-
-        message[0] = MSG_NEW_SESSION;
-
-        // COOKIE
-        memcpy(&message[1], session.session_id.c_str(), COOKIE_LENGTH);
-
-        // IP
-        memcpy(&message[1 + COOKIE_LENGTH], session.ip.c_str(), 16);
-
-        // NOTIFICATION PORT
-        memcpy(&message[1 + COOKIE_LENGTH + 16], session.notification_port.c_str(), 6);
-
-        n = write(sockfd, message, MAX_MAIL_SIZE);
-
-        if (n < 0)
-            Logger.write_error("Failed to write to socket");
+        send_session(*it, sessionId, session);
     }
+}
+
+void ReplicManager::send_session(Server server, std::string sessionId, client_session session)
+{
+    int sockfd, n;
+    struct sockaddr_in backup_server_addr;
+
+    backup_server_addr.sin_family = AF_INET;
+    backup_server_addr.sin_port = htons(server.get_port());
+    backup_server_addr.sin_addr = get_ip_by_address(server.get_ip());
+    bzero(&(backup_server_addr.sin_zero), 8);
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        Logger.write_error("ERROR: Opening socket");
+        return;
+    }
+
+    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    {
+        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        return;
+    }
+
+    std::cout << "PRIMARY IS SENDING COOKIES TO BACKUP " << server.get_signature() << std::endl;
+    char *message = new char[MAX_MAIL_SIZE];
+
+    message[0] = MSG_NEW_SESSION;
+
+    // COOKIE
+    memcpy(&message[1], sessionId.c_str(), COOKIE_LENGTH);
+
+    // IP
+    memcpy(&message[1 + COOKIE_LENGTH], session.ip.c_str(), 16);
+
+    // NOTIFICATION PORT
+    memcpy(&message[1 + COOKIE_LENGTH + 16], session.notification_port.c_str(), 6);
+
+    n = write(sockfd, message, MAX_MAIL_SIZE);
+
+    if (n < 0)
+        Logger.write_error("Failed to write to socket");
 }
 
 void ReplicManager::add_new_backup_server(std::string ip, uint16_t port)
@@ -698,7 +713,7 @@ void ReplicManager::config_new_backup_server(int connection_socket, sockaddr_in 
     close(connection_socket);
 }
 
-void ReplicManager::service_new_backup()
+void ReplicManager::new_backup_service()
 {
     int server_socket;
     socklen_t clilen;
@@ -801,6 +816,58 @@ void ReplicManager::notify_primary_addr()
         if (n < 0)
             Logger.write_error("Failed to write to socket");
     }
+}
+
+void ReplicManager::send_all_sessions(Server target)
+{
+    std::cout << "SEND ALL SESSIONS TO BACKUP " << target.get_signature() << std::endl;
+
+    std::unordered_map<std::string, client_session> sessions = DataManager::get_all_sessions();
+    
+    for (auto it = sessions.begin(); it != sessions.end(); it++)
+    {
+        send_session(target, it->first, it->second);
+    }
+
+    std::cout << "DONE" << std::endl;
+}
+
+void ReplicManager::send_all_followers(Server target)
+{
+    std::cout << "SEND ALL FOLLOWERS TO BACKUP " << target.get_signature() << std::endl;
+
+    std::unordered_map<std::string, std::vector<std::string>> followers = DataManager::get_all_followers();
+
+    for (auto it = followers.begin(); it != followers.end(); it++)
+    {
+        std::vector<std::string> followers = it->second;
+
+        for (std::string user : followers)
+        {
+            send_follow(target, it->first, user);
+        }
+    }
+
+    std::cout << "DONE" << std::endl;
+}
+
+void ReplicManager::send_all_pending_notifications(Server target)
+{
+    std::cout << "SEND ALL PENDING NOTIFICATIONS TO BACKUP " << target.get_signature() << std::endl;
+
+    std::unordered_map<std::string, std::vector<notification>> pendingNotifications = DataManager::get_all_pending_notifications();
+
+    for (auto it = pendingNotifications.begin(); it != pendingNotifications.end(); it++)
+    {
+        std::vector<notification> notifications = it->second;
+
+        for (notification notification : notifications)
+        {
+            send_pending_notification(target, it->first, notification);
+        }
+    }
+
+    std::cout << "DONE" << std::endl;
 }
 
 
@@ -1078,12 +1145,12 @@ void ReplicManager::init_server_as_backup()
             // TODO: send session to server communication manager
         }
         else if (buffer_response[0] == MSG_LIST_BACKUP)
-        {std::cout << "1\n";
+        {
             uint8_t totalBackups = buffer_response[1];
             std::list<Server> *rms = new std::list<Server>();
 
             for (int i = 0; i < totalBackups; i++)
-            {std::cout << "2\n";
+            {
                 uint16_t backupPort;
                 backupPort = ntohs(
                     buffer_response[2 + i * 18 + 0] << 8 
@@ -1091,7 +1158,7 @@ void ReplicManager::init_server_as_backup()
                 );
 
                 if (backupPort != serverPort)
-                {std::cout << "3\n";
+                {
                     char server[16];
                     memcpy(&server, &buffer_response[2 + i * 18 + 2], 16);
 
@@ -1102,7 +1169,7 @@ void ReplicManager::init_server_as_backup()
             rm = rms;
 
             std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: BACKUP LIST" << std::endl;
-std::cout << "5\n";
+
             for (Server & replic : *rms) {
                 std::cout << replic.get_signature() << std::endl;
             }
