@@ -18,8 +18,13 @@
 #include <thread>
 #include <netdb.h>
 #include <ctime>
+#include <pthread.h>
 
-#define PORT 4000
+int SELECTED_SERVER_PORT = 0;
+
+int SERVER_PORTS[] = { 4021, 4022, 4023, 4024, 4025, 4026, 4027, 4028, 4029 };
+
+int SERVER_BROADCAST_PORTS[] = { 4010, 4011, 4012, 4013, 4014, 4015, 4016, 4017, 4018, 4019, 4020 };
 
 /**
  * Inicializa o connectionSocket, que fica aberto ouvindo mensagens de clientes enviadas na porta 4000.
@@ -31,9 +36,14 @@
 using namespace socialine::utils;
 
 std::unordered_map<std::string, client_session> ServerCommunicationManager::client_sessions;
+bool ServerCommunicationManager::isPrimaryServer;
 
 void ServerCommunicationManager::start( )
 {
+
+    // TODO: Remover mocked isPrimaryServer (precisa ser definido de acordo com o algoritmo de eleição)
+    isPrimaryServer = true;
+
     signal(SIGPIPE, SIG_IGN);
 
     int server_socket;
@@ -45,15 +55,24 @@ void ServerCommunicationManager::start( )
         Logger.write_error("ERROR opening socket");
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(PORT);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     bzero(&(serv_addr.sin_zero), 8);
 
-    if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-        Logger.write_error("ERROR on binding");
 
-    Logger.write_info("Server will start listening");
+    int i;
+    int server_ports_length = sizeof(SERVER_PORTS)/sizeof(SERVER_PORTS[0]);
+    for (i = 0; i < server_ports_length; i++) {
+        serv_addr.sin_port = htons(SERVER_PORTS[i]);
+        if(bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) >= 0) {
+            Logger.write_error("Successfully bound to PORT "+std::to_string(SERVER_PORTS[i])+"\n");
+            SELECTED_SERVER_PORT = SERVER_PORTS[i];
+            break;
+        }
+        Logger.write_error("Failed binding to PORT "+std::to_string(SERVER_PORTS[i])+". Will try next port..."+"\n");
+    }
+
+    Logger.write_info("Server will start listening\n");
     listen(server_socket, 5);
 
     clilen = sizeof(struct sockaddr_in);
@@ -65,7 +84,7 @@ void ServerCommunicationManager::start( )
         struct sockaddr_in cli_addr;
 
         if ((connection_socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen)) == -1) {
-            Logger.write_error("Error accepting request");
+            Logger.write_error("Error accepting request\n");
             continue;
         }
 
@@ -88,7 +107,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
 
     n = read(connection_socket, buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        Logger.write_debug("Reading data from socket");
+        Logger.write_debug("Reading data from socket\n");
 
     char received_packet_buffer[MAX_DATA_SIZE];
     struct __packet received_packet = {0, 0, 0, 0, NO_COOKIE, received_packet_buffer };
@@ -136,7 +155,7 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
 
     n = write(connection_socket, response_buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        Logger.write_error("Failed to write to socket");
+        Logger.write_error("Failed to write to socket\n");
 
     close(connection_socket);
 }
@@ -237,13 +256,13 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     receiver_host = gethostbyaddr(&addr, sizeof(receiver_ip), AF_INET);
 
     if (receiver_host == NULL) {
-        Logger.write_error("[Send Notification] No such client found!");
+        Logger.write_error("[Send Notification] No such client found!\n");
     }
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        Logger.write_debug("[Send Notification] Opening socket");
+        Logger.write_debug("[Send Notification] Opening socket\n");
 
-    Logger.write_debug("[Send Notification] receiver port: " + receiver_port );
+    Logger.write_debug("[Send Notification] receiver port: " + receiver_port +"\n");
 
     receiver_addr.sin_family = AF_INET;
     receiver_addr.sin_port = htons(std::stoi(receiver_port.c_str()));
@@ -269,7 +288,139 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     // write
     n = write(sockfd, buffer, MAX_MAIL_SIZE);
     if (n < 0)
-        Logger.write_debug("[Send Notification] Writing to socket");
+        Logger.write_debug("[Send Notification] Writing to socket\n");
 
     close(sockfd);
+}
+
+void ServerCommunicationManager::listenForBroadcast() {
+    pthread_t ptid;
+    pthread_create(&ptid, NULL, &threadListenForBroadcast, NULL);
+
+    return;
+}
+
+
+std::string get_local_ip()
+{
+    int sock = socket(PF_INET, SOCK_DGRAM, 0);
+    sockaddr_in loopback;
+
+    if (sock == -1)
+    {
+        std::cerr << "Could not socket\n";
+        exit(-1);
+    }
+
+    std::memset(&loopback, 0, sizeof(loopback));
+    loopback.sin_family = AF_INET;
+    loopback.sin_addr.s_addr = 1337; // can be any IP address
+    loopback.sin_port = htons(9);    // using debug port
+
+    if (connect(sock, reinterpret_cast<sockaddr *>(&loopback), sizeof(loopback)) == -1)
+    {
+        close(sock);
+        std::cerr << "Could not connect\n";
+        exit(-1);
+    }
+
+    socklen_t addrlen = sizeof(loopback);
+    if (getsockname(sock, reinterpret_cast<sockaddr *>(&loopback), &addrlen) == -1)
+    {
+        close(sock);
+        std::cerr << "Could not getsockname\n";
+        exit(-1);
+    }
+
+    close(sock);
+
+    char buf[INET_ADDRSTRLEN];
+    if (inet_ntop(AF_INET, &loopback.sin_addr, buf, INET_ADDRSTRLEN) == 0x0)
+    {
+        std::cerr << "Could not inet_ntop\n";
+        //return 1;
+        exit(-1);
+    }
+
+    return std::string(buf);
+}
+
+
+void* ServerCommunicationManager::threadListenForBroadcast(void* arg)
+{
+    int server_socket;
+    socklen_t clilen;
+    struct sockaddr_in serv_addr;
+    std::string input;
+
+    if((server_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+        Logger.write_error("ERROR opening socket\n");
+
+    int broadcast = 1;
+    socklen_t sizeof_broadcast = sizeof(broadcast);
+    if (setsockopt(server_socket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof_broadcast) < 0) {
+        std::cout << "Error in setting Broadcast option: " << errno << std::endl;
+        close(server_socket);
+        return 0;
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+
+    bzero(&(serv_addr.sin_zero), 8);
+
+    int i;
+    int server_broadcast_ports_length = sizeof(SERVER_BROADCAST_PORTS)/sizeof(SERVER_BROADCAST_PORTS[0]);
+    for (i = 0; i < server_broadcast_ports_length; i++) {
+        serv_addr.sin_port = htons(SERVER_BROADCAST_PORTS[i]);
+        if(bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) >= 0) {
+            Logger.write_error("Successfully bound to PORT "+std::to_string(SERVER_BROADCAST_PORTS[i])+"\n");
+            break;
+        }
+        Logger.write_error("Failed binding to PORT "+std::to_string(SERVER_BROADCAST_PORTS[i])+". Will try next port..."+"\n");
+    }
+//    while (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {// se a porta tiver sendo usada, vai dar negativo. Aí posso tentar a próxima porta do SERVER_BROADCAST_PORTS.
+//        Logger.write_error("ERROR on binding broadcast port. Will try next port...");
+//    }
+
+    Logger.write_info("Server will start listening for broadcast\n");
+    listen(server_socket, 5);
+
+    while (true) {
+
+        struct sockaddr_in cli_addr;
+        char recvbuff[BROADCAST_MSG_LEN];
+        int recvbufflen = BROADCAST_MSG_LEN;
+        socklen_t len = sizeof(struct sockaddr_in);
+        recvfrom(server_socket,recvbuff,recvbufflen,0,(sockaddr *)&cli_addr,&len);
+
+        std::cout << "Received broadcast message" << std::endl;
+
+        // precisa ficar nesse while(true), mesmo sem ser o primário, porque a qualquer momento pode se tornar o servidor primário, e aí vai precisar rodar o while
+        // (se extrairmos isso pra uma função separada, não precisa ficar gastando recurso. Mas fica como ponto de melhoria).
+        if (!isPrimaryServer) continue;
+
+        int received_broadcast_msg = recvbuff[0];
+
+        if(received_broadcast_msg != PRIMARY_BROADCAST_REQUEST) {
+            std::cout << "Received unknown broadcast message. Ignored it" << std::endl;
+            continue;
+        }
+
+        std::cout << "Broadcast received request from client " << std::endl;
+        std::cout << "Cli IP and PORT: " << inet_ntoa(cli_addr.sin_addr) << ":" << cli_addr.sin_port << std::endl;
+
+        std::string send_buffer = std::to_string(PRIMARY_BROADCAST_IAMPRIMARY_RESPONSE) + "\n" + get_local_ip() + "\n" + std::to_string(SELECTED_SERVER_PORT) + "\n";
+        int send_buff_len = BROADCAST_MSG_LEN;
+
+        socklen_t socklen_cli_addr = sizeof(cli_addr);
+        if(sendto(server_socket, send_buffer.c_str(), BROADCAST_MSG_LEN+1, 0, (sockaddr *)&cli_addr, socklen_cli_addr) < 0) {
+            std::cout << "Error responding to broadcast" << errno << std::endl;
+        }
+    }
+}
+
+// Quem chama esse método é apenas o servidor primário quando ele é setado como primário.
+void updateClientsWithNewPrimaryServer() {
+    // pra cada client_session, manda IP e Porta do novo primário.
 }

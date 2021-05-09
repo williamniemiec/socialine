@@ -1,20 +1,24 @@
 
 #include "../../include/services/ClientCommunicationManager.h"
+#include "../../include/services/Frontend.h"
 
 using namespace socialine::utils;
 
 std::string ClientCommunicationManager::username;
-std::string ClientCommunicationManager::server;
-std::string ClientCommunicationManager::door;
 std::string ClientCommunicationManager::session_cookie;
 int ClientCommunicationManager::notification_socket;
 socklen_t ClientCommunicationManager::clilen;
 models::manager::ClientNotificationManager* ClientCommunicationManager::notificationManager;
 
 int ClientCommunicationManager::establish_connection(std::string username, std::string server , std::string door ) {
+
+    if (server.empty() || door.empty()) {
+        printf("[WARNING]: server and door are ignored");
+    }
+
+    Frontend::discoverPrimaryServer();
+
     ClientCommunicationManager::username = username;
-    ClientCommunicationManager::server = server;
-    ClientCommunicationManager::door = door;
     ClientCommunicationManager::session_cookie = NO_COOKIE;
 
     char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
@@ -34,11 +38,13 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     struct in_addr addr;
     std::string buffer_out, buffer_in;
 
-    inet_aton(server.c_str(), &addr);
-    server_host = gethostbyaddr(&addr, sizeof(server), AF_INET);
+    inet_aton(Frontend::primaryServerIP.c_str(), &addr);
+    server_host = gethostbyaddr(&addr, sizeof(Frontend::primaryServerIP), AF_INET);
 
     if (server_host == NULL) {
-        Logger.write_error("No such host!");
+        std::cout << "No such host: " << h_errno << std::endl;
+        fprintf(stderr, "ERROR: %s\n", strerror(errno));
+        fprintf(stderr, "ERROR: %s\n", strerror(h_errno));
         exit(0);
     }
 
@@ -46,7 +52,7 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
         Logger.write_error("Opening socket");
 
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(4000);
+    server_addr.sin_port = htons(Frontend::primaryServerPort);
     server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
     bzero(&(server_addr.sin_zero), 8);
 
@@ -184,57 +190,10 @@ void ClientCommunicationManager::listen_notifications(std::string *listen_notifi
 
     Logger.write_debug("[Notification Service] Ready to receive");
 
-
     notificationManager = models::manager::ClientNotificationManager::get_instance();
 
-    //std::thread child_thread(thread_listen_notif, notificationManager, clilen);
-    //child_thread.detach();
-    
     pthread_t ptid;
     pthread_create(&ptid, NULL, &thread_listen_notif, NULL);
-    // cria um novo processo filho p/ ouvir notificações
-    /*pid_t pid = fork();
-    if (pid == 0) { // processo filho
-        printf("started notification listening service\n");
-
-        int n;
-
-        //Todo: change loop to detect the end of execution, so it can return to the app;
-        while (true) {
-
-            int connection_socket;
-            struct sockaddr_in cli_addr;
-
-            if ((connection_socket = accept(notification_socket, (struct sockaddr *) &cli_addr, &clilen)) == -1) {
-                printf("ERROR on accept");
-                continue;
-            }
-
-            char buffer[MAX_MAIL_SIZE];
-            bzero(buffer, MAX_MAIL_SIZE);
-            n = read(connection_socket, buffer, MAX_MAIL_SIZE);
-            if (n < 0)
-                printf("[Notification Service] ERROR reading from socket");
-
-            char received_packet_buffer[MAX_DATA_SIZE];
-            struct __packet received_packet = {0, 0, 0, 0, received_packet_buffer };
-            received_packet.Deserialize(buffer);
-            received_packet.print("[Notification Service] RECEIVED");
-
-            std::vector<std::string> fields = utils::StringUtils::split(received_packet._payload, "\n");
-
-            
-            notificationManager->receive_notification(
-                fields[0], 
-                static_cast<uint32_t>(std::stoul(fields[1])), 
-                fields[2]
-            );
-            
-        }
-
-        close(notification_socket);
-        exit(0);
-    }*/
 
     return;
 }

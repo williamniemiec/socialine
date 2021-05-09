@@ -28,15 +28,15 @@ int check_mode(int argc, char* argv[]);
 ///Main function to orchestrate app execution
 int main(int argc, char* argv[])
 {
-    ReplicManager::run();
+//    ReplicManager::run();
 
-    exit(0); // TEMP - REPLIC MANAGER TESTS
-
+//    exit(0); // TEMP - REPLIC MANAGER TESTS
 
     Logger.set_log_level(check_mode(argc, argv));
 
     ServerCommunicationManager server;
 
+    server.listenForBroadcast();
     server.start();
 
     //ToDo: call function to persist server data

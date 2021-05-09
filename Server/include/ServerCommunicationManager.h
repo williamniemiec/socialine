@@ -21,8 +21,12 @@
 class ServerCommunicationManager {
     static std::unordered_map<std::string, client_session> client_sessions;
 public:
+    static bool isPrimaryServer;
     static void start( );
     static void sendNotification(std::string session_id, notification current_notification);
+    static void listenForBroadcast();
+    static void updateClientsWithNewPrimaryServer();
+
 private:
 
     static void sendNotification(std::string receiver_ip, std::string receiver_port, std::string session_id, std::string message);
@@ -31,6 +35,9 @@ private:
     static std::string makeCookie(sockaddr_in *cli_addr);
     static uint16_t getTimestamp();
     static std::string random_string(size_t length);
+    static void* threadListenForBroadcast(void* arg);
+    static std::string getIP();
+
 };
 
 
