@@ -40,7 +40,6 @@ bool ServerCommunicationManager::isPrimaryServer;
 
 void ServerCommunicationManager::start( )
 {
-
     // TODO: Remover mocked isPrimaryServer (precisa ser definido de acordo com o algoritmo de eleição)
     isPrimaryServer = true;
 
@@ -421,6 +420,70 @@ void* ServerCommunicationManager::threadListenForBroadcast(void* arg)
 }
 
 // Quem chama esse método é apenas o servidor primário quando ele é setado como primário.
-void updateClientsWithNewPrimaryServer() {
+void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
     // pra cada client_session, manda IP e Porta do novo primário.
+
+    // for each value in client_sessions
+    std::cout << "\n\nWill update clientsssss\n\n" << std::endl;
+    sleep(10);
+    // Iterate over an unordered_map using range based for loop
+    for (std::pair<std::string, client_session> element : client_sessions) {
+        client_session session = element.second;
+
+        std::string receiver_ip = session.ip;
+        std::string receiver_port = session.notification_port;
+        std::string session_id = session.session_id;
+        std::string message = get_local_ip() + "\n" + std::to_string(SELECTED_SERVER_PORT);
+
+        int sockfd, n;
+        struct sockaddr_in receiver_addr;
+        struct hostent *receiver_host;
+        struct in_addr addr;
+        std::string buffer_out;
+
+        inet_aton(receiver_ip.c_str(), &addr);
+
+        receiver_host = gethostbyaddr(&addr, sizeof(receiver_ip), AF_INET);
+
+        if (receiver_host == NULL) {
+            Logger.write_error("[Send Notification] No such client found!\n");
+        }
+
+        if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+            Logger.write_debug("[Send Notification] Opening socket\n");
+
+        Logger.write_debug("[Send Notification] New Primary Server receiver port: " + receiver_port +"\n");
+
+        receiver_addr.sin_family = AF_INET;
+        receiver_addr.sin_port = htons(std::stoi(receiver_port.c_str()));
+        receiver_addr.sin_addr = *((struct in_addr *)receiver_host->h_addr);
+        bzero(&(receiver_addr.sin_zero), 8);
+
+        if (connect(sockfd, (struct sockaddr *) &receiver_addr, sizeof(receiver_addr)) < 0)
+            Logger.write_debug("[Send Notification] New Primary Server");
+
+        char* bufferPayload = (char*) calloc(MAX_DATA_SIZE, sizeof(char));
+        packet packet_sent = {0,0,0,0, session_id, bufferPayload };
+
+        buildPacket(NOTIFICATION_NEW_PRIMARY_SERVER, 0, message, &packet_sent);
+
+        if (Logger.get_log_level() == LEVEL_DEBUG){
+            packet_sent.print(std::string("SENT"));
+        }
+
+        char* buffer;
+        buffer = (char *) calloc(MAX_MAIL_SIZE, sizeof(char));
+        buffer = packet_sent.Serialize();
+
+        // write
+        n = write(sockfd, buffer, MAX_MAIL_SIZE);
+        if (n < 0)
+            Logger.write_debug("[Send Notification] New Primary Server Writing to socket\n");
+
+        close(sockfd);
+
+        std::cout << "Sent new Primary Server: " << get_local_ip() << ":" << std::to_string(SELECTED_SERVER_PORT) << std::endl;
+
+    }
+
 }
