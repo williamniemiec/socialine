@@ -87,7 +87,9 @@ void Frontend::updatePrimaryServer(std::string newIP, int newPort) {
     // mesma porta ele irá receber também o novo IP do servidor primário, caso troque. Ao receber esse
     // novo IP, irá chamar essa função para atualizar o primaryServerIP;
 
-
     primaryServerIP = newIP;
     primaryServerPort = newPort;
+
+    std::cout << "\n\n Updated Primary Server to " << primaryServerIP << ":" << primaryServerPort << std::endl;
+
 }

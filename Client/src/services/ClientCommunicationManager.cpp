@@ -228,12 +228,19 @@ void* ClientCommunicationManager::thread_listen_notif(void* arg)
 
             std::vector<std::string> fields = StringUtils::split(received_packet._payload, "\n");
 
-            
-            notificationManager->receive_notification(
-                fields[0], 
-                static_cast<uint32_t>(std::stoul(fields[1])), 
-                fields[2]
-            );
+            if (received_packet.type == NOTIFICATION_NEW_PRIMARY_SERVER) {
+                std::string newPrimaryIP = fields[0];
+                std::string newPrimaryPort = fields[1];
+                Frontend::updatePrimaryServer(newPrimaryIP, stoi(newPrimaryPort));
+
+            } else {
+
+                notificationManager->receive_notification(
+                        fields[0],
+                        static_cast<uint32_t>(std::stoul(fields[1])),
+                        fields[2]
+                );
+            }
             
         }
 

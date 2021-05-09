@@ -25,7 +25,7 @@ public:
     static void start( );
     static void sendNotification(std::string session_id, notification current_notification);
     static void listenForBroadcast();
-    static void updateClientsWithNewPrimaryServer();
+    static void* updateClientsWithNewPrimaryServer(void* arg);
 
 private:
 
