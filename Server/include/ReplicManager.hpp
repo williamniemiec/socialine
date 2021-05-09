@@ -23,7 +23,7 @@ public:
     static int readBytesFromSocket;
     static char buffer_response[MAX_MAIL_SIZE];
     static std::string primaryIp;
-    static uint16_t heartbeatPort;
+    static std::string multicastIp;
 
 
 //-------------------------------------------------------------------------
@@ -43,6 +43,8 @@ public:
     /// </summary>
     static void run();
 private:
+    static void multicast_signal();
+    static bool try_receive_multicast_signal();
     static bool is_primary_active();
     static void init_server_as_primary();
     static std::string get_local_ip();

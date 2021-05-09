@@ -1,6 +1,7 @@
 #include <map>
 #include <ctime>
 #include <unistd.h>
+#include <thread>
 #include "Scheduler.hpp"
 
 using namespace socialine::util::task;
@@ -8,15 +9,52 @@ using namespace socialine::util::task;
 //-------------------------------------------------------------------------
 //		Attributes
 //-------------------------------------------------------------------------
-std::map<time_t, bool> Scheduler::timeoutRoutine = std::map<time_t, bool>();
+std::map<long, bool> Scheduler::intervalRoutines = std::map<long, bool>();
+std::map<long, bool> Scheduler::timeoutRoutine = std::map<time_t, bool>();
 void (*Scheduler::currentRoutine)();
-time_t Scheduler::currentRoutineId;
+long Scheduler::currentRoutineId;
 pthread_t Scheduler::controlThread;
 
 
 //-------------------------------------------------------------------------
 //		Methods
 //-------------------------------------------------------------------------
+long Scheduler::set_interval(void (*routine)(), long interval)
+{
+    initialize_routine_id();
+    currentRoutine = routine;
+  
+    pthread_t thread;
+    pthread_create(&thread, nullptr, interval_control_routine, (void*) interval);
+
+    return currentRoutineId;
+}
+
+void Scheduler::initialize_routine_id()
+{
+    currentRoutineId = get_current_time();
+}
+
+void* Scheduler::interval_control_routine(void* arg)
+{
+    long interval = (long) arg;
+    long id = currentRoutineId;
+    void (*routine)() = currentRoutine;
+
+    intervalRoutines[id] = true;
+
+    while (intervalRoutines[id])
+    {
+        routine();
+        usleep(interval * 1000);
+    }
+}
+
+void Scheduler::clear_interval(long id)
+{
+    intervalRoutines[id] = false;
+}
+
 bool Scheduler::set_timeout_to_routine(void (*routine)(), long timeout)
 {
     run_routine(routine);
@@ -30,14 +68,10 @@ void Scheduler::run_routine(void (*function)())
 {
     initialize_routine_id();
     
-    currentRoutine = function;
-    pthread_create(&controlThread, nullptr, control_routine, nullptr);
-}
-
-void Scheduler::initialize_routine_id()
-{
-    currentRoutineId = get_current_time();
     timeoutRoutine[currentRoutineId] = false;
+    currentRoutine = function;
+    
+    pthread_create(&controlThread, nullptr, control_routine, nullptr);
 }
 
 time_t Scheduler::get_current_time()
@@ -79,3 +113,4 @@ void Scheduler::finish_routine()
 {
     pthread_cancel(controlThread);
 }
+
