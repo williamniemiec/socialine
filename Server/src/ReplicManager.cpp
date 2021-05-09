@@ -1358,4 +1358,40 @@ int ReplicManager::receive_election_leader(Server receiver)
     return pid;
 }
 
+void ReplicManager::send_election_leader(int message_type, int pid, Server to)
+{
+    int sockfd, n;
+    struct sockaddr_in backup_server_addr;
+
+    backup_server_addr.sin_family = AF_INET;
+    backup_server_addr.sin_port = htons(to.get_port());
+    backup_server_addr.sin_addr = get_ip_by_address(to.get_ip());
+    bzero(&(backup_server_addr.sin_zero), 8);
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        Logger.write_error("ERROR: Opening socket");
+        exit(-1);
+    }
+
+    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    {
+        fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+        exit(-1); 
+    }
+
+    char *message = new char[MAX_MAIL_SIZE];
+    uint32_t normalizedPid = htonl(pid);
+
+    message[0] = message_type;
+
+    message[1] = normalizedPid >> 24;
+    message[2] = normalizedPid >> 16;
+    message[3] = normalizedPid >> 8;
+    message[4] = normalizedPid;
+
+    n = write(sockfd, message, MAX_MAIL_SIZE);
+    if (n < 0)
+        Logger.write_error("Failed to write to socket");
+}
 

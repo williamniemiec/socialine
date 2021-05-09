@@ -79,4 +79,5 @@ private:
     static std::map<int, std::list<Server>> get_servers_ordered_by_pid_ascending();
     static Server get_server_with_pid(int pid);
     static int receive_election_leader(Server receiver);
+    static void send_election_leader(int message_type, int pid, Server to);
 };
