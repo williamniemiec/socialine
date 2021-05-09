@@ -1,9 +1,10 @@
 #include "../include/Server.hpp"
 
-Server::Server(std::string ip, uint16_t port)
+Server::Server(std::string ip, uint16_t port, pid_t pid)
 {
     this->ip = ip;
     this->port = port;
+    this->pid = pid;
 }
 
 std::string Server::get_ip()
@@ -14,6 +15,11 @@ std::string Server::get_ip()
 uint16_t Server::get_port()
 {
     return this->port;
+}
+
+pid_t Server::get_pid()
+{
+    return this->pid;
 }
 
 std::string Server::get_signature()

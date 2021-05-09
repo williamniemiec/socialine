@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <unistd.h>
 
 /// <summary>
 ///     Responsible for representing a server.
@@ -12,13 +13,14 @@ class Server
 private:
     std::string ip;
     uint16_t port;
+    pid_t pid;
 
 
 //-------------------------------------------------------------------------
 //		Constructor
 //-------------------------------------------------------------------------
 public:
-    Server(std::string ip, uint16_t port);
+    Server(std::string ip, uint16_t port, pid_t pid);
 
 
 //-------------------------------------------------------------------------
@@ -28,6 +30,7 @@ public:
     std::string get_ip();
     uint16_t get_port();
     std::string get_signature();
+    pid_t get_pid();
 
 
 //-------------------------------------------------------------------------

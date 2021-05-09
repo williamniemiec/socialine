@@ -25,6 +25,7 @@ public:
     static char buffer_response[MAX_MAIL_SIZE];
     static std::string primaryIp;
     static std::string multicastIp;
+    static pid_t myPid;
 
 
 //-------------------------------------------------------------------------
@@ -58,7 +59,7 @@ private:
     static std::string get_local_ip();
     static void heartbeat_sender();
     static void heartbeat_receiver();
-    static void add_new_backup_server(std::string ip, uint16_t port);
+    static void add_new_backup_server(std::string ip, uint16_t port, pid_t pid);
     static void config_new_backup_server(int connection_socket, sockaddr_in cli_addr);
     static void new_backup_service();
     static void receive_primary_addr();
@@ -73,4 +74,5 @@ private:
     static void send_all_sessions(Server target);
     static void send_all_followers(Server target);
     static void send_all_pending_notifications(Server target);
+    static bool start_election_leader(Server starter);
 };

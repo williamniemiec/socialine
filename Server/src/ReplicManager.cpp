@@ -55,6 +55,7 @@ int ReplicManager::readBytesFromSocket;
 char ReplicManager::buffer_response[MAX_MAIL_SIZE];
 std::string ReplicManager::primaryIp;
 std::string ReplicManager::multicastIp = "226.1.1.1";
+pid_t ReplicManager::myPid = getpid();
 
 
 //-------------------------------------------------------------------------
@@ -472,10 +473,15 @@ void ReplicManager::notify_list_backups(std::list<Server>* backups)
             uint16_t normalizedPort = htons(it->get_port());
             std::string serverIp = it->get_ip();
 
-            message[2 + i * 18 + 0] = normalizedPort >> 8; // MSB
-            message[2 + i * 18 + 1] = normalizedPort; // LSB
+            message[2 + i * (18+sizeof(pid_t)) + 0] = normalizedPort >> 8; // MSB
+            message[2 + i * (18+sizeof(pid_t)) + 1] = normalizedPort; // LSB
 
-            memcpy(&message[2 + i * 18 + 2], serverIp.c_str(), 16);
+            memcpy(&message[2 + i * (18+sizeof(pid_t)) + 2], serverIp.c_str(), 16);
+
+            pid_t serverPid = it->get_pid();
+
+            memcpy(&message[2 + i * (18+sizeof(pid_t)) + 16], &serverPid, sizeof(pid_t));
+
 
             i++;
         }
@@ -683,10 +689,10 @@ void ReplicManager::send_session(Server server, std::string sessionId, client_se
         Logger.write_error("Failed to write to socket");
 }
 
-void ReplicManager::add_new_backup_server(std::string ip, uint16_t port)
+void ReplicManager::add_new_backup_server(std::string ip, uint16_t port, pid_t pid)
 {
-    rm->push_back(Server(ip, port));
-    std::cout << "NEW BACKUP SERVER ADDED: " << ip << ":" << port << std::endl;
+    rm->push_back(Server(ip, port, pid));
+    std::cout << "NEW BACKUP (" << pid << ") SERVER ADDED: " << ip << ":" << port << std::endl;
 
     std::cout << "SENDING BACKUP LIST FOR EACH BACKUP SERVER..." << std::endl;
     notify_list_backups(rm);
@@ -706,7 +712,8 @@ void ReplicManager::config_new_backup_server(int connection_socket, sockaddr_in 
         
         add_new_backup_server(
             body[0], 
-            static_cast<uint16_t>(std::stoi(body[1]))
+            static_cast<uint16_t>(std::stoi(body[1])),
+            static_cast<uint32_t>(std::stoi(body[2]))
         );
     }
 
@@ -987,7 +994,7 @@ void ReplicManager::connect_with_primary_server(std::string backupIp, uint16_t b
 
     std::cout << "BACKUP IS SENDING ITS ADDRESS TO PRIMARY" << std::endl;
    
-    std::string body = backupIp + ";" + std::to_string(backupPort);
+    std::string body = backupIp + ";" + std::to_string(backupPort) + ";" + std::to_string(myPid);
 
     n = write(sockfd, body.c_str(), MAX_MAIL_SIZE);
 
@@ -997,6 +1004,7 @@ void ReplicManager::connect_with_primary_server(std::string backupIp, uint16_t b
 
 void ReplicManager::init_server_as_backup()
 {
+    bool is_backup_server = true;
     std::cout << "CONFIGURING SERVER TO BE BACKUP" << std::endl;
 
     std::string serverIp = get_local_ip();
@@ -1036,172 +1044,187 @@ void ReplicManager::init_server_as_backup()
 
     connect_with_primary_server(serverIp, serverPort);
 
-    while (true)
+    while (is_backup_server)
     {
-        std::cout << "BACKUP(" << getpid() << ") WAITING SERVER CONNECTION" << std::endl;
-
-        bool timeout = Scheduler::set_timeout_to_routine([]() 
+        while (true)
         {
-            connection_socket = accept(server_socket, (struct sockaddr *)&cli_addr, &clilen);
-        }, TIMEOUT_SERVER_MS);
+            std::cout << "BACKUP(" << getpid() << ") WAITING SERVER CONNECTION" << std::endl;
 
-        if (timeout)
-            break;
-
-        if (connection_socket == -1)
-            continue;
-
-        std::cout << "BACKUP(" << getpid() << ") CONNECTION OK" << std::endl;
-        std::cout << "BACKUP(" << getpid() << ") WAITING SERVER SEND A MESSAGE" << std::endl;
-
-        timeout = Scheduler::set_timeout_to_routine([]() {
-            readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
-        }, TIMEOUT_SERVER_MS);
-
-        if (timeout)
-            break;
-
-        if (readBytesFromSocket < 0)
-        {
-            fprintf(stderr, "socket() failed: %s\n", strerror(errno));
-            Logger.write_error("ERROR: Reading from socket");
-            close(connection_socket);
-            continue;
-        }
-
-        if (buffer_response[0] == MSG_HEARTBEAT)
-            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: HEARTBEAT" << std::endl;
-        else if (buffer_response[0] == MSG_NEW_SESSION)
-        {
-            char cookie[COOKIE_LENGTH];
-            char ip[16];
-            char port[6];
-
-            // COOKIE
-            memcpy(&cookie, &buffer_response[1], COOKIE_LENGTH);
-
-            // IP
-            memcpy(&ip, &buffer_response[1 + COOKIE_LENGTH], 16);
-
-            // NOTIFICATION PORT
-            memcpy(&port, &buffer_response[1 + COOKIE_LENGTH + 16], 6);
-
-            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: SESSION" << std::endl;
-
-            // TODO: Store session at server communication manager
-        }
-        else if (buffer_response[0] == MSG_NEW_PENDING_NOTIFICATION)
-        {
-            char followed[MAX_DATA_SIZE];
-            uint32_t timestampNormalized;
-            notification n;
-
-            memcpy(&followed, &buffer_response[1], MAX_DATA_SIZE);
-
-            timestampNormalized = ntohl(
-                buffer_response[1 + MAX_DATA_SIZE + 0] << 24 
-                | buffer_response[1 + MAX_DATA_SIZE + 1] << 16 
-                | buffer_response[1 + MAX_DATA_SIZE + 2] << 8 
-                | buffer_response[1 + MAX_DATA_SIZE + 3]
-            );
-
-            memcpy(&n._message, &buffer_response[1 + 2 * MAX_DATA_SIZE + 4], MAX_DATA_SIZE);
-
-            n.timestamp = ntohl(timestampNormalized);
-
-            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: NEW PENDING NOTIFICATION" << std::endl;
-
-            // TODO: store new pending notification at server notification manager
-        }
-        else if (buffer_response[0] == MSG_FOLLOW)
-        {
-            char follower[MAX_DATA_SIZE];
-            char followed[MAX_DATA_SIZE];
-
-            memcpy(&follower, &buffer_response[1], MAX_DATA_SIZE);
-            memcpy(&followed, &buffer_response[1 + MAX_DATA_SIZE], MAX_DATA_SIZE);
-
-            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: FOLLOW" << std::endl;
-
-            // TODO: send new follower to profile session manager
-        }
-        else if (buffer_response[0] == MSG_CLOSE_SESSION)
-        {
-            char cookie[COOKIE_LENGTH];
-            char ip[16];
-            char port[6];
-
-            // COOKIE
-            memcpy(&cookie, &buffer_response[1], COOKIE_LENGTH);
-
-            // IP
-            memcpy(&ip, &buffer_response[1 + COOKIE_LENGTH], 16);
-
-            // NOTIFICATION PORT
-            memcpy(&port, &buffer_response[1 + COOKIE_LENGTH + 16], 6);
-
-            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE SESSION" << std::endl;
-
-            // TODO: send session to server communication manager
-        }
-        else if (buffer_response[0] == MSG_LIST_BACKUP)
-        {
-            uint8_t totalBackups = buffer_response[1];
-            std::list<Server> *rms = new std::list<Server>();
-
-            for (int i = 0; i < totalBackups; i++)
+            bool timeout = Scheduler::set_timeout_to_routine([]() 
             {
-                uint16_t backupPort;
-                backupPort = ntohs(
-                    buffer_response[2 + i * 18 + 0] << 8 
-                    | buffer_response[2 + i * 18 + 1]
+                connection_socket = accept(server_socket, (struct sockaddr *)&cli_addr, &clilen);
+            }, TIMEOUT_SERVER_MS);
+
+            if (timeout)
+                break;
+
+            if (connection_socket == -1)
+                continue;
+
+            std::cout << "BACKUP(" << getpid() << ") CONNECTION OK" << std::endl;
+            std::cout << "BACKUP(" << getpid() << ") WAITING SERVER SEND A MESSAGE" << std::endl;
+
+            timeout = Scheduler::set_timeout_to_routine([]() {
+                readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
+            }, TIMEOUT_SERVER_MS);
+
+            if (timeout)
+                break;
+
+            if (readBytesFromSocket < 0)
+            {
+                fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+                Logger.write_error("ERROR: Reading from socket");
+                close(connection_socket);
+                continue;
+            }
+
+            if (buffer_response[0] == MSG_HEARTBEAT)
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: HEARTBEAT" << std::endl;
+            else if (buffer_response[0] == MSG_NEW_SESSION)
+            {
+                char cookie[COOKIE_LENGTH];
+                char ip[16];
+                char port[6];
+
+                // COOKIE
+                memcpy(&cookie, &buffer_response[1], COOKIE_LENGTH);
+
+                // IP
+                memcpy(&ip, &buffer_response[1 + COOKIE_LENGTH], 16);
+
+                // NOTIFICATION PORT
+                memcpy(&port, &buffer_response[1 + COOKIE_LENGTH + 16], 6);
+
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: SESSION" << std::endl;
+
+                // TODO: Store session at server communication manager
+            }
+            else if (buffer_response[0] == MSG_NEW_PENDING_NOTIFICATION)
+            {
+                char followed[MAX_DATA_SIZE];
+                uint32_t timestampNormalized;
+                notification n;
+
+                memcpy(&followed, &buffer_response[1], MAX_DATA_SIZE);
+
+                timestampNormalized = ntohl(
+                    buffer_response[1 + MAX_DATA_SIZE + 0] << 24 
+                    | buffer_response[1 + MAX_DATA_SIZE + 1] << 16 
+                    | buffer_response[1 + MAX_DATA_SIZE + 2] << 8 
+                    | buffer_response[1 + MAX_DATA_SIZE + 3]
                 );
 
-                if (backupPort != serverPort)
-                {
-                    char server[16];
-                    memcpy(&server, &buffer_response[2 + i * 18 + 2], 16);
+                memcpy(&n._message, &buffer_response[1 + 2 * MAX_DATA_SIZE + 4], MAX_DATA_SIZE);
 
-                    rms->push_back(Server(server, backupPort));
+                n.timestamp = ntohl(timestampNormalized);
+
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: NEW PENDING NOTIFICATION" << std::endl;
+
+                // TODO: store new pending notification at server notification manager
+            }
+            else if (buffer_response[0] == MSG_FOLLOW)
+            {
+                char follower[MAX_DATA_SIZE];
+                char followed[MAX_DATA_SIZE];
+
+                memcpy(&follower, &buffer_response[1], MAX_DATA_SIZE);
+                memcpy(&followed, &buffer_response[1 + MAX_DATA_SIZE], MAX_DATA_SIZE);
+
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: FOLLOW" << std::endl;
+
+                // TODO: send new follower to profile session manager
+            }
+            else if (buffer_response[0] == MSG_CLOSE_SESSION)
+            {
+                char cookie[COOKIE_LENGTH];
+                char ip[16];
+                char port[6];
+
+                // COOKIE
+                memcpy(&cookie, &buffer_response[1], COOKIE_LENGTH);
+
+                // IP
+                memcpy(&ip, &buffer_response[1 + COOKIE_LENGTH], 16);
+
+                // NOTIFICATION PORT
+                memcpy(&port, &buffer_response[1 + COOKIE_LENGTH + 16], 6);
+
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE SESSION" << std::endl;
+
+                // TODO: send session to server communication manager
+            }
+            else if (buffer_response[0] == MSG_LIST_BACKUP)
+            {
+                uint8_t totalBackups = buffer_response[1];
+                std::list<Server> *rms = new std::list<Server>();
+
+                for (int i = 0; i < totalBackups; i++)
+                {
+                    uint16_t backupPort;
+                    backupPort = ntohs(
+                        buffer_response[2 + i * (18+sizeof(pid_t)) + 0] << 8 
+                        | buffer_response[2 + i * (18+sizeof(pid_t)) + 1]
+                    );
+
+                    if (backupPort != serverPort)
+                    {
+                        char server[16];
+                        memcpy(&server, &buffer_response[2 + i * (18+sizeof(pid_t)) + 2], 16);
+
+                        pid_t serverPid;
+                        memcpy(&serverPid, &buffer_response[2 + i * (18+sizeof(pid_t)) + 16], sizeof(pid_t));
+
+                        rms->push_back(Server(server, backupPort, serverPid));
+                    }
+                }
+
+                rm = rms;
+
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: BACKUP LIST" << std::endl;
+
+                for (Server & replic : *rms) {
+                    std::cout << replic.get_signature() << std::endl;
                 }
             }
-
-            rm = rms;
-
-            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: BACKUP LIST" << std::endl;
-
-            for (Server & replic : *rms) {
-                std::cout << replic.get_signature() << std::endl;
+            else
+            {
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: UNKNOWN MESSAGE" << std::endl;
             }
+        }
+
+        close(connection_socket);
+        close(server_socket);
+
+        std::cout << "BACKUP(" << getpid() << ") PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
+
+        is_backup_server = !start_election_leader(Server(serverIp, serverPort, myPid));
+
+        if (is_backup_server)
+        {
+            std::cout << "BACKUP(" << getpid() << ") I'M BACKUP AGAIN ;(" << std::endl;
+            std::cout << "BACKUP(" << getpid() << ") I'LL WAIT PRIMARY ADDRESS" << std::endl;
+
+            receive_primary_addr();
+            init_server_as_backup();
         }
         else
         {
-            std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: UNKNOWN MESSAGE" << std::endl;
+            std::cout << "BACKUP(" << getpid() << ") I'M THE LEADER!!!" << std::endl;
+            std::cout << "BACKUP(" << getpid() << ") I AM PRIMARY :D ! HAHAHAH" << std::endl;
+            std::cout << "BACKUP(" << getpid() << ") I'LL SEND MY ADDRESS TO BACKUPS" << std::endl;
+
+            notify_primary_addr();
+            init_server_as_primary();
         }
     }
+}
 
-    close(connection_socket);
-    close(server_socket);
+bool ReplicManager::start_election_leader(Server starter)
+{
+    bool is_leader = false;
 
-    std::cout << "BACKUP(" << getpid() << ") PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
+    
 
-    if (true)
-    {
-        std::cout << "BACKUP(" << getpid() << ") I'M THE LEADER!!!" << std::endl;
-        std::cout << "BACKUP(" << getpid() << ") I AM PRIMARY :D ! HAHAHAH" << std::endl;
-        std::cout << "BACKUP(" << getpid() << ") I'LL SEND MY ADDRESS TO BACKUPS" << std::endl;
-
-        notify_primary_addr();
-
-        init_server_as_primary();
-    }
-    else
-    {
-        std::cout << "BACKUP(" << getpid() << ") I'M BACKUP AGAIN ;(" << std::endl;
-        std::cout << "BACKUP(" << getpid() << ") I'LL WAIT PRIMARY ADDRESS" << std::endl;
-
-        receive_primary_addr();
-
-        init_server_as_backup();
-    }
+    return is_leader;
 }
