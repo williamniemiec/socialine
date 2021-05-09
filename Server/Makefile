@@ -7,7 +7,8 @@ OBJS	= ServerApp.o\
 		StringUtils.o\
 		Logger.o\
 		Scheduler.o\
-		ReplicManager.o
+		ReplicManager.o\
+		Server.o
 SOURCE	= ServerApp.cpp\
 		../Utils/StringUtils.cpp\
 		../Utils/Logger.cpp\
@@ -63,6 +64,9 @@ Scheduler.o: ../Utils/Scheduler.cpp
 
 ReplicManager.o: src/ReplicManager.cpp
 	$(CC) $(FLAGS) src/ReplicManager.cpp -std=c++17
+
+Server.o: src/Server.cpp
+	$(CC) $(FLAGS) src/Server.cpp -std=c++17
 
 clean:
 	rm -f $(OBJS) $(OUT)
