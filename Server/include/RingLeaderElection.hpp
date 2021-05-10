@@ -14,8 +14,8 @@ class RingLeaderElection
 //		Attributes
 //-------------------------------------------------------------------------
 private:
-    int leader_pid;
-    int candidate_pid;
+    unsigned int leader_pid;
+    unsigned int candidate_pid;
     bool leader_elected;
     std::vector<Server>* replic_managers;
     std::map<int, std::vector<Server>>* servers_mapped_by_pid;
@@ -25,6 +25,7 @@ private:
     struct sockaddr_in cli_addr;
     int read_bytes_from_socket;
     char buffer_response[MAX_MAIL_SIZE];
+    bool address_already_in_use;
 
 
 //-------------------------------------------------------------------------
@@ -44,7 +45,7 @@ private:
     std::map<int, std::vector<Server>> get_servers_ordered_by_pid_ascending();
     Server get_server_with_pid(int pid);
     void receive_election_leader(Server receiver);
-    void send_election_leader(int message_type, int pid, Server to);
+    void send_election_leader(int message_type, unsigned int pid, Server to);
     int get_index_of(Server server);
     void wait_leader_be_elected();
     bool did_neighbor_send_something();

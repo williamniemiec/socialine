@@ -26,7 +26,7 @@ public:
     static char buffer_response[MAX_MAIL_SIZE];
     static std::string primaryIp;
     static std::string multicastIp;
-    static int myPid;
+    static unsigned int myPid;
 
 
 //-------------------------------------------------------------------------

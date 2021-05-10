@@ -13,14 +13,14 @@ class Server
 private:
     std::string ip;
     uint16_t port;
-    int pid;
+    unsigned int pid;
 
 
 //-------------------------------------------------------------------------
 //		Constructor
 //-------------------------------------------------------------------------
 public:
-    Server(std::string ip, uint16_t port, int pid);
+    Server(std::string ip, uint16_t port, unsigned int pid);
 
 
 //-------------------------------------------------------------------------
@@ -30,7 +30,7 @@ public:
     std::string get_ip();
     uint16_t get_port();
     std::string get_signature();
-    int get_pid();
+    unsigned int get_pid();
 
 
 //-------------------------------------------------------------------------

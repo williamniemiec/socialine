@@ -18,6 +18,7 @@ RingLeaderElection::RingLeaderElection(std::vector<Server>* replic_managers)
 {
     this->replic_managers = replic_managers;
     leader_elected = false;
+    candidate_pid = 0;
 }
 
 
@@ -32,37 +33,54 @@ bool RingLeaderElection::start_election_leader(Server starter)
     int leader_pid = -1;
     int idx = get_index_of(starter);
     int next_idx = (idx+1) % replic_managers->size();
-    int my_pid = starter.get_pid();
-    std::thread receiver(&RingLeaderElection::receive_election_leader, this, starter);
+    unsigned int my_pid = starter.get_pid();
 
+    std::thread receiver(&RingLeaderElection::receive_election_leader, this, starter);
     receiver.detach();
+    sleep(2);
+    
+    while (address_already_in_use)
+        sleep(2);
 
     /* First round */
     // Tries to receive a message from the neighbour of the starter. If no
     // message is received, it means that starter is the first to start
     // leader election.
-    sleep(2);
     
-    if (!did_neighbor_send_something())
-        candidate_pid = -1;
+    while (!leader_elected)
+    {
+        if (!did_neighbor_send_something())
+        {
+            candidate_pid = 0;
+            std::cout << starter.get_signature() << " " << starter.get_pid() << " - I'M STARTING ELECTION LEADER" << std::endl;
+        }
 
-    if (candidate_pid < my_pid)
-    {
-        leader_pid = candidate_pid;
-        send_election_leader(MSG_ELECTION, my_pid, (*replic_managers)[next_idx]);
-    }
-    else if (!participant)
-    {
-        participant = true;
-        send_election_leader(MSG_ELECTION, candidate_pid, (*replic_managers)[next_idx]);
-    }
-    else if (candidate_pid == my_pid)
-    {
-        send_election_leader(MSG_ELECTED, my_pid, (*replic_managers)[next_idx]);
+        if (candidate_pid < my_pid)
+        {
+            if (candidate_pid > 0)
+                std::cout << starter.get_signature() << " " << starter.get_pid() << " - MY PID IS GREATHER THAN THE PID RECEIVED" << std::endl;
+
+            leader_pid = candidate_pid;
+            send_election_leader(MSG_ELECTION, my_pid, (*replic_managers)[next_idx]);
+        }
+        else if (!participant && candidate_pid != my_pid)
+        {
+            std::cout << starter.get_signature() << " " << starter.get_pid() << " - MY PID IS LESS THAN THE PID RECEIVED" << std::endl;
+            std::cout << starter.get_signature() << " " << starter.get_pid() << " - SENDING MSG_ELECTION " << candidate_pid << " TO " << (*replic_managers)[next_idx] << std::endl;
+            participant = true;
+            send_election_leader(MSG_ELECTION, candidate_pid, (*replic_managers)[next_idx]);
+        }
+        else if (candidate_pid == my_pid)
+        {
+            std::cout << starter.get_signature() << " " << starter.get_pid() << " - SENDING MSG_ELECTED " << candidate_pid << " TO " << (*replic_managers)[next_idx] << std::endl;
+            send_election_leader(MSG_ELECTED, my_pid, (*replic_managers)[next_idx]);
+            leader_elected = true;
+            leader_pid = my_pid;
+        }
     }
 
     /* Second round */
-    wait_leader_be_elected();
+    std::cout << starter.get_signature() << " " << starter.get_pid() << "WAITING SECOND ROUND" << std::endl;
     sleep(5);   // Waits 5 seconds in order to all servers that belongs to the 
                 // ring receive a message.
 
@@ -136,12 +154,14 @@ Server RingLeaderElection::get_server_with_pid(int pid)
 
 void RingLeaderElection::receive_election_leader(Server receiver)
 {
-    char* buffer[MAX_MAIL_SIZE];
+    char buffer_response[MAX_MAIL_SIZE];
     struct sockaddr_in serv_addr;
     struct in_addr addr;
     hostent *server_host;
-    
-    
+    address_already_in_use = true;
+
+    std::cout << receiver.get_signature() << " " << receiver.get_pid() << " - RECEIVE - ELECTION LEADER" << std::endl;
+
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         std::cout << "erro socket";
@@ -163,16 +183,20 @@ void RingLeaderElection::receive_election_leader(Server receiver)
 
     bzero(&(serv_addr.sin_zero), 8);
 
-    if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    //sleep(4); // Avoids 'Address already in use' error
+    int option = 1;
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0)
     {
-        int option = 1;
-        if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0)
-        {
-            std::cout << "erro bind - backup server";
-            fprintf(stderr, "socket() failed: %s\n", strerror(errno));
-            exit(-1);
-        }
+        fprintf(stderr, "%s\n", strerror(errno));
+        exit(-1);
     }
+
+    while (address_already_in_use)
+    {
+        if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) >= 0)
+            address_already_in_use = false;
+    }
+    std::cout << receiver.get_signature() << " " << receiver.get_pid() << " - RECEIVE - OK" << std::endl;
 
     listen(server_socket, 3);
 
@@ -203,10 +227,12 @@ void RingLeaderElection::receive_election_leader(Server receiver)
                 | buffer_response[3] << 8
                 | buffer_response[4]
             );
+
+            std::cout << receiver.get_signature() << " " << receiver.get_pid() << " - RECEIVED MSG_ELECTION " << candidate_pid << std::endl;
         }
         else if (buffer_response[0] == MSG_ELECTED)
         {
-            leader_elected = ntohl(
+            leader_pid = ntohl(
                 buffer_response[1] << 24
                 | buffer_response[2] << 16
                 | buffer_response[3] << 8
@@ -214,6 +240,8 @@ void RingLeaderElection::receive_election_leader(Server receiver)
             );
 
             leader_elected = true;
+
+            std::cout << receiver.get_signature() << " " << receiver.get_pid() << " - RECEIVED MSG_ELECTED " << leader_pid << std::endl;
         }
 
         close(connection_socket);
@@ -228,7 +256,7 @@ bool RingLeaderElection::did_neighbor_send_something()
     return (candidate_pid > 0);
 }
 
-void RingLeaderElection::send_election_leader(int message_type, int pid, Server to)
+void RingLeaderElection::send_election_leader(int message_type, unsigned int pid, Server to)
 {
     int sockfd, n;
     struct sockaddr_in backup_server_addr;
@@ -244,25 +272,28 @@ void RingLeaderElection::send_election_leader(int message_type, int pid, Server 
         exit(-1);
     }
 
+    sleep(2);
     if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
     {
-        fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+        fprintf(stderr, "socket() failed - SEND: %s\n", strerror(errno));
         exit(-1); 
     }
 
     char *message = new char[MAX_MAIL_SIZE];
-    uint32_t noreplic_managersalizedPid = htonl(pid);
+    uint32_t normalized_pid = htonl(pid);
 
     message[0] = message_type;
 
-    message[1] = noreplic_managersalizedPid >> 24;
-    message[2] = noreplic_managersalizedPid >> 16;
-    message[3] = noreplic_managersalizedPid >> 8;
-    message[4] = noreplic_managersalizedPid;
+    message[1] = normalized_pid >> 24;
+    message[2] = normalized_pid >> 16;
+    message[3] = normalized_pid >> 8;
+    message[4] = normalized_pid;
 
     n = write(sockfd, message, MAX_MAIL_SIZE);
     if (n < 0)
         Logger.write_error("Failed to write to socket");
+
+    close(sockfd);
 }
 
 in_addr RingLeaderElection::get_ip_by_address(std::string address)
