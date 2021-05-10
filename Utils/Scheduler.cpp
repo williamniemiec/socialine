@@ -6,12 +6,14 @@
 
 using namespace socialine::util::task;
 
+std::function<void(void)> null_routine = [](){};
+
 //-------------------------------------------------------------------------
 //		Attributes
 //-------------------------------------------------------------------------
 std::map<long, bool> Scheduler::intervalRoutines = std::map<long, bool>();
 std::map<long, bool> Scheduler::timeoutRoutine = std::map<time_t, bool>();
-void (*Scheduler::currentRoutine)();
+std::function<void(void)>& Scheduler::currentRoutine = null_routine;
 long Scheduler::currentRoutineId;
 pthread_t Scheduler::controlThread;
 
@@ -19,7 +21,7 @@ pthread_t Scheduler::controlThread;
 //-------------------------------------------------------------------------
 //		Methods
 //-------------------------------------------------------------------------
-long Scheduler::set_interval(void (*routine)(), long interval)
+long Scheduler::set_interval(const std::function<void(void)>& routine, long interval)
 {
     initialize_routine_id();
     currentRoutine = routine;
@@ -39,7 +41,7 @@ void* Scheduler::interval_control_routine(void* arg)
 {
     long interval = (long) arg;
     long id = currentRoutineId;
-    void (*routine)() = currentRoutine;
+    const std::function<void(void)>& routine = currentRoutine;
 
     intervalRoutines[id] = true;
 
@@ -55,7 +57,7 @@ void Scheduler::clear_interval(long id)
     intervalRoutines[id] = false;
 }
 
-bool Scheduler::set_timeout_to_routine(void (*routine)(), long timeout)
+bool Scheduler::set_timeout_to_routine(const std::function<void(void)>& routine, long timeout)
 {
     run_routine(routine);
     wait_routine_for(timeout);
@@ -64,12 +66,12 @@ bool Scheduler::set_timeout_to_routine(void (*routine)(), long timeout)
     return !has_routine_finished();
 }
 
-void Scheduler::run_routine(void (*function)())
+void Scheduler::run_routine(const std::function<void(void)>& routine)
 {
     initialize_routine_id();
     
     timeoutRoutine[currentRoutineId] = false;
-    currentRoutine = function;
+    currentRoutine = routine;
     
     pthread_create(&controlThread, nullptr, control_routine, nullptr);
 }
@@ -82,7 +84,7 @@ time_t Scheduler::get_current_time()
 void* Scheduler::control_routine(void* args)
 {
     time_t id = currentRoutineId;
-    void (*routine)() = currentRoutine;
+    std::function<void(void)>& routine = currentRoutine;
     
     routine();
     timeoutRoutine[id] = true;

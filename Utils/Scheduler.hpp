@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <pthread.h>
 #include <map>
 
@@ -16,7 +17,7 @@ namespace socialine::util::task
         static std::map<long, bool> intervalRoutines;
         static std::map<long, bool> timeoutRoutine;
         static long currentRoutineId;
-        static void (*currentRoutine)();
+        static std::function<void(void)>& currentRoutine;
         static pthread_t controlThread;
 
 
@@ -46,7 +47,7 @@ namespace socialine::util::task
         /// </returns>
         ///
         /// <seealso cref="Scheduler::clear_interval"/>
-        static long set_interval(void (*routine)(), long interval);
+        static long set_interval(const std::function<void(void)>& routine, long interval);
 
         /// <summary>
         ///     Cancels a timed, repeating action, which was previously established by a
@@ -67,9 +68,9 @@ namespace socialine::util::task
         ///     True if the routine has not finished executing within the time
         ///     limit; false otherwise
         /// </returns>
-        static bool set_timeout_to_routine(void (*routine)(), long timeout);
+        static bool set_timeout_to_routine(const std::function<void(void)>& routine, long timeout);
     private:
-        static void run_routine(void (*routine)());
+        static void run_routine(const std::function<void(void)>& routine);
         static void initialize_routine_id();
         static time_t get_current_time();
         static void* interval_control_routine(void* args);

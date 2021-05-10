@@ -16,11 +16,11 @@
 #include <thread>
 #include <ctime>
 #include "../include/ReplicManager.hpp"
+#include "../include/RingLeaderElection.hpp"
 #include "../../Utils/Scheduler.hpp"
 #include "../../Utils/Logger.h"
 #include "../../Utils/StringUtils.h"
 #include "../include/DataManager.hpp"
-
 
 #define MSG_HEARTBEAT 0
 #define MSG_NEW_SESSION 1
@@ -48,7 +48,7 @@ using namespace socialine::utils;
 //		Attributes
 //-------------------------------------------------------------------------
 int ReplicManager::g_process_id = 0;
-std::list<Server> *ReplicManager::rm = new std::list<Server>();
+std::vector<Server> *ReplicManager::rm = new std::vector<Server>();
 socklen_t ReplicManager::clilen = sizeof(struct sockaddr_in);
 bool ReplicManager::g_primary_server_online = true;
 int ReplicManager::server_socket;
@@ -348,7 +348,7 @@ void ReplicManager::heartbeat_sender()
                 {
                     //fprintf(stderr, "socket() failed: %s\n", strerror(errno));
                     std::cout << "BACKUP SERVER OFFLINE - REMOVED FROM BACKUP LIST" << std::endl;
-                    rm->remove(*it);
+                    rm->erase(it);
                     break; // Avoids segmentation fault
                 }
 
@@ -437,7 +437,7 @@ void ReplicManager::heartbeat_receiver()
     close(server_socket);
 }
 
-void ReplicManager::notify_list_backups(std::list<Server>* backups)
+void ReplicManager::notify_list_backups(std::vector<Server>* backups)
 {
     for (auto it = backups->begin(); it != backups->end(); it++)
     {
@@ -1168,7 +1168,7 @@ void ReplicManager::init_server_as_backup()
             else if (buffer_response[0] == MSG_LIST_BACKUP)
             {
                 uint8_t totalBackups = buffer_response[1];
-                std::list<Server> *rms = new std::list<Server>();
+                std::vector<Server> *rms = new std::vector<Server>();
 
                 for (int i = 0; i < totalBackups; i++)
                 {
@@ -1230,176 +1230,3 @@ void ReplicManager::init_server_as_backup()
         }
     }
 }
-
-Server ReplicManager::get_server_with_pid(int pid)
-{
-    for (Server s : *rm) 
-    {
-        if (s.get_pid() == pid)
-            return s;
-    }
-
-    return Server("", 0, 0);
-}
-
-std::map<int, std::list<Server>> ReplicManager::get_servers_ordered_by_pid_ascending()
-{
-    std::map<int, std::list<Server>> servers;
-
-    for (Server server : *rm)
-    {
-        if (servers.find(server.get_pid()) == servers.end())
-        {
-            std::list<Server> servers_with_same_pid;
-            servers_with_same_pid.push_back(server);
-
-            servers.insert(std::make_pair(server.get_pid(), servers_with_same_pid));
-        }
-        else
-        {
-            servers[server.get_pid()].push_back(server);
-        }
-    }
-
-    return servers;
-}
-
-bool ReplicManager::start_election_leader(Server starter)
-{
-    bool is_leader = false;
-    std::map<int, std::list<Server>> servers_mapped_by_pid = get_servers_ordered_by_pid_ascending();
-    int leader_pid = -1;
-    bool participant = false;
-
-    // First round
-    
-
-    // Second round    
-
-
-    return is_leader;
-}
-
-int ReplicManager::receive_election_leader(Server receiver)
-{
-    int pid = -1;
-    char* buffer[MAX_MAIL_SIZE];
-    struct sockaddr_in serv_addr;
-    struct in_addr addr;
-    hostent *server_host;
-    
-    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-        std::cout << "erro socket";
-        exit(-1);
-    }
-
-    inet_aton(receiver.get_ip().c_str(), &addr);
-    server_host = gethostbyaddr(&addr, sizeof(receiver.get_ip()), AF_INET);
-
-    if (server_host == NULL)
-    {
-        Logger.write_error("No such host!");
-        exit(-1);
-    }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(receiver.get_port());
-    serv_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
-
-    bzero(&(serv_addr.sin_zero), 8);
-
-    if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        int option = 1;
-        if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0)
-        {
-            std::cout << "erro bind - backup server";
-            fprintf(stderr, "socket() failed: %s\n", strerror(errno));
-            exit(-1);
-        }
-    }
-
-    listen(server_socket, 3);
-
-    clilen = sizeof(struct sockaddr_in);
-
-    bool timeout = Scheduler::set_timeout_to_routine([]() 
-    {
-        connection_socket = accept(server_socket, (struct sockaddr *)&cli_addr, &clilen);
-    }, TIMEOUT_RECEIVE_ELECTION_MS);
-
-    if (timeout)
-        exit(-1);
-
-    if (connection_socket == -1)
-        exit(-1);
-
-    timeout = Scheduler::set_timeout_to_routine([]() {
-        readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
-    }, TIMEOUT_SERVER_MS);
-
-    if (timeout)
-        exit(-1);
-
-    if (readBytesFromSocket < 0)
-    {
-        fprintf(stderr, "socket() failed: %s\n", strerror(errno));
-        Logger.write_error("ERROR: Reading from socket");
-        close(connection_socket);
-        exit(-1);
-    }
-
-    if (buffer_response[0] == MSG_ELECTION)
-    {
-        pid = ntohl(
-            buffer_response[1] << 24
-            | buffer_response[2] << 16
-            | buffer_response[3] << 8
-            | buffer_response[4]
-        );
-    }
-
-    close(connection_socket);
-    close(server_socket);
-
-    return pid;
-}
-
-void ReplicManager::send_election_leader(int message_type, int pid, Server to)
-{
-    int sockfd, n;
-    struct sockaddr_in backup_server_addr;
-
-    backup_server_addr.sin_family = AF_INET;
-    backup_server_addr.sin_port = htons(to.get_port());
-    backup_server_addr.sin_addr = get_ip_by_address(to.get_ip());
-    bzero(&(backup_server_addr.sin_zero), 8);
-
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-        Logger.write_error("ERROR: Opening socket");
-        exit(-1);
-    }
-
-    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
-    {
-        fprintf(stderr, "socket() failed: %s\n", strerror(errno));
-        exit(-1); 
-    }
-
-    char *message = new char[MAX_MAIL_SIZE];
-    uint32_t normalizedPid = htonl(pid);
-
-    message[0] = message_type;
-
-    message[1] = normalizedPid >> 24;
-    message[2] = normalizedPid >> 16;
-    message[3] = normalizedPid >> 8;
-    message[4] = normalizedPid;
-
-    n = write(sockfd, message, MAX_MAIL_SIZE);
-    if (n < 0)
-        Logger.write_error("Failed to write to socket");
-}
-

@@ -1,4 +1,4 @@
-#include <list>
+#include <vector>
 #include <map>
 #include <netinet/in.h>
 #include <unordered_map>
@@ -16,7 +16,7 @@ class ReplicManager
 public:
     //static int g_availablePort;
     static int g_process_id;
-    static std::list<Server>* rm; // Replic managers
+    static std::vector<Server>* rm; // Replic managers
     static bool g_primary_server_online;
     static socklen_t clilen;
     static int server_socket;
@@ -50,7 +50,7 @@ public:
     static void notify_new_session(std::string sessionId, client_session client_session);
     static void notify_close_session(client_session client_session);
     static void notify_follow(std::string follower, std::string followed);
-    static void notify_list_backups(std::list<Server>* backups);
+    static void notify_list_backups(std::vector<Server>* backups);
     static void notify_primary_addr();
 private:
     static void multicast_signal();
@@ -75,9 +75,4 @@ private:
     static void send_all_sessions(Server target);
     static void send_all_followers(Server target);
     static void send_all_pending_notifications(Server target);
-    static bool start_election_leader(Server starter);
-    static std::map<int, std::list<Server>> get_servers_ordered_by_pid_ascending();
-    static Server get_server_with_pid(int pid);
-    static int receive_election_leader(Server receiver);
-    static void send_election_leader(int message_type, int pid, Server to);
 };
