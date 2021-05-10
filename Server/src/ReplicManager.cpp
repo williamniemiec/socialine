@@ -743,9 +743,18 @@ void ReplicManager::new_backup_service()
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     bzero(&(serv_addr.sin_zero), 8);
 
-    if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    int option = 1;
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0)
     {
         std::cout << "erro bind new backup";
+        fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+        exit(-1);
+    }
+
+    if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        std::cout << "FALHA NEW BACKUP SERVICE" << std::endl;
+        fprintf(stderr, "socket() failed: %s\n", strerror(errno));
         exit(-1);
     }
 
@@ -910,6 +919,7 @@ bool ReplicManager::is_port_available(uint16_t port)
     }
 
     close(server_socket);
+    sleep(1);
     
     return isAvailable;
 }
@@ -991,7 +1001,9 @@ void ReplicManager::connect_with_primary_server(std::string backupIp, uint16_t b
 
     if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
     {
-        std::cout << "BACKUP SERVER OFFLINE - REMOVED FROM BACKUP LIST" << std::endl;
+        fprintf(stderr, "connect failed: %s\n", strerror(errno));
+        std::cout << "CONNECTION WITH PRIMARY SERVER FAILED!" << std::endl;
+        std::cout << "PRIMARY IP: " << primaryIp << std::endl;
         exit(-1);
     }
 
@@ -1034,13 +1046,9 @@ void ReplicManager::init_server_as_backup()
 
     if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        int option = 1;
-        if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0)
-        {
-            std::cout << "erro bind - backup server";
-            fprintf(stderr, "socket() failed: %s\n", strerror(errno));
-            exit(-1);
-        }
+        std::cout << "erro bind - backup server";
+        fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+        exit(-1);
     }
 
     listen(server_socket, 1);
@@ -1201,8 +1209,8 @@ void ReplicManager::init_server_as_backup()
 
         std::cout << "BACKUP(" << getpid() << ") PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
 
-        is_backup_server = !start_election_leader(Server(serverIp, serverPort, myPid));
-
+        //is_backup_server = !start_election_leader(Server(serverIp, serverPort, myPid));
+        is_backup_server = false;
         if (is_backup_server)
         {
             std::cout << "BACKUP(" << getpid() << ") I'M BACKUP AGAIN ;(" << std::endl;
@@ -1264,7 +1272,7 @@ bool ReplicManager::start_election_leader(Server starter)
     bool participant = false;
 
     // First round
-
+    
 
     // Second round    
 
