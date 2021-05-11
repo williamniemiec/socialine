@@ -9,7 +9,6 @@ OBJS	= ServerApp.o\
 		Scheduler.o\
 		ReplicManager.o\
 		Server.o\
-		DataManager.o\
 		RingLeaderElection.o
 SOURCE	= ServerApp.cpp\
 		../Utils/StringUtils.cpp\
@@ -69,9 +68,6 @@ ReplicManager.o: src/ReplicManager.cpp
 
 Server.o: src/Server.cpp
 	$(CC) $(FLAGS) src/Server.cpp -std=c++17
-
-DataManager.o: src/DataManager.cpp
-	$(CC) $(FLAGS) src/DataManager.cpp -std=c++17
 
 RingLeaderElection.o: src/RingLeaderElection.cpp
 	$(CC) $(FLAGS) src/RingLeaderElection.cpp -std=c++17

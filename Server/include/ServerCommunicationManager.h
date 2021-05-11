@@ -21,11 +21,15 @@
 #include "../../Utils/StringUtils.h"
 #include "../../Utils/Logger.h"
 
-class ServerCommunicationManager : public IObserver, public IObservable
+class ServerCommunicationManager : public IObservable, public IObserver
 {
     std::list<IObserver*> observers;
     static std::unordered_map<std::string, client_session> client_sessions;
     static ReplicManager* replic_manager;
+    std::string arg0;
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
 public:
     static bool isPrimaryServer;
     ServerCommunicationManager();
@@ -39,7 +43,7 @@ public:
     static void* updateClientsWithNewPrimaryServer(void* arg);
     static std::unordered_map<std::string, client_session> get_sessions();
     static void add_session(std::string cookie, std::string ip, std::string port);
-    static void remove_session(std::string cookie, std::string ip, std::string port);
+    static void remove_session(std::string cookie);
 
 private:
     static void initialize_replic_manager();

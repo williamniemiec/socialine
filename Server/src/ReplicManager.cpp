@@ -22,7 +22,6 @@
 #include "../../Utils/Scheduler.hpp"
 #include "../../Utils/Logger.h"
 #include "../../Utils/StringUtils.h"
-#include "../include/DataManager.hpp"
 
 #define MSG_HEARTBEAT 0
 #define MSG_NEW_SESSION 1
@@ -33,6 +32,10 @@
 #define MSG_ELECTED 6
 #define MSG_LIST_BACKUP 7
 #define MSG_PRIMARY_ADDR 8
+#define MSG_PROFILE_SESSION 9
+#define MSG_PROFILE_FOLLOW 10
+#define MSG_CLOSE_PROFILE_SESSION 11
+#define MSG_NEW_PROFILE_SESSION 12
 #define TIMEOUT_SERVER_MS 6000
 #define TIMEOUT_RECEIVE_ELECTION_MS 3500
 #define HEARTBEAT_MS 3000
@@ -62,6 +65,44 @@ ReplicManager::ReplicManager()
 //-------------------------------------------------------------------------
 //		Methods
 //-------------------------------------------------------------------------
+void ReplicManager::update(IObservable* observable, std::list<std::string> data)
+{
+    if (dynamic_cast<ServerCommunicationManager*>(observable) != nullptr)
+    {
+        ServerCommunicationManager* server_communication_manager = dynamic_cast<ServerCommunicationManager*>(observable);
+
+        if (data.front() == "NEW_SESSION")
+        {
+            client_session session;
+            session.ip = *((data.begin()++)++);
+            session.notification_port = *(((data.begin()++)++)++);
+
+            notify_new_session(*(data.begin()++), session);
+        }
+        else if (data.front() == "CLOSE_SESSION")
+        {
+            notify_close_session(*(data.begin()++));
+        }
+    }
+    else if (dynamic_cast<ProfileSessionManager*>(observable) != nullptr)
+    {
+        ProfileSessionManager* session_manager = dynamic_cast<ProfileSessionManager*>(observable);
+
+        if (data.front() == "NEW_SESSION")
+        {
+            notify_new_profile_session(*(data.begin()++), *((data.begin()++)++));
+        }
+        else if (data.front() == "CLOSE_SESSION")
+        {
+            notify_close_profile_session(*(data.begin()++));
+        }
+        else if (data.front() == "FOLLOW")
+        {
+            notify_new_follow(*(data.begin()++), *((data.begin()++)++));
+        }
+    }
+}
+
 void ReplicManager::attach(IObserver* observer)
 {
     observers.push_back(observer);
@@ -76,22 +117,13 @@ void ReplicManager::notify_observers()
 {
     std::list<std::string> body;
     body.push_back(is_primary ? "PRIMARY" : "BACKUP");
-
+    
     for (IObserver* observer : observers)
     {
         std::thread([=]()
         {
             observer->update(this, body);
         }).detach();
-    }
-}
-
-void ReplicManager::update(IObservable* observable, std::list<std::string> data)
-{
-    if (dynamic_cast<ServerCommunicationManager*>(observable) != nullptr)
-    {
-        ServerCommunicationManager* server_communication_manager = dynamic_cast<ServerCommunicationManager*>(observable);
-        notify_sessions(server_communication_manager->get_sessions());
     }
 }
 
@@ -526,7 +558,104 @@ void ReplicManager::notify_list_backups(std::vector<Server>* backups)
     }
 }
 
-void ReplicManager::notify_close_session(client_session session)
+void ReplicManager::notify_new_follow(std::string follower, std::string followed)
+{
+    for (auto it = rm->begin(); it != rm->end(); it++)
+    {
+        send_follow(*it, follower, followed);
+    }
+}
+
+void ReplicManager::notify_new_session(std::string sessionId, client_session client_session)
+{
+    for (auto it = rm->begin(); it != rm->end(); it++)
+    {
+        send_session(*it, sessionId, client_session);
+    }
+}
+
+void ReplicManager::notify_new_profile_session(std::string username, std::string sessionId)
+{
+    for (auto it = rm->begin(); it != rm->end(); it++)
+    {
+        int sockfd, n;
+        struct sockaddr_in backup_server_addr;
+
+        backup_server_addr.sin_family = AF_INET;
+        backup_server_addr.sin_port = htons(it->get_port());
+        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
+        bzero(&(backup_server_addr.sin_zero), 8);
+
+        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            Logger.write_error("ERROR: Opening socket");
+            continue;
+        }
+
+        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+        {
+            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            continue;
+        }
+
+        std::cout << "PRIMARY IS SENDING NEW PROFILE SESSION TO BACKUP " << it->get_signature() << std::endl;
+        char *message = new char[MAX_MAIL_SIZE];
+
+        message[0] = MSG_NEW_PROFILE_SESSION;
+
+        memcpy(&message[1], username.c_str(), MAX_DATA_SIZE);
+        memcpy(&message[2+MAX_DATA_SIZE], sessionId.c_str(), MAX_DATA_SIZE);
+
+        n = write(sockfd, message, MAX_MAIL_SIZE);
+
+        if (n < 0)
+            Logger.write_error("Failed to write to socket");
+        
+        close(sockfd);
+    }
+}
+
+void ReplicManager::notify_close_profile_session(std::string username)
+{
+    for (auto it = rm->begin(); it != rm->end(); it++)
+    {
+        int sockfd, n;
+        struct sockaddr_in backup_server_addr;
+
+        backup_server_addr.sin_family = AF_INET;
+        backup_server_addr.sin_port = htons(it->get_port());
+        backup_server_addr.sin_addr = get_ip_by_address(it->get_ip());
+        bzero(&(backup_server_addr.sin_zero), 8);
+
+        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        {
+            Logger.write_error("ERROR: Opening socket");
+            continue;
+        }
+
+        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+        {
+            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            continue;
+        }
+
+        std::cout << "PRIMARY IS SENDING CLOSE PROFILE SESSION TO BACKUP " << it->get_signature() << std::endl;
+        char *message = new char[MAX_MAIL_SIZE];
+
+        message[0] = MSG_CLOSE_PROFILE_SESSION;
+
+        memcpy(&message[1], username.c_str(), MAX_DATA_SIZE);
+
+        n = write(sockfd, message, MAX_MAIL_SIZE);
+
+        if (n < 0)
+            Logger.write_error("Failed to write to socket");
+        
+        close(sockfd);
+    }
+}
+
+void ReplicManager::notify_close_session(std::string sessionId)
 {
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
@@ -555,28 +684,109 @@ void ReplicManager::notify_close_session(client_session session)
 
         message[0] = MSG_CLOSE_SESSION;
 
-        // COOKIE
-        memcpy(&message[1], session.session_id.c_str(), COOKIE_LENGTH);
-
-        // IP
-        memcpy(&message[1 + COOKIE_LENGTH], session.ip.c_str(), 16);
-
-        // NOTIFICATION PORT
-        memcpy(&message[1 + COOKIE_LENGTH + 16], session.notification_port.c_str(), 6);
+        memcpy(&message[1], sessionId.c_str(), MAX_DATA_SIZE);
 
         n = write(sockfd, message, MAX_MAIL_SIZE);
 
         if (n < 0)
             Logger.write_error("Failed to write to socket");
+        
+        close(sockfd);
     }
 }
 
-void ReplicManager::notify_follow(std::string follower, std::string followed)
+void ReplicManager::send_all_followers(Server target, std::unordered_map<std::string, std::vector<std::string>> followers)
 {
-    for (auto it = rm->begin(); it != rm->end(); it++)
+    for (auto it2 = followers.begin(); it2 != followers.end(); it2++)
     {
-        send_follow(*it, follower, followed);
+        for (auto it3 = (it2->second).begin(); it3 != (it2->second).end(); it3++)
+        {
+            send_profile_follow(target, it2->first, *it3);
+        }
     }
+}
+
+void ReplicManager::send_all_profile_sessions(Server target, std::unordered_map<std::string, std::vector<std::string>> sessions)
+{
+    for (auto it2 = sessions.begin(); it2 != sessions.end(); it2++)
+    {
+        for (auto it3 = (it2->second).begin(); it3 != (it2->second).end(); it3++)
+        {
+            send_profile_session(target, it2->first, *it3);
+        }
+    }
+}
+
+void ReplicManager::send_profile_session(Server server, std::string username, std::string session_id)
+{
+    int sockfd, n;
+    struct sockaddr_in backup_server_addr;
+
+    backup_server_addr.sin_family = AF_INET;
+    backup_server_addr.sin_port = htons(server.get_port());
+    backup_server_addr.sin_addr = get_ip_by_address(server.get_ip());
+    bzero(&(backup_server_addr.sin_zero), 8);
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        Logger.write_error("ERROR: Opening socket");
+        return;
+    }
+
+    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    {
+        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        return;
+    }
+
+    std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP " << server.get_signature() << std::endl;
+    char *message = new char[MAX_MAIL_SIZE];
+
+    message[0] = MSG_PROFILE_SESSION;
+
+    memcpy(&message[1], username.c_str(), MAX_DATA_SIZE);
+    memcpy(&message[1 + MAX_DATA_SIZE], session_id.c_str(), MAX_DATA_SIZE);
+
+    n = write(sockfd, message, MAX_MAIL_SIZE);
+
+    if (n < 0)
+        Logger.write_error("Failed to write to socket");
+}
+
+void ReplicManager::send_profile_follow(Server server, std::string username, std::string followed)
+{
+    int sockfd, n;
+    struct sockaddr_in backup_server_addr;
+
+    backup_server_addr.sin_family = AF_INET;
+    backup_server_addr.sin_port = htons(server.get_port());
+    backup_server_addr.sin_addr = get_ip_by_address(server.get_ip());
+    bzero(&(backup_server_addr.sin_zero), 8);
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        Logger.write_error("ERROR: Opening socket");
+        return;
+    }
+
+    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    {
+        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        return;
+    }
+
+    std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP " << server.get_signature() << std::endl;
+    char *message = new char[MAX_MAIL_SIZE];
+
+    message[0] = MSG_PROFILE_FOLLOW;
+
+    memcpy(&message[1], username.c_str(), MAX_DATA_SIZE);
+    memcpy(&message[1 + MAX_DATA_SIZE], followed.c_str(), MAX_DATA_SIZE);
+
+    n = write(sockfd, message, MAX_MAIL_SIZE);
+
+    if (n < 0)
+        Logger.write_error("Failed to write to socket");
 }
 
 void ReplicManager::send_follow(Server server, std::string follower, std::string followed)
@@ -672,17 +882,11 @@ void ReplicManager::send_pending_notification(Server server, std::string followe
         Logger.write_error("Failed to write to socket");
 }
 
-void ReplicManager::notify_sessions(std::unordered_map<std::string, client_session> sessions)
+void ReplicManager::send_all_sessions(Server target, std::unordered_map<std::string, client_session> sessions)
 {
-    std::cout << "RM SIZE: " << rm->size() << std::endl;
-    std::cout << "SESSIONS SIZE: " << sessions.size() << std::endl;
-    
-    for (auto it = rm->begin(); it != rm->end(); it++)
+    for (auto it2 = sessions.begin(); it2 != sessions.end(); it2++)
     {
-        for (auto it2 = sessions.begin(); it2 != sessions.end(); it2++)
-        {
-            send_session(*it, it2->first, it2->second);
-        }
+        send_session(target, it2->first, it2->second);
     }
 }
 
@@ -739,7 +943,15 @@ void ReplicManager::add_new_backup_server(std::string ip, uint16_t port, int pid
     std::cout << "DONE!" << std::endl;
 
     std::cout << "SENDING SESSIONS FOR EACH BACKUP SERVER..." << std::endl;
-    notify_sessions(ServerCommunicationManager::get_sessions());
+    send_all_sessions(backup_server, ServerCommunicationManager::get_sessions());
+    std::cout << "DONE!" << std::endl;
+
+    std::cout << "SENDING PROFILE SESSIONS..." << std::endl;
+    send_all_profile_sessions(backup_server, ProfileSessionManager::get_sessions());
+    std::cout << "DONE!" << std::endl;
+
+    std::cout << "SENDING PROFILE FOLLOWS..." << std::endl;
+    send_all_followers(backup_server, ProfileSessionManager::get_followers());
     std::cout << "DONE!" << std::endl;
 }
 
@@ -891,29 +1103,12 @@ void ReplicManager::send_all_sessions(std::unordered_map<std::string, client_ses
     std::cout << "DONE" << std::endl;
 }
 
-void ReplicManager::send_all_followers(Server target)
-{
-    std::cout << "SEND ALL FOLLOWERS TO BACKUP " << target.get_signature() << std::endl;
 
-    std::unordered_map<std::string, std::vector<std::string>> followers = DataManager::get_all_followers();
-
-    for (auto it = followers.begin(); it != followers.end(); it++)
-    {
-        std::vector<std::string> followers = it->second;
-
-        for (std::string user : followers)
-        {
-            send_follow(target, it->first, user);
-        }
-    }
-
-    std::cout << "DONE" << std::endl;
-}
 
 void ReplicManager::send_all_pending_notifications(Server target)
 {
     std::cout << "SEND ALL PENDING NOTIFICATIONS TO BACKUP " << target.get_signature() << std::endl;
-
+/*
     std::unordered_map<std::string, std::vector<notification>> pendingNotifications = DataManager::get_all_pending_notifications();
 
     for (auto it = pendingNotifications.begin(); it != pendingNotifications.end(); it++)
@@ -925,7 +1120,7 @@ void ReplicManager::send_all_pending_notifications(Server target)
             send_pending_notification(target, it->first, notification);
         }
     }
-
+*/
     std::cout << "DONE" << std::endl;
 }
 
@@ -1119,6 +1314,18 @@ void ReplicManager::init_server_as_backup()
 
                 ServerCommunicationManager::add_session(std::string(cookie), std::string(ip), std::string(port));
             }
+            else if (buffer_response[0] == MSG_NEW_PROFILE_SESSION)
+            {
+                char username[MAX_DATA_SIZE];
+                char session_id[MAX_DATA_SIZE];
+
+                memcpy(&username, &buffer_response[1], MAX_DATA_SIZE);
+                memcpy(&session_id, &buffer_response[1 + MAX_DATA_SIZE], MAX_DATA_SIZE);
+
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: PROFILE SESSION" << std::endl;
+
+                ProfileSessionManager::add_session(std::string(username), std::string(session_id));
+            }
             else if (buffer_response[0] == MSG_NEW_PENDING_NOTIFICATION)
             {
                 char followed[MAX_DATA_SIZE];
@@ -1152,25 +1359,25 @@ void ReplicManager::init_server_as_backup()
 
                 std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: FOLLOW" << std::endl;
 
-                // TODO: send new follower to profile session manager
+                ProfileSessionManager::add_follower(follower, followed);
             }
             else if (buffer_response[0] == MSG_CLOSE_SESSION)
             {
-                char cookie[COOKIE_LENGTH];
-                char ip[16];
-                char port[6];
-
-                // COOKIE
-                memcpy(&cookie, &buffer_response[1], COOKIE_LENGTH);
-
-                // IP
-                memcpy(&ip, &buffer_response[1 + COOKIE_LENGTH], 16);
-
-                // NOTIFICATION PORT
-                memcpy(&port, &buffer_response[1 + COOKIE_LENGTH + 16], 6);
+                char cookie[MAX_DATA_SIZE];
+        
+                memcpy(&cookie, &buffer_response[1], MAX_DATA_SIZE);
 
                 std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE SESSION" << std::endl;
-                ServerCommunicationManager::remove_session(std::string(cookie), std::string(ip), std::string(port));
+                ServerCommunicationManager::remove_session(std::string(cookie));
+            }
+            else if (buffer_response[0] == MSG_CLOSE_PROFILE_SESSION)
+            {
+                char username[MAX_DATA_SIZE];
+        
+                memcpy(&username, &buffer_response[1], MAX_DATA_SIZE);
+
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE PROFILE SESSION" << std::endl;
+                ProfileSessionManager::remove_session(std::string(username));
             }
             else if (buffer_response[0] == MSG_LIST_BACKUP)
             {
@@ -1219,6 +1426,30 @@ void ReplicManager::init_server_as_backup()
                 );
 
                 std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: PRIMARY ADDR" << std::endl;
+            }
+            else if (buffer_response[0] == MSG_PROFILE_SESSION)
+            {
+                char username[MAX_DATA_SIZE];
+                char session_id[MAX_DATA_SIZE];
+
+                memcpy(&username, &buffer_response[1], MAX_DATA_SIZE);
+                memcpy(&session_id, &buffer_response[1 + MAX_DATA_SIZE], MAX_DATA_SIZE);
+
+                ProfileSessionManager::add_session(std::string(username), std::string(session_id));
+
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: PROFILE SESSION" << std::endl;
+            }
+            else if (buffer_response[0] == MSG_PROFILE_FOLLOW)
+            {
+                char username[MAX_DATA_SIZE];
+                char followed[MAX_DATA_SIZE];
+
+                memcpy(&username, &buffer_response[1], MAX_DATA_SIZE);
+                memcpy(&followed, &buffer_response[1 + MAX_DATA_SIZE], MAX_DATA_SIZE);
+
+                ProfileSessionManager::add_follower(std::string(username), std::string(followed));
+
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: PROFILE SESSION" << std::endl;
             }
             else
             {

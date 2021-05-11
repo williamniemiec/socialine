@@ -9,17 +9,19 @@
 #include <sstream>
 
 #include "FileManager.h"
+#include "../../Utils/IObservable.hpp"
+#include "../../Utils/IObserver.hpp"
 #include "../../Utils/Logger.h"
 #include "../../Utils/Types.h"
 #include "../../Utils/StringUtils.h"
 
 using namespace socialine::utils;
 
-class ProfileSessionManager {
-
-    std::unordered_map<std::string, std::vector<std::string>> sessions_map;
-    std::unordered_map<std::string, std::vector<std::string>> followers_map;
-    std::unordered_map<std::string, std::vector<std::string>> followed_by_map;
+class ProfileSessionManager : public IObservable
+{
+    static std::unordered_map<std::string, std::vector<std::string>> sessions_map;
+    static std::unordered_map<std::string, std::vector<std::string>> followers_map;
+    static std::unordered_map<std::string, std::vector<std::string>> followed_by_map;
 
     sem_t write_session_semaphore;
     sem_t session_readers_mutex;
@@ -28,6 +30,10 @@ class ProfileSessionManager {
     sem_t write_followers_semaphore;
     sem_t follower_readers_mutex;
     int followers_readers_count;
+    std::list<IObserver*> observers;
+    std::string arg0;
+    std::string arg1;
+    std::string arg2;
 
 public:
     static ProfileSessionManager profileSessionManager;
@@ -35,7 +41,10 @@ public:
 
     ProfileSessionManager()
     {
-
+        observers = std::list<IObserver*>();
+        arg0 = "";
+        arg1 = "";
+        arg2 = "";
         followers_map = myFileManager.read_profiles_file();
 
         sem_init(&write_session_semaphore, 1, 1);
@@ -47,13 +56,21 @@ public:
         followers_readers_count = 0;
 
     }
-
+    
+    virtual void attach(IObserver* observer);
+    virtual void detatch(IObserver* observer);
+    virtual void notify_observers();
     int login( std::string username, std::string session_id );
     int logout( std::string username, std::string session_id );
     int follow( std::string follower, std::string followed );
     std::vector<std::string> read_followers(std::string username);
     std::vector<std::string> read_followed(std::string username);
     std::vector<std::string> read_open_sessions(std::string username);
+    static std::unordered_map<std::string, std::vector<std::string>> get_sessions();
+    static std::unordered_map<std::string, std::vector<std::string>> get_followers();
+    static void add_session(std::string username, std::string session_id);
+    static void add_follower(std::string follower, std::string followed);
+    static void remove_session(std::string username);
 
 private:
     int open_session(std::string username, std::string session_id);

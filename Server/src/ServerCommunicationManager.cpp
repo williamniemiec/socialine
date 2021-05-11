@@ -41,10 +41,12 @@ ReplicManager* ServerCommunicationManager::replic_manager;
 
 ServerCommunicationManager::ServerCommunicationManager()
 {
-    observers = std::list<IObserver*>();
     replic_manager = new ReplicManager();
     replic_manager->attach(this);
+    
+    observers = std::list<IObserver*>();
     observers.push_back(replic_manager);
+    
     isPrimaryServer = false;
 }
 
@@ -60,11 +62,18 @@ void ServerCommunicationManager::detatch(IObserver* observer)
 
 void ServerCommunicationManager::notify_observers()
 {
+    std::list<std::string> body;
+
+    body.push_back(arg0);
+    body.push_back(arg1);
+    body.push_back(arg2);
+    body.push_back(arg3);
+
     for (IObserver* observer : observers)
     {
         std::thread([=]()
         {
-            observer->update(this, std::list<std::string>());
+            observer->update(this, body);
         }).detach();
     }
 }
@@ -77,10 +86,6 @@ void ServerCommunicationManager::update(IObservable* observable, std::list<std::
         {
             isPrimaryServer = true;
             updateClientsWithNewPrimaryServer(nullptr);
-        }
-        else if (data.front() == "NEW BACKUP")
-        {
-            notify_observers();
         }
     }
 }
@@ -202,10 +207,18 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
         //ToDo: pegar dinamicamente //"127.0.0.1";
         new_session.notification_port = args[1];
         client_sessions[cookie] = new_session;
+
+        arg0 = "NEW_SESSION";
+        arg1 = cookie;
+        arg2 = new_session.ip;
+        arg3 = new_session.notification_port;
         notify_observers();
 
     } else if(received_packet.type == CMD_LOGOUT) {
         client_sessions.erase(cookie);
+
+        arg0 = "CLOSE_SESSION";
+        arg1 = cookie;
         notify_observers();
     }
 
@@ -562,7 +575,7 @@ void ServerCommunicationManager::add_session(std::string cookie, std::string ip,
     client_sessions[cookie] = new_session;
 }
 
-void ServerCommunicationManager::remove_session(std::string cookie, std::string ip, std::string port)
+void ServerCommunicationManager::remove_session(std::string cookie)
 {
     client_sessions.erase(cookie);
 }
