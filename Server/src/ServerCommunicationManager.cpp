@@ -59,6 +59,7 @@ void ServerCommunicationManager::detatch(IObserver* observer)
 
 void ServerCommunicationManager::notify_observers()
 {
+    std::cout << "Server comm manager - notify observers" << std::endl;
     for (IObserver* observer : observers)
     {
         std::thread([&]()
@@ -286,7 +287,7 @@ std::string ServerCommunicationManager::random_string( size_t length )
     return str;
 }
 
-std::unordered_map<std::string, client_session> client_sessions;
+//std::unordered_map<std::string, client_session> client_sessions;
 void ServerCommunicationManager::sendNotification(std::string session_id, notification current_notification) {
     client_session session = ServerCommunicationManager::client_sessions[session_id];
 
@@ -481,7 +482,7 @@ void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
 
     // for each value in client_sessions
     std::cout << "Will update clients" << std::endl;
-    sleep(3);
+    //sleep(5);
     // Iterate over an unordered_map using range based for loop
     for (std::pair<std::string, client_session> element : client_sessions) {
         client_session session = element.second;
@@ -490,6 +491,8 @@ void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
         std::string receiver_port = session.notification_port;
         std::string session_id = session.session_id;
         std::string message = get_local_ip() + "\n" + std::to_string(SELECTED_SERVER_PORT);
+
+        std::cout << "MESSAGE: " << message << std::endl;
 
         int sockfd, n;
         struct sockaddr_in receiver_addr;
@@ -541,9 +544,22 @@ void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
         std::cout << "Sent new Primary Server: " << get_local_ip() << ":" << std::to_string(SELECTED_SERVER_PORT) << std::endl;
 
     }
+
+    std::cout << "DONE" << std::endl;
 }
 
 std::unordered_map<std::string, client_session> ServerCommunicationManager::get_sessions()
 {
     return client_sessions;
+}
+
+void ServerCommunicationManager::add_session(std::string cookie, std::string ip, std::string port)
+{
+    client_session new_session;
+    new_session.ip = ip;
+    new_session.notification_port = port;
+    
+    client_sessions[cookie] = new_session;
+
+    std::cout << "SIZE: " << client_sessions.size() << std::endl;
 }

@@ -37,7 +37,8 @@ public:
     static void sendNotification(std::string session_id, notification current_notification);
     static void listenForBroadcast();
     static void* updateClientsWithNewPrimaryServer(void* arg);
-    std::unordered_map<std::string, client_session> get_sessions();
+    static std::unordered_map<std::string, client_session> get_sessions();
+    static void add_session(std::string cookie, std::string ip, std::string port);
 
 private:
     static void initialize_replic_manager();

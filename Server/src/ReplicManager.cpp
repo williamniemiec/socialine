@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <thread>
 #include <ctime>
+#include "../include/ProfileSessionManager.h"
 #include "../include/ServerCommunicationManager.h"
 #include "../include/ReplicManager.hpp"
 #include "../include/RingLeaderElection.hpp"
@@ -84,7 +85,7 @@ void ReplicManager::notify_observers()
         }).detach();
     }
 }
-
+/*
 void ReplicManager::notify_observers_new_backup()
 {
     std::list<std::string> body;
@@ -97,14 +98,14 @@ void ReplicManager::notify_observers_new_backup()
             observer->update(this, body);
         }).detach();
     }
-}
+}*/
 
 void ReplicManager::update(IObservable* observable, std::list<std::string> data)
 {
     if (dynamic_cast<ServerCommunicationManager*>(observable) != nullptr)
     {
-        ServerCommunicationManager* server = dynamic_cast<ServerCommunicationManager*>(observable);
-        notify_sessions(server->get_sessions());
+        ServerCommunicationManager* server_communication_manager = dynamic_cast<ServerCommunicationManager*>(observable);
+        notify_sessions(server_communication_manager->get_sessions());
     }
 }
 
@@ -691,6 +692,9 @@ void ReplicManager::send_pending_notification(Server server, std::string followe
 
 void ReplicManager::notify_sessions(std::unordered_map<std::string, client_session> sessions)
 {
+    std::cout << "RM SIZE: " << rm->size() << std::endl;
+    std::cout << "SESSIONS SIZE: " << sessions.size() << std::endl;
+    
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
         for (auto it2 = sessions.begin(); it2 != sessions.end(); it2++)
@@ -744,11 +748,16 @@ void ReplicManager::send_session(Server server, std::string sessionId, client_se
 
 void ReplicManager::add_new_backup_server(std::string ip, uint16_t port, int pid)
 {
-    rm->push_back(Server(ip, port, pid));
+    Server backup_server = Server(ip, port, pid);
+    rm->push_back(backup_server);
     std::cout << "NEW BACKUP (" << pid << ") SERVER ADDED: " << ip << ":" << port << std::endl;
 
     std::cout << "SENDING BACKUP LIST FOR EACH BACKUP SERVER..." << std::endl;
     notify_list_backups(rm);
+    std::cout << "DONE!" << std::endl;
+
+    std::cout << "SENDING SESSIONS FOR EACH BACKUP SERVER..." << std::endl;
+    notify_sessions(ServerCommunicationManager::get_sessions());
     std::cout << "DONE!" << std::endl;
 }
 
@@ -887,14 +896,13 @@ void ReplicManager::notify_primary_addr()
     }
 }
 
-void ReplicManager::send_all_sessions(Server target)
+void ReplicManager::send_all_sessions(std::unordered_map<std::string, client_session> sessions, Server target)
 {
     std::cout << "SEND ALL SESSIONS TO BACKUP " << target.get_signature() << std::endl;
-
-    std::unordered_map<std::string, client_session> sessions = DataManager::get_all_sessions();
     
     for (auto it = sessions.begin(); it != sessions.end(); it++)
     {
+        std::cout << "SESSION: " << it->first << std::endl;
         send_session(target, it->first, it->second);
     }
 
@@ -1040,7 +1048,6 @@ void ReplicManager::init_server_as_backup()
     std::cout << "BACKUP(" << getpid() << ") MY PORT IS: " << serverPort << std::endl;
 
     connect_with_primary_server(serverIp, serverPort);
-    notify_observers_new_backup();
 
     while (!is_primary)
     {
@@ -1128,7 +1135,7 @@ void ReplicManager::init_server_as_backup()
 
                 std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: SESSION" << std::endl;
 
-                // TODO: Store session at server communication manager
+                ServerCommunicationManager::add_session(std::string(cookie), std::string(ip), std::string(port));
             }
             else if (buffer_response[0] == MSG_NEW_PENDING_NOTIFICATION)
             {
@@ -1181,8 +1188,6 @@ void ReplicManager::init_server_as_backup()
                 memcpy(&port, &buffer_response[1 + COOKIE_LENGTH + 16], 6);
 
                 std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE SESSION" << std::endl;
-
-                // TODO: send session to server communication manager
             }
             else if (buffer_response[0] == MSG_LIST_BACKUP)
             {
