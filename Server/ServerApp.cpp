@@ -24,23 +24,13 @@ using namespace socialine::utils;
 ///Log Level ALL:   All messages explained above will be shown
 
 int check_mode(int argc, char* argv[]);
+void start_server();
 
 ///Main function to orchestrate app execution
 int main(int argc, char* argv[])
 {
-    ReplicManager::run();
-
-    exit(0); // TEMP - REPLIC MANAGER TESTS
-
     Logger.set_log_level(check_mode(argc, argv));
-
-    ServerCommunicationManager server;
-
-    server.listenForBroadcast();
-    server.start();
-
-    //ToDo: call function to persist server data
-
+    start_server();
     Logger.write_debug("Closing Server Session");
 
     return(0);
@@ -62,4 +52,12 @@ int check_mode(int argc, char* argv[])
     }
 
     return level;
+}
+
+void start_server()
+{
+    ServerCommunicationManager server;
+
+    server.listenForBroadcast();
+    server.start();
 }

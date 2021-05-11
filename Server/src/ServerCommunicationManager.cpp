@@ -3,7 +3,6 @@
 //
 
 #include "../include/ServerCommunicationManager.h"
-
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,12 +36,57 @@ using namespace socialine::utils;
 
 std::unordered_map<std::string, client_session> ServerCommunicationManager::client_sessions;
 bool ServerCommunicationManager::isPrimaryServer;
+ReplicManager* ServerCommunicationManager::replic_manager;
+
+
+ServerCommunicationManager::ServerCommunicationManager()
+{
+    observers = std::list<IObserver*>();
+    replic_manager = new ReplicManager();
+    replic_manager->attach(this);
+    isPrimaryServer = false;
+}
+
+void ServerCommunicationManager::attach(IObserver* observer)
+{
+    observers.push_back(observer);
+}
+
+void ServerCommunicationManager::detatch(IObserver* observer)
+{
+    observers.remove(observer);
+}
+
+void ServerCommunicationManager::notify_observers()
+{
+    for (IObserver* observer : observers)
+    {
+        std::thread([&]()
+        {
+            observer->update(this, std::list<std::string>());
+        }).detach();
+    }
+}
+
+void ServerCommunicationManager::update(IObservable* observable, std::list<std::string> data)
+{
+    if (dynamic_cast<ReplicManager*>(observable) != nullptr)
+    {
+        if (data.front() == "PRIMARY")
+        {
+            isPrimaryServer = true;
+            updateClientsWithNewPrimaryServer(nullptr);
+        }
+        else if (data.front() == "NEW BACKUP")
+        {
+            notify_observers();
+        }
+    }
+}
 
 void ServerCommunicationManager::start( )
 {
-    // TODO: Remover mocked isPrimaryServer (precisa ser definido de acordo com o algoritmo de eleição)
-    isPrimaryServer = true;
-
+    initialize_replic_manager();
     signal(SIGPIPE, SIG_IGN);
 
     int server_socket;
@@ -89,11 +133,21 @@ void ServerCommunicationManager::start( )
 
         makeCookie(&cli_addr);
 
-        std::thread child_thread(start_client_thread, connection_socket, &cli_addr);
+        std::thread child_thread(&ServerCommunicationManager::start_client_thread, this, connection_socket, &cli_addr);
         child_thread.detach();
     }
 
     close(server_socket);
+}
+
+void ServerCommunicationManager::initialize_replic_manager()
+{
+    std::thread replic_manager_thread([&]()
+    {
+        replic_manager->run();
+    });
+    
+    replic_manager_thread.detach();
 }
 
 void ServerCommunicationManager::start_client_thread(int connection_socket, sockaddr_in *cli_addr) {
@@ -147,9 +201,11 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
         //ToDo: pegar dinamicamente //"127.0.0.1";
         new_session.notification_port = args[1];
         client_sessions[cookie] = new_session;
+        notify_observers();
 
     } else if(received_packet.type == CMD_LOGOUT) {
         client_sessions.erase(cookie);
+        notify_observers();
     }
 
     n = write(connection_socket, response_buffer, MAX_MAIL_SIZE);
@@ -424,8 +480,8 @@ void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
     // pra cada client_session, manda IP e Porta do novo primário.
 
     // for each value in client_sessions
-    std::cout << "\n\nWill update clientsssss\n\n" << std::endl;
-    sleep(10);
+    std::cout << "Will update clients" << std::endl;
+    sleep(3);
     // Iterate over an unordered_map using range based for loop
     for (std::pair<std::string, client_session> element : client_sessions) {
         client_session session = element.second;
@@ -485,5 +541,9 @@ void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
         std::cout << "Sent new Primary Server: " << get_local_ip() << ":" << std::to_string(SELECTED_SERVER_PORT) << std::endl;
 
     }
+}
 
+std::unordered_map<std::string, client_session> ServerCommunicationManager::get_sessions()
+{
+    return client_sessions;
 }

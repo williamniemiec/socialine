@@ -1,4 +1,3 @@
-#include <pcap.h>
 #include "../../include/services/Frontend.h"
 
 std::string Frontend::primaryServerIP;

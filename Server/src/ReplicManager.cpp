@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <thread>
 #include <ctime>
+#include "../include/ServerCommunicationManager.h"
 #include "../include/ReplicManager.hpp"
 #include "../include/RingLeaderElection.hpp"
 #include "../../Utils/Scheduler.hpp"
@@ -45,25 +46,68 @@ using namespace socialine::util::task;
 using namespace socialine::utils;
 
 //-------------------------------------------------------------------------
-//		Attributes
+//		Constructor
 //-------------------------------------------------------------------------
-int ReplicManager::g_process_id = 0;
-std::vector<Server> *ReplicManager::rm = new std::vector<Server>();
-socklen_t ReplicManager::clilen = sizeof(struct sockaddr_in);
-bool ReplicManager::g_primary_server_online = true;
-int ReplicManager::server_socket;
-int ReplicManager::connection_socket;
-struct sockaddr_in ReplicManager::cli_addr;
-int ReplicManager::readBytesFromSocket;
-char ReplicManager::buffer_response[MAX_MAIL_SIZE];
-std::string ReplicManager::primaryIp;
-std::string ReplicManager::multicastIp = "226.1.1.1";
-unsigned int ReplicManager::myPid = getpid();
+ReplicManager::ReplicManager()
+{
+    observers = std::list<IObserver*>();
+    rm = new std::vector<Server>();
+    clilen = sizeof(struct sockaddr_in);
+    multicastIp = "226.1.1.1";
+    myPid = getpid();
+}
 
 
 //-------------------------------------------------------------------------
 //		Methods
 //-------------------------------------------------------------------------
+void ReplicManager::attach(IObserver* observer)
+{
+    observers.push_back(observer);
+}
+
+void ReplicManager::detatch(IObserver* observer)
+{
+    observers.remove(observer);
+}
+
+void ReplicManager::notify_observers()
+{
+    std::list<std::string> body;
+    body.push_back(is_primary ? "PRIMARY" : "BACKUP");
+
+    for (IObserver* observer : observers)
+    {
+        std::thread([=]()
+        {
+            observer->update(this, body);
+        }).detach();
+    }
+}
+
+void ReplicManager::notify_observers_new_backup()
+{
+    std::list<std::string> body;
+    body.push_back("NEW BACKUP");
+
+    for (IObserver* observer : observers)
+    {
+        std::thread([=]()
+        {
+            observer->update(this, body);
+        }).detach();
+    }
+}
+
+void ReplicManager::update(IObservable* observable, std::list<std::string> data)
+{
+    if (dynamic_cast<ServerCommunicationManager*>(observable) != nullptr)
+    {
+        ServerCommunicationManager* server = dynamic_cast<ServerCommunicationManager*>(observable);
+        notify_sessions(server->get_sessions());
+    }
+}
+
 void ReplicManager::run()
 {
     bool hasPrimaryActive = try_receive_multicast_signal();
@@ -148,7 +192,7 @@ bool ReplicManager::try_receive_multicast_signal()
     
     //printf("Reading multicast group...\n");
     
-    Scheduler::set_timeout_to_routine([]()
+    Scheduler::set_timeout_to_routine([&]()
     {
         readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
     }, 5000);
@@ -253,21 +297,23 @@ void ReplicManager::init_server_as_primary()
 {
     std::cout << "BECOMING PRIMARY..." << std::endl;
     primaryIp = get_local_ip();
+    is_primary = true;
+    notify_observers();
 
-    std::thread thread_heartbeat_receiver(heartbeat_receiver);
+    std::thread thread_heartbeat_receiver(&ReplicManager::heartbeat_receiver, this);
     thread_heartbeat_receiver.detach();
 
-    std::thread thread_new_backup(new_backup_service);
+    std::thread thread_new_backup(&ReplicManager::new_backup_service, this);
     thread_new_backup.detach();
 
-    Scheduler::set_interval([]() 
+    Scheduler::set_interval([&]() 
     {
         multicast_signal();
     }, 3000);
 
     std::cout << "DONE" << std::endl;
 
-    std::thread thread_heartbeat_sender(heartbeat_sender);
+    std::thread thread_heartbeat_sender(&ReplicManager::heartbeat_sender, this);
     thread_heartbeat_sender.join();
 }
 
@@ -643,11 +689,14 @@ void ReplicManager::send_pending_notification(Server server, std::string followe
         Logger.write_error("Failed to write to socket");
 }
 
-void ReplicManager::notify_new_session(std::string sessionId, client_session session)
+void ReplicManager::notify_sessions(std::unordered_map<std::string, client_session> sessions)
 {
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
-        send_session(*it, sessionId, session);
+        for (auto it2 = sessions.begin(); it2 != sessions.end(); it2++)
+        {
+            send_session(*it, it2->first, it2->second);
+        }
     }
 }
 
@@ -768,7 +817,7 @@ void ReplicManager::new_backup_service()
         if ((connection_socket = accept(server_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1)
             continue;
 
-        std::thread backup_server_thread = std::thread(config_new_backup_server, connection_socket, cli_addr);
+        std::thread backup_server_thread = std::thread(&ReplicManager::config_new_backup_server, this, connection_socket, cli_addr);
         backup_server_thread.detach();
     }
 
@@ -979,7 +1028,9 @@ void ReplicManager::connect_with_primary_server(std::string backupIp, uint16_t b
 
 void ReplicManager::init_server_as_backup()
 {
-    bool is_backup_server = true;
+    is_primary = false;
+    notify_observers();
+
     std::cout << "CONFIGURING SERVER TO BE BACKUP" << std::endl;
 
     std::string serverIp = get_local_ip();
@@ -989,8 +1040,9 @@ void ReplicManager::init_server_as_backup()
     std::cout << "BACKUP(" << getpid() << ") MY PORT IS: " << serverPort << std::endl;
 
     connect_with_primary_server(serverIp, serverPort);
+    notify_observers_new_backup();
 
-    while (is_backup_server)
+    while (!is_primary)
     {
         struct sockaddr_in serv_addr;
         std::string input;
@@ -1028,7 +1080,7 @@ void ReplicManager::init_server_as_backup()
         {
             std::cout << "BACKUP(" << getpid() << ") WAITING SERVER CONNECTION" << std::endl;
 
-            bool timeout = Scheduler::set_timeout_to_routine([]() 
+            bool timeout = Scheduler::set_timeout_to_routine([&]() 
             {
                 connection_socket = accept(server_socket, (struct sockaddr *)&cli_addr, &clilen);
             }, TIMEOUT_SERVER_MS);
@@ -1042,7 +1094,7 @@ void ReplicManager::init_server_as_backup()
             std::cout << "BACKUP(" << getpid() << ") CONNECTION OK" << std::endl;
             std::cout << "BACKUP(" << getpid() << ") WAITING SERVER SEND A MESSAGE" << std::endl;
 
-            timeout = Scheduler::set_timeout_to_routine([]() {
+            timeout = Scheduler::set_timeout_to_routine([&]() {
                 readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
             }, TIMEOUT_SERVER_MS);
 
@@ -1195,21 +1247,12 @@ void ReplicManager::init_server_as_backup()
         std::cout << "BACKUP(" << getpid() << ") PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
 
         RingLeaderElection leader_election = RingLeaderElection(rm);
-        is_backup_server = !leader_election.start_election_leader(Server(serverIp, serverPort, myPid));
+        is_primary = leader_election.start_election_leader(Server(serverIp, serverPort, myPid));
+        notify_observers();
 
-        if (is_backup_server)
-        {
-            std::cout << "BACKUP(" << getpid() << ") I'M BACKUP AGAIN ;(" << std::endl;
-            std::cout << "BACKUP(" << getpid() << ") I'LL WAIT PRIMARY ADDRESS" << std::endl;
 
-            //receive_primary_addr();
-            //try_receive_multicast_signal();
-            //init_server_as_backup();
-        }
-        else
+        if (is_primary)
         {
-            std::cout << "BACKUP(" << getpid() << ") I'M THE LEADER!!!" << std::endl;
-            std::cout << "BACKUP(" << getpid() << ") I AM PRIMARY :D ! HAHAHAH" << std::endl;
             std::cout << "BACKUP(" << getpid() << ") I'LL SEND MY ADDRESS TO BACKUPS" << std::endl;
             sleep(2);
             notify_primary_addr();
@@ -1228,6 +1271,10 @@ void ReplicManager::init_server_as_backup()
 
             notify_list_backups(rm);
             init_server_as_primary();
+        }
+        else
+        {
+            std::cout << "BACKUP(" << getpid() << ") I'LL WAIT PRIMARY ADDRESS" << std::endl;
         }
     }
 }

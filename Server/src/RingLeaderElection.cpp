@@ -27,7 +27,10 @@ RingLeaderElection::RingLeaderElection(std::vector<Server>* replic_managers)
 //-------------------------------------------------------------------------
 bool RingLeaderElection::start_election_leader(Server starter)
 {
-    std::map<int, std::vector<Server>> servers_mapped_by_pid = get_servers_ordered_by_pid_ascending();
+    if (replic_managers->size() == 0)
+        return true;
+
+    std::map<unsigned int, std::vector<Server>> servers_mapped_by_pid = get_servers_ordered_by_pid_ascending();
     bool is_leader = false;
     bool participant = false;
     int leader_pid = -1;
@@ -118,9 +121,9 @@ void RingLeaderElection::wait_leader_be_elected()
         sleep(1);
 }
 
-std::map<int, std::vector<Server>> RingLeaderElection::get_servers_ordered_by_pid_ascending()
+std::map<unsigned int, std::vector<Server>> RingLeaderElection::get_servers_ordered_by_pid_ascending()
 {
-    std::map<int, std::vector<Server>> servers;
+    std::map<unsigned int, std::vector<Server>> servers;
 
     for (Server server : *replic_managers)
     {

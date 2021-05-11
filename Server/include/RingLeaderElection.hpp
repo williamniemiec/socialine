@@ -18,7 +18,7 @@ private:
     unsigned int candidate_pid;
     bool leader_elected;
     std::vector<Server>* replic_managers;
-    std::map<int, std::vector<Server>>* servers_mapped_by_pid;
+    std::map<unsigned int, std::vector<Server>>* servers_mapped_by_pid;
     socklen_t clilen;
     int server_socket;
     int connection_socket;
@@ -42,7 +42,7 @@ public:
     bool start_election_leader(Server starter);
 private:
     in_addr get_ip_by_address(std::string address);
-    std::map<int, std::vector<Server>> get_servers_ordered_by_pid_ascending();
+    std::map<unsigned int, std::vector<Server>> get_servers_ordered_by_pid_ascending();
     Server get_server_with_pid(int pid);
     void receive_election_leader(Server receiver);
     void send_election_leader(int message_type, unsigned int pid, Server to);
