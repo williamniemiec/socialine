@@ -21,13 +21,18 @@ class ServerNotificationManager : public IObservable
     std::list<IObserver*> observers;
     static std::unordered_map<std::string, std::vector<notification>> pending_notifications;
     static sem_t notifications_semaphore;
-
+    std::string arg0;
+    std::string arg1;
+    std::string arg2;
 
 public:
     ServerNotificationManager( )
     {
         observers = std::list<IObserver*>();
         sem_init(&notifications_semaphore, 1, 1);
+        arg0 = "";
+        arg1 = "";
+        arg2 = "";
     }
 
     //Method used to read all pending notifications for a given username

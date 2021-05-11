@@ -24,9 +24,9 @@ void ProfileSessionManager::detatch(IObserver* observer)
 void ProfileSessionManager::notify_observers()
 {
     std::list<std::string> body;
-    body.push_back(arg0); // username
-    body.push_back(arg1); // owner
-    body.push_back(arg2); // message
+    body.push_back(arg0); 
+    body.push_back(arg1); 
+    body.push_back(arg2); 
     
     for (IObserver* observer : observers)
     {
@@ -46,6 +46,10 @@ std::vector<notification> ServerNotificationManager::read_notifications( std::st
     user_notifications = pending_notifications[username];
     pending_notifications[username].clear( );
 
+    arg0 = "CLOSE";
+    arg1 = username;
+    notify_observers();
+
     sem_post(&notifications_semaphore);
 
     return user_notifications;
@@ -62,6 +66,10 @@ std::unordered_map<std::string, notification> ServerNotificationManager::tweet( 
     current_notification.owner = username;
     //current_notification.timestamp = timestamp;
     current_notification._message = message;
+    arg0 = "NEW";
+    arg1 = username;
+    arg2 = message;
+    notify_observers();
 
     followed_by = ProfileSessionManager::profileSessionManager.read_followed( username );
 
