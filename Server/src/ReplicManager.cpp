@@ -85,20 +85,6 @@ void ReplicManager::notify_observers()
         }).detach();
     }
 }
-/*
-void ReplicManager::notify_observers_new_backup()
-{
-    std::list<std::string> body;
-    body.push_back("NEW BACKUP");
-
-    for (IObserver* observer : observers)
-    {
-        std::thread([=]()
-        {
-            observer->update(this, body);
-        }).detach();
-    }
-}*/
 
 void ReplicManager::update(IObservable* observable, std::list<std::string> data)
 {
@@ -143,8 +129,6 @@ bool ReplicManager::try_receive_multicast_signal()
         perror("Opening datagram socket error");
         exit(1);
     }
-    //else
-    //    printf("Opening datagram socket....OK.\n");
 
     /* Enable SO_REUSEADDR to allow multiple instances of this */
     /* application to receive copies of the multicast datagrams. */
@@ -156,8 +140,6 @@ bool ReplicManager::try_receive_multicast_signal()
             close(connection_socket);
             exit(1);
         }
-        //else
-        //    printf("Setting SO_REUSEADDR...OK.\n");
     }
 
     /* Bind to the proper port number with the IP address */
@@ -1188,6 +1170,7 @@ void ReplicManager::init_server_as_backup()
                 memcpy(&port, &buffer_response[1 + COOKIE_LENGTH + 16], 6);
 
                 std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE SESSION" << std::endl;
+                ServerCommunicationManager::remove_session(std::string(cookie), std::string(ip), std::string(port));
             }
             else if (buffer_response[0] == MSG_LIST_BACKUP)
             {

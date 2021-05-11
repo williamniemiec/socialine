@@ -44,6 +44,7 @@ ServerCommunicationManager::ServerCommunicationManager()
     observers = std::list<IObserver*>();
     replic_manager = new ReplicManager();
     replic_manager->attach(this);
+    observers.push_back(replic_manager);
     isPrimaryServer = false;
 }
 
@@ -59,10 +60,9 @@ void ServerCommunicationManager::detatch(IObserver* observer)
 
 void ServerCommunicationManager::notify_observers()
 {
-    std::cout << "Server comm manager - notify observers" << std::endl;
     for (IObserver* observer : observers)
     {
-        std::thread([&]()
+        std::thread([=]()
         {
             observer->update(this, std::list<std::string>());
         }).detach();
@@ -560,6 +560,9 @@ void ServerCommunicationManager::add_session(std::string cookie, std::string ip,
     new_session.notification_port = port;
     
     client_sessions[cookie] = new_session;
+}
 
-    std::cout << "SIZE: " << client_sessions.size() << std::endl;
+void ServerCommunicationManager::remove_session(std::string cookie, std::string ip, std::string port)
+{
+    client_sessions.erase(cookie);
 }

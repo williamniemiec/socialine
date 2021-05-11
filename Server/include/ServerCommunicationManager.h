@@ -39,6 +39,7 @@ public:
     static void* updateClientsWithNewPrimaryServer(void* arg);
     static std::unordered_map<std::string, client_session> get_sessions();
     static void add_session(std::string cookie, std::string ip, std::string port);
+    static void remove_session(std::string cookie, std::string ip, std::string port);
 
 private:
     static void initialize_replic_manager();
