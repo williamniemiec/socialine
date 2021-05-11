@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <thread>
 #include <ctime>
+#include "../include/ServerNotificationManager.h"
 #include "../include/ProfileSessionManager.h"
 #include "../include/ServerCommunicationManager.h"
 #include "../include/ReplicManager.hpp"
@@ -36,6 +37,7 @@
 #define MSG_PROFILE_FOLLOW 10
 #define MSG_CLOSE_PROFILE_SESSION 11
 #define MSG_NEW_PROFILE_SESSION 12
+#define MSG_CLOSE_PENDING_NOTIFICATION 13
 #define TIMEOUT_SERVER_MS 6000
 #define TIMEOUT_RECEIVE_ELECTION_MS 3500
 #define HEARTBEAT_MS 3000
@@ -99,6 +101,23 @@ void ReplicManager::update(IObservable* observable, std::list<std::string> data)
         else if (data.front() == "FOLLOW")
         {
             notify_new_follow(*(data.begin()++), *((data.begin()++)++));
+        }
+    }
+    else if (dynamic_cast<ServerNotificationManager*>(observable) != nullptr)
+    {
+        ServerNotificationManager* notification_manager = dynamic_cast<ServerNotificationManager*>(observable);
+
+        if (data.front() == "NEW")
+        {
+            notification n;
+            n.owner = *((data.begin()++)++);
+            n.timestamp = 0;
+            n._message = *(((data.begin()++)++)++);
+            notify_pending_notification(*(data.begin()++), n);
+        }
+        else if (data.front() == "CLOSE")
+        {
+            notify_close_pending_notification(*(data.begin()++));
         }
     }
 }
@@ -833,6 +852,14 @@ void ReplicManager::notify_pending_notification(std::string followed, notificati
     }
 }
 
+void ReplicManager::notify_close_pending_notification(std::string username)
+{
+    for (auto it = rm->begin(); it != rm->end(); it++)
+    {
+        send_close_pending_notification(*it, username);
+    }
+}
+
 void ReplicManager::send_pending_notification(Server server, std::string followed, notification current_notification)
 {
     int sockfd, n;
@@ -880,6 +907,52 @@ void ReplicManager::send_pending_notification(Server server, std::string followe
 
     if (n < 0)
         Logger.write_error("Failed to write to socket");
+}
+
+void ReplicManager::send_close_pending_notification(Server server, std::string username)
+{
+    int sockfd, n;
+    struct sockaddr_in backup_server_addr;
+
+    backup_server_addr.sin_family = AF_INET;
+    backup_server_addr.sin_port = htons(server.get_port());
+    backup_server_addr.sin_addr = get_ip_by_address(server.get_ip());
+    bzero(&(backup_server_addr.sin_zero), 8);
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        Logger.write_error("ERROR: Opening socket");
+        return;
+    }
+
+    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    {
+        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        return;
+    }
+
+    std::cout << "PRIMARY IS SENDING CLOSE PENDING NOTIFICATION TO BACKUP " << server.get_signature() << std::endl;
+    char *message = new char[MAX_MAIL_SIZE];
+
+    message[0] = MSG_CLOSE_PENDING_NOTIFICATION;
+
+    memcpy(&message[1], username.c_str(), MAX_DATA_SIZE);
+
+    n = write(sockfd, message, MAX_MAIL_SIZE);
+
+    if (n < 0)
+        Logger.write_error("Failed to write to socket");
+}
+
+void ReplicManager::send_all_pending_notifications(Server target, std::unordered_map<std::string, std::vector<notification>> notifications)
+{
+    for (auto it = notifications.begin(); it != notifications.end(); it++)
+    {
+        for (auto it2 = (it->second).begin(); it2 != (it->second).end(); it2++)
+        {
+            send_pending_notification(target, it->first, *it2);
+        }
+    }
 }
 
 void ReplicManager::send_all_sessions(Server target, std::unordered_map<std::string, client_session> sessions)
@@ -952,6 +1025,10 @@ void ReplicManager::add_new_backup_server(std::string ip, uint16_t port, int pid
 
     std::cout << "SENDING PROFILE FOLLOWS..." << std::endl;
     send_all_followers(backup_server, ProfileSessionManager::get_followers());
+    std::cout << "DONE!" << std::endl;
+
+    std::cout << "SENDING PENDING NOTIFICATIONS..." << std::endl;
+    send_all_pending_notifications(backup_server, ServerNotificationManager::get_pending_notifications());
     std::cout << "DONE!" << std::endl;
 }
 
@@ -1347,7 +1424,16 @@ void ReplicManager::init_server_as_backup()
 
                 std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: NEW PENDING NOTIFICATION" << std::endl;
 
-                // TODO: store new pending notification at server notification manager
+                ServerNotificationManager::add_pending_notification(std::string(followed), n);
+            }
+            else if (buffer_response[0] == MSG_CLOSE_PENDING_NOTIFICATION)
+            {
+                char username[MAX_DATA_SIZE];
+
+                memcpy(&username, &buffer_response[1], MAX_DATA_SIZE);
+                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE PENDING NOTIFICATION" << std::endl;
+
+                ServerNotificationManager::remove_pending_notification(std::string(username));
             }
             else if (buffer_response[0] == MSG_FOLLOW)
             {

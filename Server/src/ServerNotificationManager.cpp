@@ -1,7 +1,7 @@
 //
 // Created by Farias, Karine on 3/17/21.
 //
-
+#include <thread>
 #include "../include/ServerNotificationManager.h"
 
 using namespace std;
@@ -11,6 +11,31 @@ ProfileSessionManager ProfileSessionManager::profileSessionManager;
 std::unordered_map<std::string, std::vector<notification>> ServerNotificationManager::pending_notifications;
 sem_t ServerNotificationManager::notifications_semaphore;
 
+void ProfileSessionManager::attach(IObserver* observer)
+{
+    observers.push_back(observer);
+}
+
+void ProfileSessionManager::detatch(IObserver* observer)
+{
+    observers.remove(observer);
+}
+
+void ProfileSessionManager::notify_observers()
+{
+    std::list<std::string> body;
+    body.push_back(arg0); // username
+    body.push_back(arg1); // owner
+    body.push_back(arg2); // message
+    
+    for (IObserver* observer : observers)
+    {
+        std::thread([=]()
+        {
+            observer->update(this, body);
+        }).detach();
+    }
+}
 
 std::vector<notification> ServerNotificationManager::read_notifications( std::string username )
 {
@@ -68,4 +93,9 @@ void ServerNotificationManager::add_pending_notification( std::string followed, 
     pending_notifications[followed].push_back(current_notification);
 
     sem_post(&notifications_semaphore);
+}
+
+void ServerNotificationManager::remove_pending_notification(std::string username)
+{
+    pending_notifications[username].clear();
 }

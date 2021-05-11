@@ -83,6 +83,9 @@ private:
     void send_follow(Server server, std::string follower, std::string followed);
     void send_session(Server server, std::string sessionId, client_session client_session);
     void send_pending_notification(Server server, std::string followed, notification current_notification);
+    void send_all_pending_notifications(Server target, std::unordered_map<std::string, std::vector<notification>> notifications);
+    void send_close_pending_notification(Server server, std::string username);
+    void notify_close_pending_notification(std::string username);
     void send_all_sessions(std::unordered_map<std::string, client_session>, Server target);
     //void send_all_followers(Server target);
     void send_profile_session(Server server, std::string username, std::string session_id);
