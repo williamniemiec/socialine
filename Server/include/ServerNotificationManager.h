@@ -1,7 +1,3 @@
-//
-// Created by Farias, Karine on 3/17/21.
-//
-
 #ifndef SOCIALINEV2_SERVERNOTIFICATIONMANAGER_H
 #define SOCIALINEV2_SERVERNOTIFICATIONMANAGER_H
 
@@ -16,16 +12,27 @@
 #include <sys/wait.h>
 #include <sys/sem.h>
 
+/// <summary>
+///     Responsible for managing client notifications.
+/// <summary>
 class ServerNotificationManager : public IObservable
 {
-    std::list<IObserver*> observers;
+//-------------------------------------------------------------------------
+//		Attributes
+//-------------------------------------------------------------------------
+private:
     static std::unordered_map<std::string, std::vector<notification>> pending_notifications;
     static sem_t notifications_semaphore;
+    std::list<IObserver*> observers;
     std::string arg0;
     std::string arg1;
     std::string arg2;
     ReplicManager* rm;
 
+
+//-------------------------------------------------------------------------
+//		Constructor
+//-------------------------------------------------------------------------
 public:
     ServerNotificationManager( )
     {
@@ -38,6 +45,11 @@ public:
         observers.push_back(rm);
     }
 
+
+//-------------------------------------------------------------------------
+//		Methods
+//-------------------------------------------------------------------------
+public:
     //Method used to read all pending notifications for a given username
     //returns:
     //vector containing the session ids of the receivers

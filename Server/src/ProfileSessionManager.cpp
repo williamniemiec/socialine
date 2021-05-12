@@ -1,17 +1,20 @@
-//
-// Created by Farias, Karine on 3/17/21.
-//
 #include <thread>
 #include "../include/ProfileSessionManager.h"
-
 
 using namespace std;
 using namespace socialine::utils;
 
+//-------------------------------------------------------------------------
+//		Attributes
+//-------------------------------------------------------------------------
 std::unordered_map<std::string, std::vector<std::string>> ProfileSessionManager::sessions_map;
 std::unordered_map<std::string, std::vector<std::string>> ProfileSessionManager::followers_map;
 std::unordered_map<std::string, std::vector<std::string>> ProfileSessionManager::followed_by_map;
 
+
+//-------------------------------------------------------------------------
+//		Methods
+//-------------------------------------------------------------------------
 void ProfileSessionManager::attach(IObserver* observer)
 {
     observers.push_back(observer);
@@ -41,40 +44,27 @@ void ProfileSessionManager::notify_observers()
 int ProfileSessionManager::login( std::string username, std::string session_id)
 {
     int return_code = 0;
-
-    //Logger.write_debug("Welcome to Profile and Session Manager");
-    //Logger.write_debug("I am trying to log you in, " + username);
-
+    
     return_code = open_session(username, session_id);
-
-    //Logger.write_debug("Finishing method login, code: " + std::to_string(return_code));
-
+    
     return return_code;
 }
 
 int ProfileSessionManager::follow( std::string follower, std::string followed )
 {
-
     int return_code = 0;
-
-    //Logger.write_debug("Welcome to Profile and Session Manager");
-    //Logger.write_debug("I am trying to follow this profile: " + followed);
 
     if(follower == followed)
         return ERROR_FOLLOW_YOURSELF;
 
     return_code = write_follower(follower, followed);
 
-    //Logger.write_debug("Finishing method follow, code: " + std::to_string(return_code));
-
     return return_code;
 }
 
 int ProfileSessionManager::logout( std::string username, std::string session_id )
 {
-    //Logger.write_debug("LOGOUT LENG: " + std::to_string(session_id.length()));
     close_session(username, session_id);
-    //Logger.write_debug(std::to_string(session_id.length()));
 
     return 0;
 }
@@ -111,8 +101,6 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
     {
         sessions_map[username].push_back(session_id);
 
-        std::cout << "SESSION ID: " << session_id << "\n";
-
         arg0 = "NEW_SESSION";
         arg1 = username;
         arg2 = session_id;
@@ -137,12 +125,9 @@ int ProfileSessionManager::open_session(std::string username, std::string sessio
 
 void ProfileSessionManager::close_session(std::string username, std::string session_id)
 {
-    //Logger.write_debug("LENG: " + std::to_string(session_id.length()));
     session_id = StringUtils::trim(session_id);
-    //Logger.write_debug(std::to_string(session_id.length()));
 
     sem_wait(&write_session_semaphore);
-    //Logger.write_debug(std::to_string(session_id.length()));
 
     //Logger.write_debug("Active sessions:");
     stringstream activeSessions;
@@ -242,11 +227,11 @@ int ProfileSessionManager::write_follower(std::string follower, std::string foll
     int code = 0;
 
     sem_wait(&write_followers_semaphore);
-/*
-    std::cout << "I am " + follower + " and I follow this accounts:\n";
+
+    Logger.write_debug("I am " + follower + " and I follow this accounts:");
     for (int k = 0; k < followers_map[follower].size() ; ++k)
         std::cout << "\t" + followers_map[follower][k] << std::endl;
-  */  
+   
     //To ensure we only follow someone once
     if(followers_map[follower].size() != 0)
     {
@@ -259,7 +244,6 @@ int ProfileSessionManager::write_follower(std::string follower, std::string foll
 
     if(code == 0)
     {
-        //Logger.write_debug("I am here!!!!");
         followers_map[follower].push_back(followed);
         followed_by_map[followed].push_back(follower);
 
@@ -268,19 +252,18 @@ int ProfileSessionManager::write_follower(std::string follower, std::string foll
         arg2 = followed;
         notify_observers();
     }
-/*
-    std::cout << "I am " + follower + " and I follow this accounts:\n";
+
+    Logger.write_debug("I am " + follower + " and I follow this accounts:");
     for (int k = 0; k < followers_map[follower].size() ; ++k)
         std::cout << "\t" + followers_map[follower][k] << std::endl;
-*/
-    /*std::cout << "SOU " << followed << " SEGUIDO POR: \n";
+
+    Logger.write_debug("I am " + followed + " and I am followd by:");
     for (int k = 0; k < followed_by_map[followed].size() ; ++k)
         std::cout << "\t" + followed_by_map[followed][k] << std::endl;
-    */
+    
     sem_post(&write_followers_semaphore);
 
     return code;
-
 }
 
 std::unordered_map<std::string, std::vector<std::string>> ProfileSessionManager::get_sessions()
@@ -306,23 +289,14 @@ void ProfileSessionManager::add_session(std::string username, std::string sessio
     {
         sessions_map[username].push_back(session_id);
     }
-
-    //std::cout << "Active sessions:\n";
-    //stringstream activeSessions;
-    
-    /*for(int i = 0; i < sessions_map[username].size(); i++ )
-    {
-        std::cout << sessions_map[username][i] << " ";
-
-    }*/
 }
 
 void ProfileSessionManager::add_follower(std::string follower, std::string followed)
 {
-    /*std::cout << "I am " + follower + " and I follow this accounts:\n";
+    Logger.write_debug("I am " + follower + " and I follow this accounts:");
     for (int k = 0; k < followers_map[follower].size() ; ++k)
         std::cout << "\t" + followers_map[follower][k] << std::endl;
-*/
+
     //To ensure we only follow someone once
     if(followers_map[follower].size() != 0)
     {
@@ -335,14 +309,14 @@ void ProfileSessionManager::add_follower(std::string follower, std::string follo
 
     followers_map[follower].push_back(followed);
     followed_by_map[followed].push_back(follower);
-/*
-    std::cout << "I am " + follower + " and I follow this accounts:\n";
+
+    Logger.write_debug("I am " + follower + " and I follow this accounts:");
     for (int k = 0; k < followers_map[follower].size() ; ++k)
         std::cout << "\t" + followers_map[follower][k] << std::endl;
 
-    std::cout << "SOU " << followed << " SEGUIDO POR: \n";
+    Logger.write_debug("I am " + followed + " and I am followd by");
     for (int k = 0; k < followed_by_map[followed].size() ; ++k)
-        std::cout << "\t" + followed_by_map[followed][k] << std::endl;*/
+        std::cout << "\t" + followed_by_map[followed][k] << std::endl;
 }
 
 void ProfileSessionManager::remove_session(std::string username)

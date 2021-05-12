@@ -17,8 +17,14 @@
 
 using namespace socialine::utils;
 
-class FileManager {
-
+/// <summary>
+///     Responsible for managing files.
+/// <summary>
+class FileManager 
+{
+//-------------------------------------------------------------------------
+//		Methods
+//-------------------------------------------------------------------------
 public:
     std::unordered_map<std::string, std::vector<std::string>> read_profiles_file( );
     void write_profiles_file( std::unordered_map<std::string, std::vector<std::string>> final_followers_map  );

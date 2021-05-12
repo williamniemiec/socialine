@@ -2,16 +2,23 @@
 // Created by Farias, Karine on 3/17/21.
 //
 #include <thread>
+#include "../../Utils/Logger.h"
 #include "../include/ServerNotificationManager.h"
 #include "../include/ProfileSessionManager.h"
 
 using namespace std;
 
+//-------------------------------------------------------------------------
+//		Attributes
+//-------------------------------------------------------------------------
 ProfileSessionManager ProfileSessionManager::profileSessionManager;
-
 std::unordered_map<std::string, std::vector<notification>> ServerNotificationManager::pending_notifications;
 sem_t ServerNotificationManager::notifications_semaphore;
 
+
+//-------------------------------------------------------------------------
+//		Methods
+//-------------------------------------------------------------------------
 void ServerNotificationManager::attach(IObserver* observer)
 {
     observers.push_back(observer);
@@ -77,7 +84,7 @@ std::unordered_map<std::string, notification> ServerNotificationManager::tweet( 
     for(int i = 0; i < followed_by.size( ); i++ )
     {
         followed = followed_by[i];
-        std::cout << "SEGUIDO POR: " << followed << std::endl;
+        Logger.write_debug("Followed by: " + followed);
         open_sessions = ProfileSessionManager::profileSessionManager.read_open_sessions(followed);
         if(open_sessions.size( ) == 0)
         {
@@ -87,7 +94,7 @@ std::unordered_map<std::string, notification> ServerNotificationManager::tweet( 
         {
             for(int j = 0; j < open_sessions.size( ); j++ )
             {
-                std::cout << "SESSAO ABERTA: " << open_sessions[j] << std::endl;
+                Logger.write_debug("Open session: " + open_sessions[j]);
                 notifications_to_send[open_sessions[j]] = current_notification;
             }
         }

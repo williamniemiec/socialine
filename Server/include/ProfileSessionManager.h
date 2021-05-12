@@ -18,16 +18,21 @@
 
 using namespace socialine::utils;
 
+/// <summary>
+///     Responsible for managing client sessions.
+/// <summary>
 class ProfileSessionManager : public IObservable
 {
+//-------------------------------------------------------------------------
+//		Attributes
+//-------------------------------------------------------------------------
+private:
     static std::unordered_map<std::string, std::vector<std::string>> sessions_map;
     static std::unordered_map<std::string, std::vector<std::string>> followers_map;
     static std::unordered_map<std::string, std::vector<std::string>> followed_by_map;
-
     sem_t write_session_semaphore;
     sem_t session_readers_mutex;
     int session_readers_count;
-
     sem_t write_followers_semaphore;
     sem_t follower_readers_mutex;
     int followers_readers_count;
@@ -41,6 +46,11 @@ public:
     static ProfileSessionManager profileSessionManager;
     FileManager myFileManager;
 
+
+//-------------------------------------------------------------------------
+//		Constructor
+//-------------------------------------------------------------------------
+public:
     ProfileSessionManager()
     {
         rm = ReplicManager::get_instance();
@@ -58,9 +68,18 @@ public:
         sem_init(&write_followers_semaphore, 1, 1);
         sem_init(&follower_readers_mutex, 1, 1);
         followers_readers_count = 0;
-
     }
-    
+
+
+//-------------------------------------------------------------------------
+//		Methods
+//-------------------------------------------------------------------------
+public:
+    static std::unordered_map<std::string, std::vector<std::string>> get_sessions();
+    static std::unordered_map<std::string, std::vector<std::string>> get_followers();
+    static void add_session(std::string username, std::string session_id);
+    static void add_follower(std::string follower, std::string followed);
+    static void remove_session(std::string username);
     virtual void attach(IObserver* observer);
     virtual void detatch(IObserver* observer);
     virtual void notify_observers();
@@ -70,18 +89,11 @@ public:
     std::vector<std::string> read_followers(std::string username);
     std::vector<std::string> read_followed(std::string username);
     std::vector<std::string> read_open_sessions(std::string username);
-    static std::unordered_map<std::string, std::vector<std::string>> get_sessions();
-    static std::unordered_map<std::string, std::vector<std::string>> get_followers();
-    static void add_session(std::string username, std::string session_id);
-    static void add_follower(std::string follower, std::string followed);
-    static void remove_session(std::string username);
 
 private:
     int open_session(std::string username, std::string session_id);
     void close_session(std::string username, std::string session_id);
     int write_follower(std::string follower, std::string followed);
-
 };
-
 
 #endif //SOCIALINEV2_PROFILESESSIONMANAGER_H

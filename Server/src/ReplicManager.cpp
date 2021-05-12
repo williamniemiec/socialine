@@ -1,11 +1,3 @@
-/*
-    ESSA CLASSE SERÁ REFATORADA MAIS TARDE! 
-    
-    FAVOR NÃO REPARAR NA BAGUNÇA :D
-*/
-
-// TODO: refactor class and methods
-
 #include <unistd.h>
 #include <iostream>
 #include <string.h>
@@ -57,6 +49,7 @@ using namespace socialine::utils;
 //-------------------------------------------------------------------------
 ReplicManager *ReplicManager::instance;
 
+
 //-------------------------------------------------------------------------
 //		Constructor
 //-------------------------------------------------------------------------
@@ -68,6 +61,7 @@ ReplicManager::ReplicManager()
     multicastIp = "226.1.1.1";
     myPid = getpid();
 }
+
 
 //-------------------------------------------------------------------------
 //		Methods

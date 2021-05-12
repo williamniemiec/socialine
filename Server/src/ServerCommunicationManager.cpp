@@ -113,7 +113,7 @@ void ServerCommunicationManager::start()
         serv_addr.sin_port = htons(SERVER_PORTS[i]);
         if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) >= 0)
         {
-            Logger.write_error("Successfully bound to PORT " + std::to_string(SERVER_PORTS[i]));
+            Logger.write_info("Successfully bound to PORT " + std::to_string(SERVER_PORTS[i]));
             SELECTED_SERVER_PORT = SERVER_PORTS[i];
             break;
         }
@@ -507,7 +507,7 @@ void *ServerCommunicationManager::updateClientsWithNewPrimaryServer(void *arg)
         bzero(&(receiver_addr.sin_zero), 8);
 
         connect(sockfd, (struct sockaddr *)&receiver_addr, sizeof(receiver_addr));
-        
+
         char *bufferPayload = (char *)calloc(MAX_DATA_SIZE, sizeof(char));
         packet packet_sent = {0, 0, 0, 0, session_id, bufferPayload};
 

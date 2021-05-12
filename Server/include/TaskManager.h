@@ -1,7 +1,3 @@
-//
-// Created by Farias, Karine on 3/25/21.
-//
-
 #ifndef SOCIALINE_TASKMANAGER_H
 #define SOCIALINE_TASKMANAGER_H
 
@@ -13,15 +9,16 @@
 #include <iostream>
 #include <sstream>
 
-class TaskManager {
-
+/// <summary>
+///     Responsible for parsing commands.
+/// </summary>
+class TaskManager 
+{
+//-------------------------------------------------------------------------
+//		Methods
+//-------------------------------------------------------------------------
 public:
-    int run_command(int type, std::string payload, std::string session_id );
-/*
-private:
-    std::vector<std::string> parse_command( std::string payload );*/
-
+    int run_command(int type, std::string payload, std::string session_id);
 };
-
 
 #endif //SOCIALINE_TASKMANAGER_H
