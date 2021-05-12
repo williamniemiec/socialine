@@ -54,13 +54,14 @@ public:
     virtual void detatch(IObserver* observer);
     virtual void notify_observers();
     virtual void update(IObservable* observable, std::list<std::string> data);
+    
+private:
     void notify_pending_notification(std::string followed, notification current_notification);
     void send_all_sessions(Server target, std::unordered_map<std::string, client_session> sessions);
     void send_all_followers(Server target, std::unordered_map<std::string, std::vector<std::string>> followers);
     void send_all_profile_sessions(Server target, std::unordered_map<std::string, std::vector<std::string>> sessions);
     void notify_list_backups(std::vector<Server>* backups);
     void notify_primary_addr();
-private:
     void notify_new_follow(std::string follower, std::string followed);
     void notify_new_session(std::string sessionId, client_session client_session);
     void notify_new_profile_session(std::string username, std::string sessionId);
@@ -89,8 +90,8 @@ private:
     void send_close_pending_notification(Server server, std::string username);
     void notify_close_pending_notification(std::string username);
     void send_all_sessions(std::unordered_map<std::string, client_session>, Server target);
-    //void send_all_followers(Server target);
     void send_profile_session(Server server, std::string username, std::string session_id);
     void send_profile_follow(Server server, std::string username, std::string followed);
     void send_all_pending_notifications(Server target);
+    std::string build_backup_message(std::string message);
 };

@@ -41,6 +41,7 @@
 #define TIMEOUT_SERVER_MS 6000
 #define TIMEOUT_RECEIVE_ELECTION_MS 3500
 #define HEARTBEAT_MS 3000
+#define MULTICAST_MS 3000
 #define MAX_WAITING_BACKUPS 5
 #define PORT_MULTICAST 4001
 #define PORT_HEARTBEAT 4002
@@ -54,26 +55,24 @@ using namespace socialine::utils;
 //-------------------------------------------------------------------------
 //		Attributes
 //-------------------------------------------------------------------------
-ReplicManager* ReplicManager::instance;
-
+ReplicManager *ReplicManager::instance;
 
 //-------------------------------------------------------------------------
 //		Constructor
 //-------------------------------------------------------------------------
 ReplicManager::ReplicManager()
 {
-    observers = std::list<IObserver*>();
+    observers = std::list<IObserver *>();
     rm = new std::vector<Server>();
     clilen = sizeof(struct sockaddr_in);
     multicastIp = "226.1.1.1";
     myPid = getpid();
 }
 
-
 //-------------------------------------------------------------------------
 //		Methods
 //-------------------------------------------------------------------------
-ReplicManager* ReplicManager::get_instance()
+ReplicManager *ReplicManager::get_instance()
 {
     if (instance == nullptr)
         instance = new ReplicManager();
@@ -81,13 +80,13 @@ ReplicManager* ReplicManager::get_instance()
     return instance;
 }
 
-void ReplicManager::update(IObservable* observable, std::list<std::string> data)
+void ReplicManager::update(IObservable *observable, std::list<std::string> data)
 {
     std::list<std::string>::iterator it = data.begin();
 
-    if (dynamic_cast<ServerCommunicationManager*>(observable) != nullptr)
+    if (dynamic_cast<ServerCommunicationManager *>(observable) != nullptr)
     {
-        ServerCommunicationManager* server_communication_manager = dynamic_cast<ServerCommunicationManager*>(observable);
+        ServerCommunicationManager *server_communication_manager = dynamic_cast<ServerCommunicationManager *>(observable);
 
         if (data.front() == "NEW_SESSION")
         {
@@ -107,16 +106,16 @@ void ReplicManager::update(IObservable* observable, std::list<std::string> data)
         else if (data.front() == "CLOSE_SESSION")
         {
             std::string session_id;
-            
+
             std::advance(it, 1);
             session_id = *it;
 
             notify_close_session(session_id);
         }
     }
-    else if (dynamic_cast<ProfileSessionManager*>(observable) != nullptr)
+    else if (dynamic_cast<ProfileSessionManager *>(observable) != nullptr)
     {
-        ProfileSessionManager* session_manager = dynamic_cast<ProfileSessionManager*>(observable);
+        ProfileSessionManager *session_manager = dynamic_cast<ProfileSessionManager *>(observable);
 
         if (data.front() == "NEW_SESSION")
         {
@@ -128,8 +127,6 @@ void ReplicManager::update(IObservable* observable, std::list<std::string> data)
 
             std::advance(it, 1);
             session_id = *it;
-
-            std::cout << "SESSION_ID_NEW_REPLIC_MANAGER: " << session_id << std::endl;
 
             notify_new_profile_session(username, session_id);
         }
@@ -152,13 +149,14 @@ void ReplicManager::update(IObservable* observable, std::list<std::string> data)
 
             std::advance(it, 1);
             followed = *it;
-            
+
             notify_new_follow(follower, followed);
         }
     }
-    else if (dynamic_cast<ServerNotificationManager*>(observable) != nullptr)
+    else if (dynamic_cast<ServerNotificationManager *>(observable) != nullptr)
     {
-        /*ServerNotificationManager* notification_manager = dynamic_cast<ServerNotificationManager*>(observable);
+        /*
+        ServerNotificationManager* notification_manager = dynamic_cast<ServerNotificationManager*>(observable);
 
         if (data.front() == "NEW")
         {
@@ -171,16 +169,17 @@ void ReplicManager::update(IObservable* observable, std::list<std::string> data)
         else if (data.front() == "CLOSE")
         {
             notify_close_pending_notification(*(data.begin()++));
-        }*/
+        }
+        */
     }
 }
 
-void ReplicManager::attach(IObserver* observer)
+void ReplicManager::attach(IObserver *observer)
 {
     observers.push_back(observer);
 }
 
-void ReplicManager::detatch(IObserver* observer)
+void ReplicManager::detatch(IObserver *observer)
 {
     observers.remove(observer);
 }
@@ -188,12 +187,12 @@ void ReplicManager::detatch(IObserver* observer)
 void ReplicManager::notify_observers()
 {
     std::list<std::string> body;
+
     body.push_back(is_primary ? "PRIMARY" : "BACKUP");
-    
-    for (IObserver* observer : observers)
+
+    for (IObserver *observer : observers)
     {
-        std::thread([=]()
-        {
+        std::thread([=]() {
             observer->update(this, body);
         }).detach();
     }
@@ -205,16 +204,15 @@ void ReplicManager::run()
 
     if (hasPrimaryActive)
     {
-        std::cout << "THERE IS AN ACTIVE PRIMARY!" << std::endl;
+        Logger.write_info("There is an active primary!");
         init_server_as_backup();
     }
     else
     {
-        std::cout << "THERE IS NO ACTIVE PRIMARY!" << std::endl;
+        Logger.write_info("There is no active primary!");
         init_server_as_primary();
     }
 }
-
 
 //
 //      PRIMARY OR BACKUP SERVER
@@ -225,77 +223,64 @@ bool ReplicManager::try_receive_multicast_signal()
     struct sockaddr_in localSock;
     struct ip_mreq group;
 
-    /* Create a datagram socket on which to receive. */
     connection_socket = socket(AF_INET, SOCK_DGRAM, 0);
 
     if (connection_socket < 0)
     {
-        perror("Opening datagram socket error");
+        Logger.write_error("Opening datagram socket error");
         exit(1);
     }
 
-    /* Enable SO_REUSEADDR to allow multiple instances of this */
-    /* application to receive copies of the multicast datagrams. */
+    // Enable SO_REUSEADDR to allow multiple instances of this
+    // application to receive copies of the multicast datagrams.
+    int reuse = 1;
+    if (setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse, sizeof(reuse)) < 0)
     {
-        int reuse = 1;
-        if (setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse, sizeof(reuse)) < 0)
-        {
-            perror("Setting SO_REUSEADDR error");
-            close(connection_socket);
-            exit(1);
-        }
-    }
-
-    /* Bind to the proper port number with the IP address */
-    /* specified as INADDR_ANY. */
-    memset((char *)&localSock, 0, sizeof(localSock));
-    localSock.sin_family = AF_INET;
-    localSock.sin_port = htons(PORT_HEARTBEAT);
-    localSock.sin_addr.s_addr = INADDR_ANY;
-    if (bind(connection_socket, (struct sockaddr *)&localSock, sizeof(localSock)))
-    {
-        perror("Binding datagram socket error");
+        Logger.write_error("Setting SO_REUSEADDR error");
         close(connection_socket);
         exit(1);
     }
-    //else
-    //    printf("Binding datagram socket...OK.\n");
-    
-    /* Join the multicast group 226.1.1.1 on the local 203.106.93.94 */
-    /* interface. Note that this IP_ADD_MEMBERSHIP option must be */
-    /* called for each local interface over which the multicast */
-    /* datagrams are to be received. */
+
+    // Bind to the proper port number with the IP address
+    // specified as INADDR_ANY.
+    memset((char *)&localSock, 0, sizeof(localSock));
+
+    localSock.sin_family = AF_INET;
+    localSock.sin_port = htons(PORT_HEARTBEAT);
+    localSock.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(connection_socket, (struct sockaddr *) &localSock, sizeof(localSock)))
+    {
+        Logger.write_error("Binding datagram socket error");
+        close(connection_socket);
+        exit(1);
+    }
+
+    // Join the multicast group 226.1.1.1 on the local ip
     group.imr_multiaddr.s_addr = inet_addr(multicastIp.c_str());
     group.imr_interface.s_addr = inet_addr(get_local_ip().c_str());
     if (setsockopt(connection_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group)) < 0)
     {
-        perror("Adding multicast group error");
+        Logger.write_error("Adding multicast group error");
         close(connection_socket);
         exit(1);
     }
-    //else
-    //    printf("Adding multicast group...OK.\n");
-    /* Read from the socket. */
-    
-    //printf("Reading multicast group...\n");
-    
-    Scheduler::set_timeout_to_routine([&]()
-    {
+
+    Scheduler::set_timeout_to_routine([&]() {
         readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
-    }, 5000);
+    },
+                                      5000);
 
     if (readBytesFromSocket <= 0)
     {
-        perror("Reading datagram message error");
         close(connection_socket);
         return false;
     }
-    
-    //printf("Reading datagram message...OK.\n");
-    //printf("The message from multicast server is: \"%s\"\n", buffer_response);
+
     primaryIp = std::string(buffer_response);
+
     close(connection_socket);
-    
+
     return true;
 }
 
@@ -306,7 +291,7 @@ std::string ReplicManager::get_local_ip()
 
     if (sock == -1)
     {
-        std::cerr << "Could not socket\n";
+        Logger.write_error("Could not socket");
         exit(-1);
     }
 
@@ -318,7 +303,7 @@ std::string ReplicManager::get_local_ip()
     if (connect(sock, reinterpret_cast<sockaddr *>(&loopback), sizeof(loopback)) == -1)
     {
         close(sock);
-        std::cerr << "Could not connect\n";
+        Logger.write_error("Could not connect");
         exit(-1);
     }
 
@@ -326,7 +311,7 @@ std::string ReplicManager::get_local_ip()
     if (getsockname(sock, reinterpret_cast<sockaddr *>(&loopback), &addrlen) == -1)
     {
         close(sock);
-        std::cerr << "Could not getsockname\n";
+        Logger.write_error("Could not getsockname");
         exit(-1);
     }
 
@@ -335,8 +320,7 @@ std::string ReplicManager::get_local_ip()
     char buf[INET_ADDRSTRLEN];
     if (inet_ntop(AF_INET, &loopback.sin_addr, buf, INET_ADDRSTRLEN) == 0x0)
     {
-        std::cerr << "Could not inet_ntop\n";
-        //return 1;
+        Logger.write_error("Could not inet_ntop");
         exit(-1);
     }
 
@@ -354,9 +338,7 @@ bool ReplicManager::is_primary_active()
     server_host = gethostbyaddr(&addr, sizeof(primaryIp), AF_INET);
 
     if (server_host == NULL)
-    {
         return false;
-    }
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         return false;
@@ -366,7 +348,7 @@ bool ReplicManager::is_primary_active()
     server_addr.sin_addr = *((struct in_addr *)server_host->h_addr);
     bzero(&(server_addr.sin_zero), 8);
 
-    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+    if (connect(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
         return false;
 
     close(sockfd);
@@ -374,15 +356,14 @@ bool ReplicManager::is_primary_active()
     return true;
 }
 
-
-
 //
 //      PRIMARY SERVER
 //
 
 void ReplicManager::init_server_as_primary()
 {
-    std::cout << "BECOMING PRIMARY..." << std::endl;
+    Logger.write_info("Becoming primary...");
+    
     primaryIp = get_local_ip();
     is_primary = true;
     notify_observers();
@@ -393,12 +374,11 @@ void ReplicManager::init_server_as_primary()
     std::thread thread_new_backup(&ReplicManager::new_backup_service, this);
     thread_new_backup.detach();
 
-    Scheduler::set_interval([&]() 
-    {
+    Scheduler::set_interval([&]() {
         multicast_signal();
-    }, 3000);
+    }, MULTICAST_MS);
 
-    //std::cout << "DONE" << std::endl;
+    Logger.write_info("Done");
 
     std::thread thread_heartbeat_sender(&ReplicManager::heartbeat_sender, this);
     thread_heartbeat_sender.join();
@@ -411,45 +391,33 @@ void ReplicManager::multicast_signal()
 
     strcpy(buffer_response, get_local_ip().c_str());
 
-
     connection_socket = socket(AF_INET, SOCK_DGRAM, 0);
 
     if (connection_socket < 0)
     {
-        perror("Opening datagram socket error");
+        Logger.write_error("Opening datagram socket error");
         exit(1);
     }
-    //else
-    //    printf("Opening the datagram socket...OK.\n");
 
-    /* Initialize the group sockaddr structure with a */
-    /* group address of 225.1.1.1 and port 5555. */
     memset((char *)&groupSock, 0, sizeof(groupSock));
     groupSock.sin_family = AF_INET;
     groupSock.sin_addr.s_addr = inet_addr(multicastIp.c_str());
     groupSock.sin_port = htons(PORT_HEARTBEAT);
 
-    /* Set local interface for outbound multicast datagrams. */
-    /* The IP address specified must be associated with a local, */
-    /* multicast capable interface. */
+    // Set local interface for outbound multicast datagrams.
     localInterface.s_addr = inet_addr(get_local_ip().c_str());
+    
     if (setsockopt(connection_socket, IPPROTO_IP, IP_MULTICAST_IF, (char *)&localInterface, sizeof(localInterface)) < 0)
     {
-        perror("Setting local interface error");
-        fprintf(stderr, "ERROR: %s\n", strerror(errno));
+        Logger.write_error("Setting local interface error");
+        fprintf(stderr, "%s\n", strerror(errno));
         exit(1);
     }
-    //else
-    //    printf("Setting the local interface...OK\n");
-    
-    /* Send a message to the multicast group specified by the*/
-    /* groupSock sockaddr structure. */
-    if (sendto(connection_socket, buffer_response, MAX_MAIL_SIZE, 0, (struct sockaddr *)&groupSock, sizeof(groupSock)) < 0)
+
+    if (sendto(connection_socket, buffer_response, MAX_MAIL_SIZE, 0, (struct sockaddr *) &groupSock, sizeof(groupSock)) < 0)
     {
-        perror("Sending datagram message error");
+        Logger.write_error("Sending datagram message error");
     }
-    //else
-    //    printf("Sending datagram message...OK\n");
 }
 
 void ReplicManager::heartbeat_sender()
@@ -458,9 +426,8 @@ void ReplicManager::heartbeat_sender()
 
     while (true)
     {
-        if (difftime(std::time(nullptr), start) * 1000 >= (double)HEARTBEAT_MS)
+        if (difftime(std::time(nullptr), start) * 1000 >= (double) HEARTBEAT_MS)
         {
-            // SEND HEARTBEAT TO ALL BACKUPS EACH 5 SECONDS
             for (auto it = rm->begin(); it != rm->end(); it++)
             {
                 int sockfd, n;
@@ -473,23 +440,23 @@ void ReplicManager::heartbeat_sender()
 
                 if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
                 {
-                    Logger.write_error("ERROR: Opening socket");
+                    Logger.write_error("Opening socket");
                     continue;
                 }
 
-                if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+                if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
                 {
-                    //fprintf(stderr, "socket() failed: %s\n", strerror(errno));
-                    std::cout << "BACKUP SERVER OFFLINE - REMOVED FROM BACKUP LIST" << std::endl;
+                    Logger.write_info("Backup server offline - removed from backup list");
                     rm->erase(it);
                     break; // Avoids segmentation fault
                 }
 
-                //std::cout << "PRIMARY IS SENDING HEARTBEAT TO BACKUP " << it->get_signature() << std::endl;
                 char *message = new char[MAX_MAIL_SIZE];
 
                 message[0] = MSG_HEARTBEAT;
+                
                 n = write(sockfd, message, MAX_MAIL_SIZE);
+                
                 if (n < 0)
                     Logger.write_error("Failed to write to socket");
             }
@@ -506,7 +473,7 @@ in_addr ReplicManager::get_ip_by_address(std::string address)
     inet_aton(address.c_str(), &addr);
     server_host = gethostbyaddr(&addr, sizeof(address), AF_INET);
 
-    return *((struct in_addr *)server_host->h_addr);
+    return *((struct in_addr *) server_host->h_addr);
 }
 
 void ReplicManager::heartbeat_receiver()
@@ -517,10 +484,10 @@ void ReplicManager::heartbeat_receiver()
     struct in_addr addr;
     hostent *server_host;
     std::string input;
-    
+
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        std::cout << "erro socket";
+        Logger.write_error("Socket error");
         exit(-1);
     }
 
@@ -542,9 +509,9 @@ void ReplicManager::heartbeat_receiver()
     int option = 1;
     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
-    if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
     {
-        std::cout << "erro bind - backup server";
+        Logger.write_error("Bind error - backup server");
         fprintf(stderr, "socket() failed: %s\n", strerror(errno));
         exit(-1);
     }
@@ -558,7 +525,7 @@ void ReplicManager::heartbeat_receiver()
         int connection_socket;
         struct sockaddr_in cli_addr;
 
-        if ((connection_socket = accept(server_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1)
+        if ((connection_socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen)) == -1)
         {
             close(connection_socket);
         }
@@ -569,7 +536,7 @@ void ReplicManager::heartbeat_receiver()
     close(server_socket);
 }
 
-void ReplicManager::notify_list_backups(std::vector<Server>* backups)
+void ReplicManager::notify_list_backups(std::vector<Server> *backups)
 {
     for (auto it = backups->begin(); it != backups->end(); it++)
     {
@@ -583,17 +550,18 @@ void ReplicManager::notify_list_backups(std::vector<Server>* backups)
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
-            Logger.write_error("ERROR: Opening socket");
+            Logger.write_error("Opening socket");
             continue;
         }
 
-        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
         {
-            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            Logger.write_debug("Backup server offline - it will be skipped");
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING BACKUP LIST TO BACKUP " << it->get_signature() << std::endl;
+        Logger.write_info("Primary is sending MSG_LIST_BACKUP to backup " + it->get_signature());
+        
         char *message = new char[MAX_MAIL_SIZE];
 
         message[0] = MSG_LIST_BACKUP;
@@ -609,7 +577,7 @@ void ReplicManager::notify_list_backups(std::vector<Server>* backups)
             std::string serverIp = it->get_ip();
 
             message[2 + i * 22 + 0] = normalizedPort >> 8; // MSB
-            message[2 + i * 22 + 1] = normalizedPort; // LSB
+            message[2 + i * 22 + 1] = normalizedPort;      // LSB
 
             memcpy(&message[2 + i * 22 + 2], serverIp.c_str(), 16);
 
@@ -660,29 +628,30 @@ void ReplicManager::notify_new_profile_session(std::string username, std::string
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
-            Logger.write_error("ERROR: Opening socket");
+            Logger.write_error("Opening socket");
             continue;
         }
 
-        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
         {
-            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            Logger.write_debug("Backup server offline - it will be skipped");
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING NEW PROFILE SESSION TO BACKUP " << it->get_signature() << std::endl;
+        Logger.write_info("Primary is sending MSG_NEW PROFILE SESSION to backup " + it->get_signature());
+        
         char *message = new char[MAX_MAIL_SIZE];
 
         message[0] = MSG_NEW_PROFILE_SESSION;
 
         memcpy(&message[1], username.c_str(), MAX_DATA_SIZE);
-        memcpy(&message[1+MAX_DATA_SIZE], sessionId.c_str(), MAX_DATA_SIZE);
+        memcpy(&message[1 + MAX_DATA_SIZE], sessionId.c_str(), MAX_DATA_SIZE);
 
         n = write(sockfd, message, MAX_MAIL_SIZE);
 
         if (n < 0)
             Logger.write_error("Failed to write to socket");
-        
+
         close(sockfd);
     }
 }
@@ -701,17 +670,18 @@ void ReplicManager::notify_close_profile_session(std::string username)
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
-            Logger.write_error("ERROR: Opening socket");
+            Logger.write_error("Opening socket");
             continue;
         }
 
-        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
         {
-            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            Logger.write_debug("Backup server offline - it will be skipped");
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING CLOSE PROFILE SESSION TO BACKUP " << it->get_signature() << std::endl;
+        Logger.write_info("Primary is sending MSG_CLOSE_PROFILE_SESSION to backup " + it->get_signature());
+        
         char *message = new char[MAX_MAIL_SIZE];
 
         message[0] = MSG_CLOSE_PROFILE_SESSION;
@@ -722,7 +692,7 @@ void ReplicManager::notify_close_profile_session(std::string username)
 
         if (n < 0)
             Logger.write_error("Failed to write to socket");
-        
+
         close(sockfd);
     }
 }
@@ -741,17 +711,17 @@ void ReplicManager::notify_close_session(std::string sessionId)
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
-            Logger.write_error("ERROR: Opening socket");
+            Logger.write_error("Opening socket");
             continue;
         }
 
-        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
         {
-            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            Logger.write_debug("Backup server offline - it will be skipped");
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING CLOSE SESSION TO BACKUP " << it->get_signature() << std::endl;
+        Logger.write_info("Primary is sending MSG_CLOSE_SESSION to backup " + it->get_signature());
         char *message = new char[MAX_MAIL_SIZE];
 
         message[0] = MSG_CLOSE_SESSION;
@@ -762,7 +732,7 @@ void ReplicManager::notify_close_session(std::string sessionId)
 
         if (n < 0)
             Logger.write_error("Failed to write to socket");
-        
+
         close(sockfd);
     }
 }
@@ -801,17 +771,18 @@ void ReplicManager::send_profile_session(Server server, std::string username, st
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        Logger.write_error("ERROR: Opening socket");
+        Logger.write_error("Opening socket");
         return;
     }
 
-    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
     {
-        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        Logger.write_debug("Backup server offline - it will be skipped");
         return;
     }
 
-    std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP " << server.get_signature() << std::endl;
+    Logger.write_info("Primary is sending MSG_PROFILE_SESSION to backup " + server.get_signature());
+    
     char *message = new char[MAX_MAIL_SIZE];
 
     message[0] = MSG_PROFILE_SESSION;
@@ -837,17 +808,18 @@ void ReplicManager::send_profile_follow(Server server, std::string username, std
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        Logger.write_error("ERROR: Opening socket");
+        Logger.write_error("Opening socket");
         return;
     }
 
-    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
     {
-        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        Logger.write_debug("Backup server offline - it will be skipped");
         return;
     }
 
-    std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP " << server.get_signature() << std::endl;
+    Logger.write_info("Primary is sending MSG_PROFILE_FOLLOW to backup " + server.get_signature());
+    
     char *message = new char[MAX_MAIL_SIZE];
 
     message[0] = MSG_PROFILE_FOLLOW;
@@ -873,17 +845,18 @@ void ReplicManager::send_follow(Server server, std::string follower, std::string
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        Logger.write_error("ERROR: Opening socket");
+        Logger.write_error("Opening socket");
         return;
     }
 
-    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
     {
-        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        Logger.write_debug("Backup server offline - it will be skipped");
         return;
     }
 
-    std::cout << "PRIMARY IS SENDING NEW FOLLOWER TO BACKUP " << server.get_signature() << std::endl;
+    Logger.write_info("Primary is sending MSG_FOLLOW to backup " + server.get_signature());
+    
     char *message = new char[MAX_MAIL_SIZE];
 
     message[0] = MSG_FOLLOW;
@@ -925,17 +898,17 @@ void ReplicManager::send_pending_notification(Server server, std::string followe
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        Logger.write_error("ERROR: Opening socket");
+        Logger.write_error("Opening socket");
         return;
     }
 
-    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
     {
-        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        Logger.write_debug("Backup server offline - it will be skipped");
         return;
     }
 
-    std::cout << "PRIMARY IS SENDING NEW PENDING NOTIFICATION TO BACKUP " << server.get_signature() << std::endl;
+    Logger.write_info("Primary is sending MSG_NEW_PENDING_NOTIFICATION to backup " + server.get_signature());
     char *message = new char[MAX_MAIL_SIZE];
 
     message[0] = MSG_NEW_PENDING_NOTIFICATION;
@@ -974,17 +947,18 @@ void ReplicManager::send_close_pending_notification(Server server, std::string u
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        Logger.write_error("ERROR: Opening socket");
+        Logger.write_error("Opening socket");
         return;
     }
 
-    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
     {
-        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        Logger.write_debug("Backup server offline - it will be skipped");
         return;
     }
 
-    std::cout << "PRIMARY IS SENDING CLOSE PENDING NOTIFICATION TO BACKUP " << server.get_signature() << std::endl;
+    Logger.write_info("Primary is sending MSG_CLOSE_PENDING_NOTIFICATION to backup " + server.get_signature());
+    
     char *message = new char[MAX_MAIL_SIZE];
 
     message[0] = MSG_CLOSE_PENDING_NOTIFICATION;
@@ -1028,22 +1002,19 @@ void ReplicManager::send_session(Server server, std::string sessionId, client_se
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        Logger.write_error("ERROR: Opening socket");
+        Logger.write_error("Opening socket");
         return;
     }
 
-    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
     {
-        std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+        Logger.write_debug("Backup server offline - it will be skipped");
         return;
     }
 
-    std::cout << "PRIMARY IS SENDING COOKIES TO BACKUP " << server.get_signature() << std::endl;
+    Logger.write_info("Primary is sending MSG_NEW_SESSION to backup " + server.get_signature());
+    
     char *message = new char[MAX_MAIL_SIZE];
-
-    std::cout << "IP: " << session.ip << std::endl;
-    std::cout << "PORT: " << session.notification_port << std::endl;
-    std::cout << "ID: " << session.session_id << std::endl;
 
     message[0] = MSG_NEW_SESSION;
 
@@ -1065,46 +1036,44 @@ void ReplicManager::send_session(Server server, std::string sessionId, client_se
 void ReplicManager::add_new_backup_server(std::string ip, uint16_t port, int pid)
 {
     Server backup_server = Server(ip, port, pid);
+    
     rm->push_back(backup_server);
-    std::cout << "NEW BACKUP (" << pid << ") SERVER ADDED: " << ip << ":" << port << std::endl;
+    
+    Logger.write_info("New backup " + std::to_string(pid) + " server added: " + ip + ":" + std::to_string(port));
 
-    std::cout << "SENDING BACKUP LIST FOR EACH BACKUP SERVER..." << std::endl;
+    Logger.write_info("Sending backup list for each backup server...");
     notify_list_backups(rm);
-    //std::cout << "DONE!" << std::endl;
 
-    std::cout << "SENDING SESSIONS FOR EACH BACKUP SERVER..." << std::endl;
+    Logger.write_info("Sending sessions for each backup server...");
     send_all_sessions(backup_server, ServerCommunicationManager::get_sessions());
-    //std::cout << "DONE!" << std::endl;
 
-    std::cout << "SENDING PROFILE SESSIONS..." << std::endl;
+    Logger.write_info("Sending profile sessions...");
     send_all_profile_sessions(backup_server, ProfileSessionManager::get_sessions());
-    //std::cout << "DONE!" << std::endl;
 
-    std::cout << "SENDING PROFILE FOLLOWS..." << std::endl;
+    Logger.write_info("Sending profile follows...");
     send_all_followers(backup_server, ProfileSessionManager::get_followers());
-    //std::cout << "DONE!" << std::endl;
 
-    //std::cout << "SENDING PENDING NOTIFICATIONS..." << std::endl;
-    //send_all_pending_notifications(backup_server, ServerNotificationManager::get_pending_notifications());
-    //std::cout << "DONE!" << std::endl;
+    /*
+    std::cout << "SENDING PENDING NOTIFICATIONS..." << std::endl;
+    send_all_pending_notifications(backup_server, ServerNotificationManager::get_pending_notifications());
+    */
 }
 
 void ReplicManager::config_new_backup_server(int connection_socket, sockaddr_in cli_addr)
 {
     char *message = new char[MAX_MAIL_SIZE];
- 
+
     int n = read(connection_socket, message, MAX_MAIL_SIZE);
     if (n < 0)
         std::cout << "PRIMARY: Failed to write to socket" << std::endl;
     else
     {
         std::vector<std::string> body = StringUtils::split(std::string(message), ";");
-        
+
         add_new_backup_server(
-            body[0], 
+            body[0],
             static_cast<uint16_t>(std::stoi(body[1])),
-            static_cast<uint32_t>(std::stoi(body[2]))
-        );
+            static_cast<uint32_t>(std::stoi(body[2])));
     }
 
     close(connection_socket);
@@ -1121,26 +1090,26 @@ void ReplicManager::new_backup_service()
 
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        std::cout << "erro socket";
+        Logger.write_error("Socket error");
         exit(-1);
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(NEW_BACKUP_PORT); 
+    serv_addr.sin_port = htons(NEW_BACKUP_PORT);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     bzero(&(serv_addr.sin_zero), 8);
 
     int option = 1;
     if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0)
     {
-        std::cout << "erro bind new backup";
+        Logger.write_error("New backup service - bind");
         fprintf(stderr, "socket() failed: %s\n", strerror(errno));
         exit(-1);
     }
 
-    if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
     {
-        std::cout << "FALHA NEW BACKUP SERVICE" << std::endl;
+        Logger.write_error("New backup service - bind");
         fprintf(stderr, "socket() failed: %s\n", strerror(errno));
         exit(-1);
     }
@@ -1151,7 +1120,7 @@ void ReplicManager::new_backup_service()
 
     while (true)
     {
-        if ((connection_socket = accept(server_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1)
+        if ((connection_socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen)) == -1)
             continue;
 
         std::thread backup_server_thread = std::thread(&ReplicManager::config_new_backup_server, this, connection_socket, cli_addr);
@@ -1161,7 +1130,6 @@ void ReplicManager::new_backup_service()
     close(server_socket);
 }
 
-/// Send primary ip and port to all backups
 void ReplicManager::notify_primary_addr()
 {
     struct hostent *server_host;
@@ -1179,7 +1147,6 @@ void ReplicManager::notify_primary_addr()
     for (auto it = rm->begin(); it != rm->end(); it++)
     {
         int sockfd, n;
-
         struct sockaddr_in backup_server_addr;
 
         backup_server_addr.sin_family = AF_INET;
@@ -1189,17 +1156,17 @@ void ReplicManager::notify_primary_addr()
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
-            Logger.write_error("ERROR: Opening socket");
+            Logger.write_error("Opening socket");
             continue;
         }
 
-        if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+        if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
         {
-            std::cout << "BACKUP SERVER OFFLINE - IT WILL BE SKIPPED" << std::endl;
+            Logger.write_debug("Backup server offline - it will be skipped");
             continue;
         }
 
-        std::cout << "PRIMARY IS SENDING ITS ADDRESS TO BACKUP " << it->get_signature() << std::endl;
+        Logger.write_info("Primary is sending MSG_PRIMARY_ADDR to backup " + it->get_signature());
         char *message = new char[MAX_MAIL_SIZE];
 
         uint32_t normalizedPrimaryIp = htonl(addr.s_addr);
@@ -1226,23 +1193,16 @@ void ReplicManager::notify_primary_addr()
 
 void ReplicManager::send_all_sessions(std::unordered_map<std::string, client_session> sessions, Server target)
 {
-    //std::cout << "SEND ALL SESSIONS TO BACKUP " << target.get_signature() << std::endl;
-    
     for (auto it = sessions.begin(); it != sessions.end(); it++)
     {
-        //std::cout << "SESSION: " << it->first << std::endl;
         send_session(target, it->first, it->second);
     }
-
-    //std::cout << "DONE" << std::endl;
 }
-
-
 
 void ReplicManager::send_all_pending_notifications(Server target)
 {
     //std::cout << "SEND ALL PENDING NOTIFICATIONS TO BACKUP " << target.get_signature() << std::endl;
-/*
+    /*
     std::unordered_map<std::string, std::vector<notification>> pendingNotifications = DataManager::get_all_pending_notifications();
 
     for (auto it = pendingNotifications.begin(); it != pendingNotifications.end(); it++)
@@ -1257,8 +1217,6 @@ void ReplicManager::send_all_pending_notifications(Server target)
 */
     //std::cout << "DONE" << std::endl;
 }
-
-
 
 //
 //      BACKUP SERVER
@@ -1283,13 +1241,13 @@ bool ReplicManager::is_port_available(uint16_t port)
 
         bzero(&(serv_addr.sin_zero), 8);
 
-        if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+        if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
             isAvailable = false;
     }
 
     close(server_socket);
     sleep(1);
-    
+
     return isAvailable;
 }
 
@@ -1305,8 +1263,8 @@ uint16_t ReplicManager::get_available_port_in_range(uint16_t start, uint16_t end
         else
             currentPort++;
     }
-    
-    return (currentPort > end) ? -1 :currentPort;
+
+    return (currentPort > end) ? -1 : currentPort;
 }
 
 void ReplicManager::connect_with_primary_server(std::string backupIp, uint16_t backupPort)
@@ -1321,20 +1279,19 @@ void ReplicManager::connect_with_primary_server(std::string backupIp, uint16_t b
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        Logger.write_error("ERROR: Opening socket");
+        Logger.write_error("Opening socket");
         exit(-1);
     }
 
-    if (connect(sockfd, (struct sockaddr *)&backup_server_addr, sizeof(backup_server_addr)) < 0)
+    if (connect(sockfd, (struct sockaddr *) &backup_server_addr, sizeof(backup_server_addr)) < 0)
     {
         fprintf(stderr, "connect failed: %s\n", strerror(errno));
-        std::cout << "CONNECTION WITH PRIMARY SERVER FAILED!" << std::endl;
-        std::cout << "PRIMARY IP: " << primaryIp << std::endl;
+        Logger.write_error("Connection with primary server failed!");
         exit(-1);
     }
 
-    std::cout << "BACKUP IS SENDING ITS ADDRESS TO PRIMARY" << std::endl;
-   
+    Logger.write_info("Backup is sending its address to primary");
+
     std::string body = backupIp + ";" + std::to_string(backupPort) + ";" + std::to_string(myPid);
 
     n = write(sockfd, body.c_str(), MAX_MAIL_SIZE);
@@ -1350,13 +1307,13 @@ void ReplicManager::init_server_as_backup()
     is_primary = false;
     notify_observers();
 
-    std::cout << "CONFIGURING SERVER TO BE BACKUP" << std::endl;
+    Logger.write_info("Configuring server to be backup");
 
     std::string serverIp = get_local_ip();
     uint16_t serverPort = get_available_port_in_range(BACKUP_PORT_START, BACKUP_PORT_END);
 
-    std::cout << "BACKUP(" << getpid() << ") MY IP IS: " << serverIp << std::endl;
-    std::cout << "BACKUP(" << getpid() << ") MY PORT IS: " << serverPort << std::endl;
+    Logger.write_debug(build_backup_message("My ip is " + serverIp));
+    Logger.write_debug(build_backup_message("My port is " + std::to_string(serverPort)));
 
     connect_with_primary_server(serverIp, serverPort);
 
@@ -1368,7 +1325,7 @@ void ReplicManager::init_server_as_backup()
 
         if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
-            std::cout << "erro socket";
+            Logger.write_error("Socket error");
             exit(-1);
         }
 
@@ -1385,9 +1342,9 @@ void ReplicManager::init_server_as_backup()
             exit(-1);
         }
 
-        if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+        if (bind(server_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
         {
-            std::cout << "erro bind - backup server";
+            Logger.write_error("Bind error - backup server");
             fprintf(stderr, "socket() failed: %s\n", strerror(errno));
             exit(-1);
         }
@@ -1396,11 +1353,8 @@ void ReplicManager::init_server_as_backup()
 
         while (true)
         {
-            //std::cout << "BACKUP(" << getpid() << ") WAITING SERVER CONNECTION" << std::endl;
-
-            bool timeout = Scheduler::set_timeout_to_routine([&]() 
-            {
-                connection_socket = accept(server_socket, (struct sockaddr *)&cli_addr, &clilen);
+            bool timeout = Scheduler::set_timeout_to_routine([&]() {
+                connection_socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen);
             }, TIMEOUT_SERVER_MS);
 
             if (timeout)
@@ -1408,9 +1362,6 @@ void ReplicManager::init_server_as_backup()
 
             if (connection_socket == -1)
                 continue;
-
-            //std::cout << "BACKUP(" << getpid() << ") CONNECTION OK" << std::endl;
-            //std::cout << "BACKUP(" << getpid() << ") WAITING SERVER SEND A MESSAGE" << std::endl;
 
             timeout = Scheduler::set_timeout_to_routine([&]() {
                 readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
@@ -1422,16 +1373,14 @@ void ReplicManager::init_server_as_backup()
             if (readBytesFromSocket < 0)
             {
                 fprintf(stderr, "socket() failed: %s\n", strerror(errno));
-                Logger.write_error("ERROR: Reading from socket");
+                Logger.write_error("Reading from socket");
                 close(connection_socket);
                 continue;
             }
 
             if (buffer_response[0] == MSG_HEARTBEAT)
             {
-
             }
-                //std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: HEARTBEAT" << std::endl;
             else if (buffer_response[0] == MSG_NEW_SESSION)
             {
                 char cookie[COOKIE_LENGTH];
@@ -1447,7 +1396,7 @@ void ReplicManager::init_server_as_backup()
                 // NOTIFICATION PORT
                 memcpy(&port, &buffer_response[1 + COOKIE_LENGTH + 16], 6);
 
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: SESSION" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_NEW_SESSION"));
 
                 ServerCommunicationManager::add_session(std::string(cookie), std::string(ip), std::string(port));
             }
@@ -1459,7 +1408,7 @@ void ReplicManager::init_server_as_backup()
                 memcpy(&username, &buffer_response[1], MAX_DATA_SIZE);
                 memcpy(&session_id, &buffer_response[1 + MAX_DATA_SIZE], MAX_DATA_SIZE);
 
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: PROFILE SESSION" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_NEW_PROFILE_SESSION"));
 
                 ProfileSessionManager::add_session(std::string(username), std::string(session_id));
             }
@@ -1472,17 +1421,13 @@ void ReplicManager::init_server_as_backup()
                 memcpy(&followed, &buffer_response[1], MAX_DATA_SIZE);
 
                 timestampNormalized = ntohl(
-                    buffer_response[1 + MAX_DATA_SIZE + 0] << 24 
-                    | buffer_response[1 + MAX_DATA_SIZE + 1] << 16 
-                    | buffer_response[1 + MAX_DATA_SIZE + 2] << 8 
-                    | buffer_response[1 + MAX_DATA_SIZE + 3]
-                );
+                    buffer_response[1 + MAX_DATA_SIZE + 0] << 24 | buffer_response[1 + MAX_DATA_SIZE + 1] << 16 | buffer_response[1 + MAX_DATA_SIZE + 2] << 8 | buffer_response[1 + MAX_DATA_SIZE + 3]);
 
                 memcpy(&n._message, &buffer_response[1 + 2 * MAX_DATA_SIZE + 4], MAX_DATA_SIZE);
 
                 n.timestamp = ntohl(timestampNormalized);
 
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: NEW PENDING NOTIFICATION" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_NEW_PENDING_NOTIFICATION"));
 
                 ServerNotificationManager::add_pending_notification(std::string(followed), n);
             }
@@ -1491,7 +1436,7 @@ void ReplicManager::init_server_as_backup()
                 char username[MAX_DATA_SIZE];
 
                 memcpy(&username, &buffer_response[1], MAX_DATA_SIZE);
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE PENDING NOTIFICATION" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_CLOSE_PENDING_NOTIFICATION"));
 
                 ServerNotificationManager::remove_pending_notification(std::string(username));
             }
@@ -1508,19 +1453,19 @@ void ReplicManager::init_server_as_backup()
             else if (buffer_response[0] == MSG_CLOSE_SESSION)
             {
                 char cookie[MAX_DATA_SIZE];
-        
+
                 memcpy(&cookie, &buffer_response[1], MAX_DATA_SIZE);
 
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE SESSION" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_CLOSE_SESSION"));
                 ServerCommunicationManager::remove_session(std::string(cookie));
             }
             else if (buffer_response[0] == MSG_CLOSE_PROFILE_SESSION)
             {
                 char username[MAX_DATA_SIZE];
-        
+
                 memcpy(&username, &buffer_response[1], MAX_DATA_SIZE);
 
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: CLOSE PROFILE SESSION" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_CLOSE_PROFILE_SESSION"));
                 ProfileSessionManager::remove_session(std::string(username));
             }
             else if (buffer_response[0] == MSG_LIST_BACKUP)
@@ -1532,9 +1477,7 @@ void ReplicManager::init_server_as_backup()
                 {
                     uint16_t backupPort;
                     backupPort = ntohs(
-                        buffer_response[2 + i * 22 + 0] << 8 
-                        | buffer_response[2 + i * 22 + 1]
-                    );
+                        buffer_response[2 + i * 22 + 0] << 8 | buffer_response[2 + i * 22 + 1]);
 
                     if (backupPort != serverPort)
                     {
@@ -1542,11 +1485,7 @@ void ReplicManager::init_server_as_backup()
                         memcpy(&server, &buffer_response[2 + i * 22 + 2], 16);
 
                         uint32_t serverPid = ntohl(
-                            buffer_response[2 + i * 22 + 18 + 0] << 24
-                            | buffer_response[2 + i * 22 + 18 + 1] << 16
-                            | buffer_response[2 + i * 22 + 18 + 2] << 8
-                            | buffer_response[2 + i * 22 + 18 + 3]
-                        );
+                            buffer_response[2 + i * 22 + 18 + 0] << 24 | buffer_response[2 + i * 22 + 18 + 1] << 16 | buffer_response[2 + i * 22 + 18 + 2] << 8 | buffer_response[2 + i * 22 + 18 + 3]);
 
                         rms->push_back(Server(server, backupPort, serverPid));
                     }
@@ -1554,22 +1493,19 @@ void ReplicManager::init_server_as_backup()
 
                 rm = rms;
 
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: BACKUP LIST" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_LIST_BACKUP"));
 
-                for (Server & replic : *rms) {
+                for (Server &replic : *rms)
+                {
                     std::cout << replic.get_signature() << std::endl;
                 }
             }
             else if (buffer_response[0] == MSG_PRIMARY_ADDR)
             {
                 primaryIp = ntohl(
-                    buffer_response[1] << 24 
-                    | buffer_response[2] << 16 
-                    | buffer_response[3] << 8 
-                    | buffer_response[4]
-                );
+                    buffer_response[1] << 24 | buffer_response[2] << 16 | buffer_response[3] << 8 | buffer_response[4]);
 
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: PRIMARY ADDR" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_PRIMARY_ADDR"));
             }
             else if (buffer_response[0] == MSG_PROFILE_SESSION)
             {
@@ -1581,7 +1517,7 @@ void ReplicManager::init_server_as_backup()
 
                 ProfileSessionManager::add_session(std::string(username), std::string(session_id));
 
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: PROFILE SESSION" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_PROFILE_SESSION"));
             }
             else if (buffer_response[0] == MSG_PROFILE_FOLLOW)
             {
@@ -1593,11 +1529,11 @@ void ReplicManager::init_server_as_backup()
 
                 ProfileSessionManager::add_follower(std::string(username), std::string(followed));
 
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: PROFILE SESSION" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: MSG_PROFILE_FOLLOW"));
             }
             else
             {
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: UNKNOWN MESSAGE" << std::endl;
+                Logger.write_info(build_backup_message("Received from primary: UNKNOWN MESSAGE"));
             }
         }
 
@@ -1607,16 +1543,15 @@ void ReplicManager::init_server_as_backup()
         shutdown(server_socket, SHUT_RDWR);
         close(server_socket);
 
-        std::cout << "BACKUP(" << getpid() << ") PRIMARY OFFLINE - I'M STARTING ELECTION LEADER" << std::endl;
+        Logger.write_info(build_backup_message("Primary offline - I'm starting election leader"));;
 
         RingLeaderElection leader_election = RingLeaderElection(rm);
         is_primary = leader_election.start_election_leader(Server(serverIp, serverPort, myPid));
-        std::cout << "DONE" << std::endl;
         notify_observers();
 
         if (is_primary)
         {
-            std::cout << "BACKUP(" << getpid() << ") I'LL SEND MY ADDRESS TO BACKUPS" << std::endl;
+            Logger.write_info(build_backup_message("I'll send my address to backups"));
             sleep(2);
             notify_primary_addr();
 
@@ -1637,7 +1572,12 @@ void ReplicManager::init_server_as_backup()
         }
         else
         {
-            std::cout << "BACKUP(" << getpid() << ") I'LL WAIT PRIMARY ADDRESS" << std::endl;
+            Logger.write_info(build_backup_message("I'll wait primary address"));
         }
     }
+}
+
+std::string ReplicManager::build_backup_message(std::string message)
+{
+    return "BACKUP(" + std::to_string(getpid()) + ") - " + message;
 }

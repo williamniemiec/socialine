@@ -49,4 +49,5 @@ private:
     int get_index_of(Server server);
     void wait_leader_be_elected();
     bool did_neighbor_send_something();
+    std::string build_message(Server server, std::string message);
 };

@@ -320,8 +320,6 @@ void ServerCommunicationManager::sendNotification(std::string receiver_ip, std::
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         Logger.write_debug("[Send Notification] Opening socket");
 
-    Logger.write_debug("[Send Notification] receiver port: " + receiver_port);
-
     receiver_addr.sin_family = AF_INET;
     receiver_addr.sin_port = htons(std::stoi(receiver_port.c_str()));
     receiver_addr.sin_addr = *((struct in_addr *)receiver_host->h_addr);
@@ -503,16 +501,13 @@ void *ServerCommunicationManager::updateClientsWithNewPrimaryServer(void *arg)
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
             Logger.write_debug("[Send Notification] Opening socket");
 
-        Logger.write_debug("[Send Notification] New Primary Server receiver port: " + receiver_port);
-
         receiver_addr.sin_family = AF_INET;
         receiver_addr.sin_port = htons(std::stoi(receiver_port.c_str()));
         receiver_addr.sin_addr = *((struct in_addr *)receiver_host->h_addr);
         bzero(&(receiver_addr.sin_zero), 8);
 
-        if (connect(sockfd, (struct sockaddr *)&receiver_addr, sizeof(receiver_addr)) < 0)
-            Logger.write_debug("[Send Notification] New Primary Server");
-
+        connect(sockfd, (struct sockaddr *)&receiver_addr, sizeof(receiver_addr));
+        
         char *bufferPayload = (char *)calloc(MAX_DATA_SIZE, sizeof(char));
         packet packet_sent = {0, 0, 0, 0, session_id, bufferPayload};
 
