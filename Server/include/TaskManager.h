@@ -5,9 +5,6 @@
 #ifndef SOCIALINE_TASKMANAGER_H
 #define SOCIALINE_TASKMANAGER_H
 
-#include "../include/ProfileSessionManager.h"
-#include "../include/ServerNotificationManager.h"
-#include "../include/ServerCommunicationManager.h"
 #include "../../Utils/Types.h"
 #include "../../Utils/StringUtils.h"
 

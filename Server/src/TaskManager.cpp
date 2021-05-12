@@ -3,6 +3,9 @@
 //
 
 #include "../include/TaskManager.h"
+#include "../include/ProfileSessionManager.h"
+#include "../include/ServerNotificationManager.h"
+#include "../include/ServerCommunicationManager.h"
 
 using namespace std;
 using namespace socialine::utils;
@@ -14,7 +17,7 @@ int TaskManager::run_command(int type, string payload, string session_id )
 {
     int code = 0;
 
-    Logger.write_info("I am running the TASK Manager!!");
+    //Logger.write_info("I am running the TASK Manager!!");
     vector<notification> notifications;
     std::unordered_map<std::string, notification> notifications_map;
     vector<string> arguments;
@@ -24,7 +27,7 @@ int TaskManager::run_command(int type, string payload, string session_id )
     switch(type)
     {
         case CMD_LOGIN:
-            cout << "Hi! This is the task Manager running command LOGIN" << "\n";
+            //cout << "Hi! This is the task Manager running command LOGIN" << "\n";
             code = ProfileSessionManager::profileSessionManager.login(arguments[1], session_id);
             notifications = notification_manager.read_notifications(arguments[1]);
             for(int i = 0; i < notifications.size(); i++ )
@@ -33,13 +36,13 @@ int TaskManager::run_command(int type, string payload, string session_id )
             }
             break;
         case CMD_FOLLOW:
-            cout << "Hi! This is the task Manager running command FOLLOW" << "\n";
-            cout << "Follower: " + arguments[1] + " Followed: " + arguments[2] << "\n";
+            //cout << "Hi! This is the task Manager running command FOLLOW" << "\n";
+            //cout << "Follower: " + arguments[1] + " Followed: " + arguments[2] << "\n";
             code = ProfileSessionManager::profileSessionManager.follow(arguments[1], arguments[2]);
             break;
         case CMD_LOGOUT:
-            cout << "Hi! This is the task Manager running command LOGOUT" << "\n";
-            cout << "session id: " + session_id << "\n";
+            //cout << "Hi! This is the task Manager running command LOGOUT" << "\n";
+            //cout << "session id: " + session_id << "\n";
             ProfileSessionManager::profileSessionManager.logout(arguments[1], session_id);
             break;
         case CMD_TWEET:
@@ -50,8 +53,8 @@ int TaskManager::run_command(int type, string payload, string session_id )
                 comunication_manager.sendNotification( x.first, x.second );
             }
             break;
-        default:
-            cout << "Oops! Something went wrong!" << "\n";
+        //default:
+            //cout << "Oops! Something went wrong!" << "\n";
     }
 
     return code;

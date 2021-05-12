@@ -41,9 +41,8 @@ ReplicManager* ServerCommunicationManager::replic_manager;
 
 ServerCommunicationManager::ServerCommunicationManager()
 {
-    replic_manager = new ReplicManager();
+    replic_manager = ReplicManager::get_instance();
     replic_manager->attach(this);
-    
     observers = std::list<IObserver*>();
     observers.push_back(replic_manager);
     
@@ -171,10 +170,12 @@ void ServerCommunicationManager::start_client_thread(int connection_socket, sock
     char received_packet_buffer[MAX_DATA_SIZE];
     struct __packet received_packet = {0, 0, 0, 0, NO_COOKIE, received_packet_buffer };
     received_packet.Deserialize(buffer);
-    if( Logger.get_log_level() == LEVEL_DEBUG)
-    {
+    //if( Logger.get_log_level() == LEVEL_DEBUG)
+    //{
         received_packet.print(std::string("RECEIVED"));
-    }
+    //}
+
+    received_packet.print("PACOTE");
 
     std::string cookie;
     if(received_packet.cookie == NO_COOKIE)
@@ -463,7 +464,7 @@ void* ServerCommunicationManager::threadListenForBroadcast(void* arg)
         socklen_t len = sizeof(struct sockaddr_in);
         recvfrom(server_socket,recvbuff,recvbufflen,0,(sockaddr *)&cli_addr,&len);
 
-        std::cout << "Received broadcast message" << std::endl;
+        //std::cout << "Received broadcast message" << std::endl;
 
         // precisa ficar nesse while(true), mesmo sem ser o primário, porque a qualquer momento pode se tornar o servidor primário, e aí vai precisar rodar o while
         // (se extrairmos isso pra uma função separada, não precisa ficar gastando recurso. Mas fica como ponto de melhoria).
@@ -476,8 +477,8 @@ void* ServerCommunicationManager::threadListenForBroadcast(void* arg)
             continue;
         }
 
-        std::cout << "Broadcast received request from client " << std::endl;
-        std::cout << "Cli IP and PORT: " << inet_ntoa(cli_addr.sin_addr) << ":" << cli_addr.sin_port << std::endl;
+        //std::cout << "Broadcast received request from client " << std::endl;
+        //std::cout << "Cli IP and PORT: " << inet_ntoa(cli_addr.sin_addr) << ":" << cli_addr.sin_port << std::endl;
 
         std::string send_buffer = std::to_string(PRIMARY_BROADCAST_IAMPRIMARY_RESPONSE) + "\n" + get_local_ip() + "\n" + std::to_string(SELECTED_SERVER_PORT) + "\n";
         int send_buff_len = BROADCAST_MSG_LEN;
@@ -494,7 +495,7 @@ void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
     // pra cada client_session, manda IP e Porta do novo primário.
 
     // for each value in client_sessions
-    std::cout << "Will update clients" << std::endl;
+    //std::cout << "Will update clients" << std::endl;
     //sleep(5);
     // Iterate over an unordered_map using range based for loop
     for (std::pair<std::string, client_session> element : client_sessions) {
@@ -505,7 +506,7 @@ void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
         std::string session_id = session.session_id;
         std::string message = get_local_ip() + "\n" + std::to_string(SELECTED_SERVER_PORT);
 
-        std::cout << "MESSAGE: " << message << std::endl;
+        //std::cout << "MESSAGE: " << message << std::endl;
 
         int sockfd, n;
         struct sockaddr_in receiver_addr;
@@ -518,13 +519,13 @@ void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
         receiver_host = gethostbyaddr(&addr, sizeof(receiver_ip), AF_INET);
 
         if (receiver_host == NULL) {
-            Logger.write_error("[Send Notification] No such client found!\n");
+            Logger.write_error("[Send Notification] No such client found!");
         }
 
         if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-            Logger.write_debug("[Send Notification] Opening socket\n");
+            Logger.write_debug("[Send Notification] Opening socket");
 
-        Logger.write_debug("[Send Notification] New Primary Server receiver port: " + receiver_port +"\n");
+        Logger.write_debug("[Send Notification] New Primary Server receiver port: " + receiver_port);
 
         receiver_addr.sin_family = AF_INET;
         receiver_addr.sin_port = htons(std::stoi(receiver_port.c_str()));
@@ -554,11 +555,11 @@ void* ServerCommunicationManager::updateClientsWithNewPrimaryServer(void* arg) {
 
         close(sockfd);
 
-        std::cout << "Sent new Primary Server: " << get_local_ip() << ":" << std::to_string(SELECTED_SERVER_PORT) << std::endl;
+        //std::cout << "Sent new Primary Server: " << get_local_ip() << ":" << std::to_string(SELECTED_SERVER_PORT) << std::endl;
 
     }
 
-    std::cout << "DONE" << std::endl;
+   // std::cout << "DONE" << std::endl;
 }
 
 std::unordered_map<std::string, client_session> ServerCommunicationManager::get_sessions()

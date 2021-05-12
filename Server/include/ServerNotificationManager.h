@@ -5,7 +5,7 @@
 #ifndef SOCIALINEV2_SERVERNOTIFICATIONMANAGER_H
 #define SOCIALINEV2_SERVERNOTIFICATIONMANAGER_H
 
-#include "../include/ProfileSessionManager.h"
+#include "../include/ReplicManager.hpp"
 #include "../../Utils/Types.h"
 #include "../../Utils/Logger.h"
 #include "../../Utils/IObservable.hpp"
@@ -24,15 +24,18 @@ class ServerNotificationManager : public IObservable
     std::string arg0;
     std::string arg1;
     std::string arg2;
+    ReplicManager* rm;
 
 public:
     ServerNotificationManager( )
     {
+        rm = ReplicManager::get_instance();
         observers = std::list<IObserver*>();
         sem_init(&notifications_semaphore, 1, 1);
         arg0 = "";
         arg1 = "";
         arg2 = "";
+        observers.push_back(rm);
     }
 
     //Method used to read all pending notifications for a given username

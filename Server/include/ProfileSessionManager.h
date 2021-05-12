@@ -14,6 +14,7 @@
 #include "../../Utils/Logger.h"
 #include "../../Utils/Types.h"
 #include "../../Utils/StringUtils.h"
+#include "../include/ReplicManager.hpp"
 
 using namespace socialine::utils;
 
@@ -34,6 +35,7 @@ class ProfileSessionManager : public IObservable
     std::string arg0;
     std::string arg1;
     std::string arg2;
+    ReplicManager* rm;
 
 public:
     static ProfileSessionManager profileSessionManager;
@@ -41,11 +43,13 @@ public:
 
     ProfileSessionManager()
     {
+        rm = ReplicManager::get_instance();
         observers = std::list<IObserver*>();
         arg0 = "";
         arg1 = "";
         arg2 = "";
         followers_map = myFileManager.read_profiles_file();
+        observers.push_back(rm);
 
         sem_init(&write_session_semaphore, 1, 1);
         sem_init(&session_readers_mutex, 1, 1);

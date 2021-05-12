@@ -3,6 +3,7 @@
 //
 #include <thread>
 #include "../include/ServerNotificationManager.h"
+#include "../include/ProfileSessionManager.h"
 
 using namespace std;
 
@@ -11,17 +12,17 @@ ProfileSessionManager ProfileSessionManager::profileSessionManager;
 std::unordered_map<std::string, std::vector<notification>> ServerNotificationManager::pending_notifications;
 sem_t ServerNotificationManager::notifications_semaphore;
 
-void ProfileSessionManager::attach(IObserver* observer)
+void ServerNotificationManager::attach(IObserver* observer)
 {
     observers.push_back(observer);
 }
 
-void ProfileSessionManager::detatch(IObserver* observer)
+void ServerNotificationManager::detatch(IObserver* observer)
 {
     observers.remove(observer);
 }
 
-void ProfileSessionManager::notify_observers()
+void ServerNotificationManager::notify_observers()
 {
     std::list<std::string> body;
     body.push_back(arg0); 
@@ -76,6 +77,7 @@ std::unordered_map<std::string, notification> ServerNotificationManager::tweet( 
     for(int i = 0; i < followed_by.size( ); i++ )
     {
         followed = followed_by[i];
+        std::cout << "SEGUIDO POR: " << followed << std::endl;
         open_sessions = ProfileSessionManager::profileSessionManager.read_open_sessions(followed);
         if(open_sessions.size( ) == 0)
         {
@@ -85,6 +87,7 @@ std::unordered_map<std::string, notification> ServerNotificationManager::tweet( 
         {
             for(int j = 0; j < open_sessions.size( ); j++ )
             {
+                std::cout << "SESSAO ABERTA: " << open_sessions[j] << std::endl;
                 notifications_to_send[open_sessions[j]] = current_notification;
             }
         }
@@ -92,6 +95,11 @@ std::unordered_map<std::string, notification> ServerNotificationManager::tweet( 
 
     return notifications_to_send;
 
+}
+
+std::unordered_map<std::string, std::vector<notification>> ServerNotificationManager::get_pending_notifications()
+{
+    return pending_notifications;
 }
 
 void ServerNotificationManager::add_pending_notification( std::string followed, notification current_notification )

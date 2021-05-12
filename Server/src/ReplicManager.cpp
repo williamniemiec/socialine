@@ -52,6 +52,12 @@ using namespace socialine::util::task;
 using namespace socialine::utils;
 
 //-------------------------------------------------------------------------
+//		Attributes
+//-------------------------------------------------------------------------
+ReplicManager* ReplicManager::instance;
+
+
+//-------------------------------------------------------------------------
 //		Constructor
 //-------------------------------------------------------------------------
 ReplicManager::ReplicManager()
@@ -67,8 +73,18 @@ ReplicManager::ReplicManager()
 //-------------------------------------------------------------------------
 //		Methods
 //-------------------------------------------------------------------------
+ReplicManager* ReplicManager::get_instance()
+{
+    if (instance == nullptr)
+        instance = new ReplicManager();
+
+    return instance;
+}
+
 void ReplicManager::update(IObservable* observable, std::list<std::string> data)
 {
+    std::list<std::string>::iterator it = data.begin();
+
     if (dynamic_cast<ServerCommunicationManager*>(observable) != nullptr)
     {
         ServerCommunicationManager* server_communication_manager = dynamic_cast<ServerCommunicationManager*>(observable);
@@ -76,14 +92,26 @@ void ReplicManager::update(IObservable* observable, std::list<std::string> data)
         if (data.front() == "NEW_SESSION")
         {
             client_session session;
-            session.ip = *((data.begin()++)++);
-            session.notification_port = *(((data.begin()++)++)++);
 
-            notify_new_session(*(data.begin()++), session);
+            std::advance(it, 1);
+            session.session_id = *it;
+
+            std::advance(it, 1);
+            session.ip = *it;
+
+            std::advance(it, 1);
+            session.notification_port = *it;
+
+            notify_new_session(session.session_id, session);
         }
         else if (data.front() == "CLOSE_SESSION")
         {
-            notify_close_session(*(data.begin()++));
+            std::string session_id;
+            
+            std::advance(it, 1);
+            session_id = *it;
+
+            notify_close_session(session_id);
         }
     }
     else if (dynamic_cast<ProfileSessionManager*>(observable) != nullptr)
@@ -92,20 +120,45 @@ void ReplicManager::update(IObservable* observable, std::list<std::string> data)
 
         if (data.front() == "NEW_SESSION")
         {
-            notify_new_profile_session(*(data.begin()++), *((data.begin()++)++));
+            std::string username;
+            std::string session_id;
+
+            std::advance(it, 1);
+            username = *it;
+
+            std::advance(it, 1);
+            session_id = *it;
+
+            std::cout << "SESSION_ID_NEW_REPLIC_MANAGER: " << session_id << std::endl;
+
+            notify_new_profile_session(username, session_id);
         }
         else if (data.front() == "CLOSE_SESSION")
         {
-            notify_close_profile_session(*(data.begin()++));
+            std::string username;
+
+            std::advance(it, 1);
+            username = *it;
+
+            notify_close_profile_session(username);
         }
         else if (data.front() == "FOLLOW")
         {
-            notify_new_follow(*(data.begin()++), *((data.begin()++)++));
+            std::string follower;
+            std::string followed;
+
+            std::advance(it, 1);
+            follower = *it;
+
+            std::advance(it, 1);
+            followed = *it;
+            
+            notify_new_follow(follower, followed);
         }
     }
     else if (dynamic_cast<ServerNotificationManager*>(observable) != nullptr)
     {
-        ServerNotificationManager* notification_manager = dynamic_cast<ServerNotificationManager*>(observable);
+        /*ServerNotificationManager* notification_manager = dynamic_cast<ServerNotificationManager*>(observable);
 
         if (data.front() == "NEW")
         {
@@ -118,7 +171,7 @@ void ReplicManager::update(IObservable* observable, std::list<std::string> data)
         else if (data.front() == "CLOSE")
         {
             notify_close_pending_notification(*(data.begin()++));
-        }
+        }*/
     }
 }
 
@@ -345,7 +398,7 @@ void ReplicManager::init_server_as_primary()
         multicast_signal();
     }, 3000);
 
-    std::cout << "DONE" << std::endl;
+    //std::cout << "DONE" << std::endl;
 
     std::thread thread_heartbeat_sender(&ReplicManager::heartbeat_sender, this);
     thread_heartbeat_sender.join();
@@ -432,7 +485,7 @@ void ReplicManager::heartbeat_sender()
                     break; // Avoids segmentation fault
                 }
 
-                std::cout << "PRIMARY IS SENDING HEARTBEAT TO BACKUP " << it->get_signature() << std::endl;
+                //std::cout << "PRIMARY IS SENDING HEARTBEAT TO BACKUP " << it->get_signature() << std::endl;
                 char *message = new char[MAX_MAIL_SIZE];
 
                 message[0] = MSG_HEARTBEAT;
@@ -623,7 +676,7 @@ void ReplicManager::notify_new_profile_session(std::string username, std::string
         message[0] = MSG_NEW_PROFILE_SESSION;
 
         memcpy(&message[1], username.c_str(), MAX_DATA_SIZE);
-        memcpy(&message[2+MAX_DATA_SIZE], sessionId.c_str(), MAX_DATA_SIZE);
+        memcpy(&message[1+MAX_DATA_SIZE], sessionId.c_str(), MAX_DATA_SIZE);
 
         n = write(sockfd, message, MAX_MAIL_SIZE);
 
@@ -988,6 +1041,10 @@ void ReplicManager::send_session(Server server, std::string sessionId, client_se
     std::cout << "PRIMARY IS SENDING COOKIES TO BACKUP " << server.get_signature() << std::endl;
     char *message = new char[MAX_MAIL_SIZE];
 
+    std::cout << "IP: " << session.ip << std::endl;
+    std::cout << "PORT: " << session.notification_port << std::endl;
+    std::cout << "ID: " << session.session_id << std::endl;
+
     message[0] = MSG_NEW_SESSION;
 
     // COOKIE
@@ -1013,23 +1070,23 @@ void ReplicManager::add_new_backup_server(std::string ip, uint16_t port, int pid
 
     std::cout << "SENDING BACKUP LIST FOR EACH BACKUP SERVER..." << std::endl;
     notify_list_backups(rm);
-    std::cout << "DONE!" << std::endl;
+    //std::cout << "DONE!" << std::endl;
 
     std::cout << "SENDING SESSIONS FOR EACH BACKUP SERVER..." << std::endl;
     send_all_sessions(backup_server, ServerCommunicationManager::get_sessions());
-    std::cout << "DONE!" << std::endl;
+    //std::cout << "DONE!" << std::endl;
 
     std::cout << "SENDING PROFILE SESSIONS..." << std::endl;
     send_all_profile_sessions(backup_server, ProfileSessionManager::get_sessions());
-    std::cout << "DONE!" << std::endl;
+    //std::cout << "DONE!" << std::endl;
 
     std::cout << "SENDING PROFILE FOLLOWS..." << std::endl;
     send_all_followers(backup_server, ProfileSessionManager::get_followers());
-    std::cout << "DONE!" << std::endl;
+    //std::cout << "DONE!" << std::endl;
 
-    std::cout << "SENDING PENDING NOTIFICATIONS..." << std::endl;
-    send_all_pending_notifications(backup_server, ServerNotificationManager::get_pending_notifications());
-    std::cout << "DONE!" << std::endl;
+    //std::cout << "SENDING PENDING NOTIFICATIONS..." << std::endl;
+    //send_all_pending_notifications(backup_server, ServerNotificationManager::get_pending_notifications());
+    //std::cout << "DONE!" << std::endl;
 }
 
 void ReplicManager::config_new_backup_server(int connection_socket, sockaddr_in cli_addr)
@@ -1169,22 +1226,22 @@ void ReplicManager::notify_primary_addr()
 
 void ReplicManager::send_all_sessions(std::unordered_map<std::string, client_session> sessions, Server target)
 {
-    std::cout << "SEND ALL SESSIONS TO BACKUP " << target.get_signature() << std::endl;
+    //std::cout << "SEND ALL SESSIONS TO BACKUP " << target.get_signature() << std::endl;
     
     for (auto it = sessions.begin(); it != sessions.end(); it++)
     {
-        std::cout << "SESSION: " << it->first << std::endl;
+        //std::cout << "SESSION: " << it->first << std::endl;
         send_session(target, it->first, it->second);
     }
 
-    std::cout << "DONE" << std::endl;
+    //std::cout << "DONE" << std::endl;
 }
 
 
 
 void ReplicManager::send_all_pending_notifications(Server target)
 {
-    std::cout << "SEND ALL PENDING NOTIFICATIONS TO BACKUP " << target.get_signature() << std::endl;
+    //std::cout << "SEND ALL PENDING NOTIFICATIONS TO BACKUP " << target.get_signature() << std::endl;
 /*
     std::unordered_map<std::string, std::vector<notification>> pendingNotifications = DataManager::get_all_pending_notifications();
 
@@ -1198,7 +1255,7 @@ void ReplicManager::send_all_pending_notifications(Server target)
         }
     }
 */
-    std::cout << "DONE" << std::endl;
+    //std::cout << "DONE" << std::endl;
 }
 
 
@@ -1339,7 +1396,7 @@ void ReplicManager::init_server_as_backup()
 
         while (true)
         {
-            std::cout << "BACKUP(" << getpid() << ") WAITING SERVER CONNECTION" << std::endl;
+            //std::cout << "BACKUP(" << getpid() << ") WAITING SERVER CONNECTION" << std::endl;
 
             bool timeout = Scheduler::set_timeout_to_routine([&]() 
             {
@@ -1352,8 +1409,8 @@ void ReplicManager::init_server_as_backup()
             if (connection_socket == -1)
                 continue;
 
-            std::cout << "BACKUP(" << getpid() << ") CONNECTION OK" << std::endl;
-            std::cout << "BACKUP(" << getpid() << ") WAITING SERVER SEND A MESSAGE" << std::endl;
+            //std::cout << "BACKUP(" << getpid() << ") CONNECTION OK" << std::endl;
+            //std::cout << "BACKUP(" << getpid() << ") WAITING SERVER SEND A MESSAGE" << std::endl;
 
             timeout = Scheduler::set_timeout_to_routine([&]() {
                 readBytesFromSocket = read(connection_socket, buffer_response, MAX_MAIL_SIZE);
@@ -1371,7 +1428,10 @@ void ReplicManager::init_server_as_backup()
             }
 
             if (buffer_response[0] == MSG_HEARTBEAT)
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: HEARTBEAT" << std::endl;
+            {
+
+            }
+                //std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: HEARTBEAT" << std::endl;
             else if (buffer_response[0] == MSG_NEW_SESSION)
             {
                 char cookie[COOKIE_LENGTH];
@@ -1442,8 +1502,6 @@ void ReplicManager::init_server_as_backup()
 
                 memcpy(&follower, &buffer_response[1], MAX_DATA_SIZE);
                 memcpy(&followed, &buffer_response[1 + MAX_DATA_SIZE], MAX_DATA_SIZE);
-
-                std::cout << "BACKUP(" << getpid() << ") RECEIVED FROM PRIMARY: FOLLOW" << std::endl;
 
                 ProfileSessionManager::add_follower(follower, followed);
             }
@@ -1553,8 +1611,8 @@ void ReplicManager::init_server_as_backup()
 
         RingLeaderElection leader_election = RingLeaderElection(rm);
         is_primary = leader_election.start_election_leader(Server(serverIp, serverPort, myPid));
+        std::cout << "DONE" << std::endl;
         notify_observers();
-
 
         if (is_primary)
         {

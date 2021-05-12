@@ -29,12 +29,13 @@ private:
     std::string primaryIp;
     std::string multicastIp;
     unsigned int myPid;
+    static ReplicManager* instance;
 
 
 //-------------------------------------------------------------------------
 //		Constructor
 //-------------------------------------------------------------------------
-public:
+private:
     ReplicManager();
 
 
@@ -48,6 +49,7 @@ public:
     /// </summary>
     void run();
 
+    static ReplicManager* get_instance();
     virtual void attach(IObserver* observer);
     virtual void detatch(IObserver* observer);
     virtual void notify_observers();
