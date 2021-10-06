@@ -72,7 +72,7 @@ void Frontend::discoverPrimaryServer() {
 
     std::vector<std::string> message = StringUtils::split(recvbuff,"\n");
 
-    primaryServerIP = "127.0.0.1";//inet_ntoa(recv_addr.sin_addr);
+    primaryServerIP = message[1];//"127.0.0.1";//inet_ntoa(recv_addr.sin_addr);
     primaryServerPort = stoi(message[2]); //htons(recv_addr.sin_port);
 
     std::cout << "Primary Server IP and PORT: " << primaryServerIP << ":" << primaryServerPort << std::endl;

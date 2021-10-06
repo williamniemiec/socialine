@@ -10,12 +10,7 @@ int ClientCommunicationManager::notification_socket;
 socklen_t ClientCommunicationManager::clilen;
 models::manager::ClientNotificationManager* ClientCommunicationManager::notificationManager;
 
-int ClientCommunicationManager::establish_connection(std::string username, std::string server , std::string door ) {
-
-    if (server.empty() || door.empty()) {
-        printf("[WARNING]: server and door are ignored");
-    }
-
+int ClientCommunicationManager::establish_connection(std::string username) {
     Frontend::discoverPrimaryServer();
 
     ClientCommunicationManager::username = username;
@@ -42,7 +37,7 @@ int ClientCommunicationManager::sendPacket(struct __packet *packet) {
     server_host = gethostbyaddr(&addr, sizeof(Frontend::primaryServerIP), AF_INET);
 
     if (server_host == NULL) {
-        std::cout << "No such host: " << h_errno << std::endl;
+        std::cout << "No such host(" << Frontend::primaryServerIP << "): " << h_errno << std::endl;
         fprintf(stderr, "ERROR: %s\n", strerror(errno));
         fprintf(stderr, "ERROR: %s\n", strerror(h_errno));
         exit(0);

@@ -25,9 +25,9 @@ bool is_debug_mode(int argc, char* argv[]);
 int main(int argc, char* argv[])
 {
     //ToDo: better way to validate inputs
-    if(argc < 5)
+    if(argc < 2)
     {
-        Logger.write_error("Please, inform all parameters in the following order: user, server, port, debug");
+        Logger.write_error("Please, inform all parameters in the following order: user, debug");
         return -1;
     }
     try {
@@ -55,8 +55,8 @@ int main(int argc, char* argv[])
 //-------------------------------------------------------------------------
 bool is_debug_mode(int argc, char* argv[])
 {
-    return (argc > 4)
-            && StringUtils::to_upper(std::string (argv[4])) == "TRUE";
+    return (argc > 1)
+            && StringUtils::to_upper(std::string (argv[2])) == "TRUE";
 }
 
 void run_gui(int argc, char* argv[])

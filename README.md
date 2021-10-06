@@ -14,14 +14,7 @@
 ```
 cd Client
 make
-make run user=@<username> server=<ip> port=<port>
-```
-
-#### Client - debug mode
-```
-cd Client
-make
-make run user=@<username> server=<ip> port=<port> debug=true
+make run user=@<username> debug=<true_to_cli_false_to_gui>
 ```
 
 #### Server

@@ -29,7 +29,7 @@ class ClientCommunicationManager {
     static models::manager::ClientNotificationManager* notificationManager;
 
 public:
-    int establish_connection(std::string username, std::string server , std::string door );
+    int establish_connection(std::string username);
     int follow(std::string followed);
     int tweet(std::string message);
     int logout();

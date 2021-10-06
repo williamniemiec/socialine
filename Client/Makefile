@@ -44,7 +44,7 @@ HEADER	= ../Utils/Types.h\
 
 OUT	= app_cliente.out
 CC	 = g++ 
-FLAGS	 = -g -c `wx-config --cflags` -Winvalid-pch -include include/wx_pch.h
+FLAGS	 = -g -c -w `wx-config --cflags` -include include/wx_pch.h
 LFLAGS	 =`wx-config --libs`
 
 all: $(OBJS)
@@ -108,7 +108,7 @@ User.o: src/models/User.cpp
 	$(CC) $(FLAGS) src/models/User.cpp -std=c++17
 
 clean:
-	rm -f $(OBJS) $(OUT)
+	rm -f $(OBJS) $(OUT) *.o
 
 wx-mac:
 	brew install cdalvaro/tap/wxmac
@@ -119,4 +119,4 @@ wx-ubuntu:
 	sudo apt-get install libwxbase3.0-dev libwxgtk3.0-gtk3-dev
 
 run: $(OUT)
-	./$(OUT) $(user) $(server) $(port) $(debug)
+	./$(OUT) $(user) $(debug)

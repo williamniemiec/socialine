@@ -14,14 +14,12 @@ CommandBuilder::CommandBuilder()
 //-------------------------------------------------------------------------
 //      Methods
 //-------------------------------------------------------------------------
-app_command CommandBuilder::build_login_command(std::string username, std::string server, std::string port)
+app_command CommandBuilder::build_login_command(std::string username)
 {
     app_command command;
 
     command.type = CMD_LOGIN;
     command.arguments.push_back(username);
-    command.arguments.push_back(server);
-    command.arguments.push_back(port);
 
     return command;
 }

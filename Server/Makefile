@@ -30,7 +30,7 @@ HEADER	= ../Utils/Types.h\
 		include/ServerCommunicationManager.h
 OUT	= app_server.out
 CC	 = g++
-FLAGS	 = -g -c -Wno-deprecated-declarations
+FLAGS	 = -g -c -w
 LFLAGS	 = -pthread
 
 all: $(OBJS)
@@ -73,7 +73,7 @@ RingLeaderElection.o: src/RingLeaderElection.cpp
 	$(CC) $(FLAGS) src/RingLeaderElection.cpp -std=c++17
 
 clean:
-	rm -f $(OBJS) $(OUT)
+	rm -f $(OBJS) $(OUT) *.o
 
 run: $(OUT)
 	./$(OUT) $(mode)

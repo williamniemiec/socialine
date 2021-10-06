@@ -39,9 +39,7 @@ void CLIAuthenticator::do_login()
     ClientCommunicationManager communicationModule;
 
     authResponseCode = communicationModule.establish_connection(
-            loginCommand.arguments[0],
-            loginCommand.arguments[1],
-            loginCommand.arguments[2]
+            loginCommand.arguments[0]
     );
 
     this->username = loginCommand.arguments[0];

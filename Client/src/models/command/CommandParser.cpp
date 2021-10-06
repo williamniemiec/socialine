@@ -24,22 +24,16 @@ app_command CommandParser::parse(int argc, char* argv[])
 {
     validate_login(argc, argv);
 
-    return CommandBuilder::build_login_command(argv[1], argv[2], argv[3]);
+    return CommandBuilder::build_login_command(argv[1]);
 }
 
 void CommandParser::validate_login(int argc, char* argv[])
 {
-    if (argc < 4)
-        throw std::invalid_argument("Invalid args. Usage: <username> <server_ip> <port>");
+    if (argc < 2)
+        throw std::invalid_argument("Invalid args. Usage: <username> <debug>");
 
     if (!models::data::ArgumentValidator::validate_username(argv[1]))
         throw std::invalid_argument("Invalid username. Expected: @[A-z0-9]+");
-
-    if (!models::data::ArgumentValidator::validate_ip(argv[2]))
-        throw std::invalid_argument("Invalid ip. Expected: [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}");
-
-    if (!models::data::ArgumentValidator::validate_port(argv[3]))
-        throw std::invalid_argument("Invalid port. Expected: [0-9]{1,4}");
 }
 
 app_command CommandParser::parse(std::string command)
