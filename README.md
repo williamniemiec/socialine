@@ -8,6 +8,16 @@
 	<a href="https://docs.microsoft.com/en-us/cpp/"><img src="https://img.shields.io/badge/C++-17+-D0008F.svg" alt="Cpp compatibility"></a>
   <a href="https://github.com/williamniemiec/socialine/blob/master/LICENCE"><img src="https://img.shields.io/badge/Licence-BSD0-919191.svg" alt="Licence"></a>
 
+
+## 🖼 Gallery
+
+![img1](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen1.png)
+![img2](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen2.png)
+![img3](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen3.png)
+![img4](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen4.png)
+![img5](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen5.png)
+
+
 ## ❓ How to use
 
 #### Client
