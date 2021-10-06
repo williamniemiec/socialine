@@ -8,6 +8,8 @@
 	<a href="https://docs.microsoft.com/en-us/cpp/"><img src="https://img.shields.io/badge/C++-17+-D0008F.svg" alt="Cpp compatibility"></a>
   <a href="https://github.com/williamniemiec/socialine/blob/master/LICENCE"><img src="https://img.shields.io/badge/Licence-BSD0-919191.svg" alt="Licence"></a>
 
+## ❇ Introduction
+Socialine is a simple client-server application inspired by how [Twitter](https://twitter.com/) works. The main objective of its development was to deepen the knowledge of learning in concurrent programming and passive replication.
 
 ## 🖼 Gallery
 
@@ -41,7 +43,7 @@ make
 make run debug=true
 ```
 
-## ⚠ Requirements
+## ✔ Requiremens
 #### wxWidgets
 |        OS        |Make command|
 |----------------|-------------------------------|
@@ -49,6 +51,9 @@ make run debug=true
 |MacOS |`make wx-mac`|
 |Windows| 😥 |
 
+## 🚩 Changelog
+Details about each version are documented in the [releases section](https://github.com/williamniemiec/socialine/releases).
+	
 ## 📁 Files
 
 ### /
