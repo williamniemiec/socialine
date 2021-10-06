@@ -11,11 +11,11 @@
 
 ## 🖼 Gallery
 
-![img1](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen1.png)
-![img2](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen2.png)
-![img3](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen3.png)
-![img4](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen4.png)
-![img5](https://github.com/williamniemiec/socialine/blob/master/docs/screens/screen5.png)
+![img1](https://raw.githubusercontent.com/williamniemiec/socialine/master/docs/img/screens/screen1.png)
+![img2](https://raw.githubusercontent.com/williamniemiec/socialine/master/docs/img/screens/screen2.png)
+![img3](https://raw.githubusercontent.com/williamniemiec/socialine/master/docs/img/screens/screen3.png)
+![img4](https://raw.githubusercontent.com/williamniemiec/socialine/master/docs/img/screens/screen4.png)
+![img5](https://raw.githubusercontent.com/williamniemiec/socialine/master/docs/img/screens/screen5.png)
 
 
 ## ❓ How to use
